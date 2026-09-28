@@ -36,8 +36,8 @@ export function HeroSlider() {
   const proSound = HERO_SIDE_PROMOS.proSound;
 
   return (
-    <Container className="py-2.5 sm:py-3">
-      <div className="grid gap-2.5 sm:gap-3 lg:grid-cols-3">
+    <Container className="py-2 sm:py-2.5">
+      <div className="grid gap-1.5 sm:gap-2 lg:grid-cols-3">
         {/* Left (2/3): large banner carousel */}
         <div className="relative h-[270px] overflow-hidden rounded-lg bg-neutral-100 sm:h-[340px] lg:col-span-2 lg:h-[390px]">
           {HERO_SLIDES.map((s, idx) => (
@@ -66,14 +66,6 @@ export function HeroSlider() {
             </div>
           ))}
 
-          {/* Arrows */}
-          <button type="button" aria-label="Previous slide" onClick={() => setI((p) => (p - 1 + n) % n)} className="absolute left-2.5 top-1/2 z-20 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md border border-neutral-200 bg-white/95 text-neutral-900 transition hover:bg-neutral-100">
-            <SfIconChevronLeft size="xs" />
-          </button>
-          <button type="button" aria-label="Next slide" onClick={() => setI((p) => (p + 1) % n)} className="absolute right-2.5 top-1/2 z-20 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md border border-neutral-200 bg-white/95 text-neutral-900 transition hover:bg-neutral-100">
-            <SfIconChevronRight size="xs" />
-          </button>
-
           {/* Dots */}
           <div className="absolute bottom-2.5 left-1/2 z-20 flex -translate-x-1/2 items-center">
             {HERO_SLIDES.map((s, idx) => (
@@ -91,7 +83,7 @@ export function HeroSlider() {
         </div>
 
         {/* Right (1/3): two stacked promo cards */}
-        <div className="grid gap-2.5 sm:gap-3 lg:grid-rows-2">
+        <div className="grid gap-1.5 sm:gap-2 lg:grid-rows-2">
           <Link href={happyHour.href} className="group relative block h-36 overflow-hidden rounded-lg bg-primary-50 lg:h-auto">
             <Image src={happyHour.image} alt="Happy Hour" fill sizes="(max-width: 1023px) 100vw, 33vw" className="object-cover object-left transition-transform duration-300 group-hover:scale-105" />
             <div className="absolute inset-0 bg-primary-500/20 mix-blend-color" />
@@ -280,33 +272,33 @@ function BrandTile({ b }: { b: string }) {
     <Link
       href={`/brand/${b.toLowerCase()}`}
       title={`${b} official store`}
-      className="group flex h-14 flex-col items-center justify-center gap-1 rounded-md border border-neutral-200/90 bg-white px-2 transition-colors hover:border-primary-400"
+      className="group flex h-24 flex-col items-center justify-center gap-2.5 rounded-xl border border-neutral-200 bg-white px-3 transition-all duration-200 hover:border-primary-500 hover:shadow-md sm:h-28"
     >
       {logo && !failed ? (
         // SVGs are tiny static files — skip the image optimizer entirely.
         <Image
           src={logo}
           alt={`${b} logo`}
-          width={80}
-          height={32}
+          width={128}
+          height={56}
           unoptimized
-          sizes="80px"
-          className="h-5 w-auto max-w-[70px] object-contain transition duration-200 group-hover:scale-105"
+          sizes="128px"
+          className="h-11 w-auto max-w-[120px] object-contain transition duration-300 group-hover:scale-110 sm:h-12"
           onError={() => setFailed(true)}
         />
       ) : (
-        <span className="text-xs font-bold text-neutral-500 transition-colors group-hover:text-primary-700">{b}</span>
+        <span className="text-lg font-bold text-neutral-500 transition-colors group-hover:text-primary-700">{b}</span>
       )}
-      <span className="text-[9px] font-semibold uppercase tracking-wide text-neutral-400 transition-colors group-hover:text-primary-700">{b}</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400 transition-colors group-hover:text-primary-700">{b}</span>
     </Link>
   );
 }
 
 export function BrandStrip() {
   return (
-    <Container className="py-4 sm:py-5">
+    <Container className="py-6 sm:py-8">
       <SectionHeading title="Shop by Brand" subtitle="Official stores from the world's leading brands" />
-      <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 sm:gap-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {BRANDS.map((b) => (
           <BrandTile key={b} b={b} />
         ))}
