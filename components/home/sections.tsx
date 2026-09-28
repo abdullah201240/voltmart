@@ -120,11 +120,32 @@ export function CategoryGrid() {
           <Link
             key={c.slug}
             href={`/category/${c.slug}`}
-            className="group relative flex flex-col overflow-hidden rounded-md border border-neutral-200/90 bg-white p-2 transition-colors hover:border-primary-400"
+            className="group relative block overflow-hidden rounded-xl bg-neutral-900 transition-shadow duration-200 hover:shadow-lg"
           >
-            <ProductImage category={c.slug} tone={c.tone} name={c.name} src={c.image} className="mb-1.5 aspect-[4/3] w-full" rounded="rounded-sm" />
-            <span className="text-xs font-semibold text-neutral-900 group-hover:text-primary-700 sm:text-sm lg:text-[15px]">{c.name}</span>
-            <span className="text-[10px] text-neutral-500 lg:text-xs">{c.count} products</span>
+            <div className="relative aspect-[4/3] w-full">
+              <ProductImage
+                category={c.slug}
+                tone={c.tone}
+                name={c.name}
+                src={c.image}
+                className="h-full w-full transition-transform duration-300 group-hover:scale-105"
+                rounded="rounded-none"
+              />
+            </div>
+            {/* Readability gradient over the photo */}
+            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/45 to-transparent" />
+
+            {/* Text pinned to the bottom of the tile */}
+            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-2.5 sm:p-3">
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-bold text-white sm:text-[15px]">{c.name}</h3>
+                <p className="hidden truncate text-[11px] font-medium text-neutral-100 sm:block">{c.blurb}</p>
+                <p className="mt-0.5 text-[10px] font-medium text-primary-300 sm:text-xs">{c.count} products</p>
+              </div>
+              <span className="grid h-7 w-7 shrink-0 translate-y-1 place-items-center rounded-full bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm transition-all duration-200 group-hover:translate-y-0 group-hover:bg-primary-500 group-hover:ring-primary-500">
+                <SfIconChevronRight size="xs" />
+              </span>
+            </div>
           </Link>
         ))}
       </div>
