@@ -111,7 +111,7 @@ export function Header() {
 
   return (
     <>
-    <header className="sticky top-0 z-40 bg-white">
+    <header className="sticky top-0 z-40 border-b border-black/[0.06] bg-white/70 backdrop-blur-xl backdrop-saturate-150">
       {/* Announcement */}
       <div className="truncate bg-primary-700 px-3 py-1.5 text-center text-xs font-medium tracking-wide text-white sm:text-[12px] lg:text-[13px]">
         {ANNOUNCEMENT}
