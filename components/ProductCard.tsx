@@ -1,19 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import {
   SfButton,
   SfRating,
-  SfModal,
   SfIconFavorite,
   SfIconFavoriteFilled,
   SfIconCompareArrows,
-  SfIconVisibility,
   SfIconAdd,
   SfIconRemove,
   SfIconCheck,
-  SfIconLocalShipping,
   SfIconSafetyCheck,
   SfIconAddShoppingCart,
   SfChip,
@@ -71,21 +67,19 @@ export function ProductCard({
   layout?: "grid" | "list";
 }) {
   const { wishlist, toggleWishlist, compare, toggleCompare, addToCart } = useStore();
-  const [quick, setQuick] = useState(false);
-  const [qty, setQty] = useState(1);
   const disc = discountPercent(product.price, product.oldPrice);
   const saved = wishlist.includes(product.id);
   const comparing = compare.includes(product.id);
 
   const media = (
-    <div className={classNames("relative", layout === "grid" ? "aspect-square" : "aspect-square w-full sm:w-40 sm:shrink-0")}>
+    <Link href={`/product/${product.id}`} aria-label={product.name} className={classNames("relative block", layout === "grid" ? "aspect-square w-full" : "aspect-square w-full sm:w-40 sm:shrink-0")}>
       <ProductImage
         category={product.category}
         tone={product.tone}
         name={product.name}
         src={product.image}
         className="h-full w-full transition-transform duration-200 group-hover:scale-[1.02]"
-        rounded="rounded-sm"
+        rounded={layout === "grid" ? "rounded-none" : "rounded-md"}
       />
       <div className="absolute left-1 top-1 flex flex-col items-start gap-1">
         {product.isNew && (
@@ -99,24 +93,19 @@ export function ProductCard({
           </SfChip>
         )}
       </div>
-      <div className="absolute right-1 top-1 flex flex-col gap-1 opacity-100 transition-opacity duration-150 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
-        <SfButton variant="tertiary" size="sm" square aria-label="Quick view" className="!rounded-md border border-neutral-200/90 bg-white/95 p-1 text-neutral-600 hover:text-neutral-900" onClick={() => setQuick(true)}>
-          <SfIconVisibility size="xs" />
-        </SfButton>
-      </div>
-    </div>
+    </Link>
   );
 
   return (
     <>
       <div
         className={classNames(
-          "group flex rounded-md border border-neutral-200/90 bg-white transition-colors duration-150 hover:border-primary-400",
-          layout === "grid" ? "flex-col p-2 sm:p-2.5" : "flex-col gap-2.5 p-2.5 sm:flex-row sm:p-3",
+          "group flex overflow-hidden rounded-md bg-white transition-colors duration-150",
+          layout === "grid" ? "flex-col" : "flex-col gap-2.5 p-2.5 sm:flex-row sm:p-3",
         )}
       >
         {media}
-        <div className={classNames("flex flex-1 flex-col gap-1", layout === "grid" && "pt-1.5 px-0.5")}>
+        <div className={classNames("flex flex-1 flex-col gap-1", layout === "grid" ? "p-2" : "px-0")}>
           <div className="flex items-center justify-between gap-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 lg:text-xs">{product.brand}</span>
             <div className="flex items-center gap-0.5">
@@ -191,51 +180,6 @@ export function ProductCard({
           </SfButton>
         </div>
       </div>
-
-      {/* Quick view modal */}
-      <SfModal open={quick} onClose={() => setQuick(false)} className="max-w-lg">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-primary-600">{product.brand}</span>
-            <SfButton variant="tertiary" square className="!rounded-full p-2" aria-label="Close" onClick={() => setQuick(false)}>
-              <SfIconRemove size="sm" />
-            </SfButton>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ProductImage category={product.category} tone={product.tone} name={product.name} src={product.image} className="aspect-square w-full" />
-            <div className="flex flex-col gap-2">
-              <h3 className="text-lg font-bold text-neutral-900">{product.name}</h3>
-              <p className="text-sm text-neutral-600">{product.tagline}</p>
-              <div className="flex items-center gap-1.5">
-                <SfRating size="xs" value={product.rating} max={5} />
-                <span className="text-xs text-neutral-500">({product.reviews.toLocaleString("en-IN")})</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-bold">{formatPrice(product.price)}</span>
-                {product.oldPrice && <span className="text-sm text-neutral-400 line-through">{formatPrice(product.oldPrice)}</span>}
-              </div>
-              <div className="flex gap-2 pt-1">
-                {Object.entries(product.attrs).slice(0, 4).map(([k, v]) => (
-                  <SfChip key={k} size="sm" square>{`${k}: ${v}`}</SfChip>
-                ))}
-              </div>
-              <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
-                <span className="inline-flex items-center gap-1"><SfIconLocalShipping size="sm" /> Fast delivery</span>
-                <span className="inline-flex items-center gap-1"><SfIconSafetyCheck size="sm" /> Official warranty</span>
-              </div>
-              <div className="mt-3 flex items-center gap-3">
-                <QuantitySelector value={qty} onChange={setQty} />
-                <SfButton className="flex-1" disabled={!product.inStock} onClick={() => { addToCart(product.id, qty); setQuick(false); }}>
-                  Add to Cart
-                </SfButton>
-              </div>
-              <Link href={`/product/${product.id}`} onClick={() => setQuick(false)} className="text-sm font-medium text-primary-700 underline">
-                View full details
-              </Link>
-            </div>
-          </div>
-        </div>
-      </SfModal>
     </>
   );
 }
