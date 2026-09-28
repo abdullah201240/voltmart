@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   SfIconHome,
   SfIconGridView,
-  SfIconSearch,
   SfIconFavorite,
   SfIconPerson,
 } from "@storefront-ui/react";
@@ -15,7 +14,6 @@ import { classNames } from "@/lib/format";
 const ITEMS = [
   { href: "/", label: "Home", icon: <SfIconHome size="sm" /> },
   { href: "/category/mobiles", label: "Categories", icon: <SfIconGridView size="sm" /> },
-  { href: "/search", label: "Search", icon: <SfIconSearch size="sm" /> },
   { href: "/wishlist", label: "Wishlist", icon: <SfIconFavorite size="sm" /> },
   { href: "/account", label: "Account", icon: <SfIconPerson size="sm" /> },
 ];

@@ -7,6 +7,7 @@ import {
   SfIconCall,
   SfIconEmail,
   SfIconLocationOn,
+  SfIconChevronRight,
 } from "@storefront-ui/react";
 import { Container } from "@/components/ui";
 
@@ -76,13 +77,33 @@ export function Footer() {
             </div>
           </div>
 
+          {/* Mobile / tablet: collapsible accordions so the same links aren't all expanded */}
+          <div className="col-span-full -mx-1 divide-y divide-neutral-200 border-y border-neutral-200 lg:hidden">
+            {COLUMNS.map((col) => (
+              <details key={col.title} className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-1 py-3 text-sm font-bold text-neutral-900">
+                  {col.title}
+                  <SfIconChevronRight size="xs" className="rotate-90 text-neutral-400 transition-transform group-open:-rotate-90" />
+                </summary>
+                <ul className="pb-3">
+                  {col.links.map((l) => (
+                    <li key={l.label}>
+                      <Link href={l.href} className="block px-1 py-1.5 text-sm text-neutral-600 hover:text-primary-700">{l.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </div>
+
+          {/* Desktop: flat columns */}
           {COLUMNS.map((col) => (
-            <div key={col.title}>
-              <h4 className="text-xs font-bold uppercase tracking-wide text-neutral-900 sm:text-sm">{col.title}</h4>
+            <div key={col.title} className="hidden lg:block">
+              <h4 className="text-sm font-bold uppercase tracking-wide text-neutral-900">{col.title}</h4>
               <ul className="mt-2.5 space-y-1.5">
                 {col.links.map((l) => (
                   <li key={l.label}>
-                    <Link href={l.href} className="text-xs text-neutral-600 hover:text-primary-700 sm:text-sm">{l.label}</Link>
+                    <Link href={l.href} className="text-sm text-neutral-600 hover:text-primary-700">{l.label}</Link>
                   </li>
                 ))}
               </ul>

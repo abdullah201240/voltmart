@@ -12,15 +12,17 @@ export function SectionHeading({
   href,
   linkLabel = "View all",
   dark = false,
+  className = "",
 }: {
   title: string;
   subtitle?: string;
   href?: string;
   linkLabel?: string;
   dark?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-2.5">
+    <div className={classNames("mb-3 flex items-end justify-between gap-2.5", className)}>
       <div>
         <h2 className={classNames("text-lg font-bold tracking-tight sm:text-xl lg:text-2xl", dark ? "text-white" : "text-neutral-900")}>
           {title}

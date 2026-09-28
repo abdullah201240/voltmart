@@ -1,6 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { PRODUCTS } from "@/lib/data";
-import { Container, SectionHeading } from "@/components/ui";
+import { Container, SectionHeading, CustomSelect } from "@/components/ui";
 import { ProductCard } from "@/components/ProductCard";
 import { SfButton, SfIconChevronRight, SfIconPercent } from "@storefront-ui/react";
 import Link from "next/link";
@@ -12,8 +15,19 @@ const SECTIONS = [
   { key: "Bundle Offers", match: (p: (typeof PRODUCTS)[number]) => p.category === "accessories" || p.category === "tv-audio" },
 ];
 
+const FILTER_OPTIONS = [
+  { value: "all", label: "All Deal Sections" },
+  { value: "Today's Deals", label: "Today's Deals" },
+  { value: "Flash Sale", label: "Flash Sale" },
+  { value: "Clearance", label: "Clearance Deals" },
+  { value: "Bundle Offers", label: "Bundle Offers" },
+];
+
 export default function DealsPage() {
+  const [filter, setFilter] = useState("all");
   const topDeals = PRODUCTS.filter((p) => p.oldPrice);
+  const visibleSections = filter === "all" ? SECTIONS : SECTIONS.filter((s) => s.key === filter);
+
   return (
     <>
       {/* Full-width edge-to-edge Deals Banner */}
@@ -38,12 +52,24 @@ export default function DealsPage() {
               Authentic electronics at discounted prices
             </p>
           </div>
-          <div className="inline-flex items-center gap-1.5 rounded-sm bg-negative-50 px-2.5 py-1 text-xs font-semibold text-negative-800 lg:text-sm">
-            <SfIconPercent size="xs" className="text-negative-600" />
-            <span>{topDeals.length} active deals</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center gap-1.5 rounded-sm bg-negative-50 px-2.5 py-1 text-xs font-semibold text-negative-800 lg:text-sm">
+              <SfIconPercent size="xs" className="text-negative-600" />
+              <span>{topDeals.length} active deals</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="hidden text-xs text-neutral-500 sm:inline">Section:</span>
+              <CustomSelect
+                value={filter}
+                onChange={setFilter}
+                options={FILTER_OPTIONS}
+                size="sm"
+                className="min-w-44"
+              />
+            </div>
           </div>
         </div>
-        {SECTIONS.map((s) => {
+        {visibleSections.map((s) => {
           const items = s.match ? PRODUCTS.filter(s.match) : [];
           if (items.length === 0) return null;
           return (

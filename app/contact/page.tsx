@@ -3,7 +3,16 @@
 import { useState } from "react";
 import { SfButton, SfInput, SfTextarea, SfIconCall, SfIconEmail, SfIconLocationOn, SfIconContactSupport } from "@storefront-ui/react";
 import { useStore } from "@/lib/store";
-import { Container } from "@/components/ui";
+import { Container, CustomSelect } from "@/components/ui";
+
+const SUBJECT_OPTIONS = [
+  { value: "general", label: "General Inquiry" },
+  { value: "orders", label: "Order & Delivery Tracking" },
+  { value: "warranty", label: "Warranty Claim & Service" },
+  { value: "returns", label: "Returns & Refunds" },
+  { value: "technical", label: "Technical Support" },
+  { value: "wholesale", label: "Corporate / Bulk Orders" },
+];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -17,6 +26,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export default function ContactPage() {
   const { notify } = useStore();
   const [sent, setSent] = useState(false);
+  const [subject, setSubject] = useState("general");
 
   const channels = [
     { icon: <SfIconCall />, title: "Call us", value: "+880 1600-000-000", note: "Sat–Thu, 9 AM – 9 PM" },
@@ -55,7 +65,15 @@ export default function ContactPage() {
             <Field label="Name"><SfInput required placeholder="Your name" /></Field>
             <Field label="Email"><SfInput required type="email" placeholder="you@email.com" /></Field>
           </div>
-          <Field label="Subject"><SfInput placeholder="How can we help?" /></Field>
+          <Field label="Topic / Department">
+            <CustomSelect
+              value={subject}
+              onChange={setSubject}
+              options={SUBJECT_OPTIONS}
+              className="w-full"
+              size="sm"
+            />
+          </Field>
           <Field label="Message"><SfTextarea required rows={4} placeholder="Write your message..." /></Field>
           <SfButton type="submit" size="base" className="w-full !rounded-md">{sent ? "Message sent ✓" : "Send message"}</SfButton>
         </form>
