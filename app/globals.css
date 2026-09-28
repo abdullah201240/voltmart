@@ -1,4 +1,11 @@
 @import "tailwindcss";
+@import "@storefront-ui/react/tailwind-config";
+
+/* Tailwind v4 ignores node_modules by default. Storefront UI ships class names
+   (icon sizes, component internals) inside its compiled dist, so we must opt the
+   package in explicitly or those utilities are never generated. */
+@source "../node_modules/@storefront-ui/react/dist";
+@source "../node_modules/@storefront-ui/shared/dist";
 
 :root {
   --background: #ffffff;
@@ -12,15 +19,87 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Storefront UI expects --font-headings / --font-body tokens (defaults to Inter).
+   Remap them to the Geist fonts already loaded in layout.tsx. */
+@theme {
+  --font-headings: var(--font-geist-sans), "sans-serif";
+  --font-body: var(--font-geist-sans), "sans-serif";
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #171717;
   }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 1440px) {
+  html {
+    font-size: 17.5px;
+  }
+}
+
+/* Scrollbar in the theme's primary color. Firefox/standard first, then WebKit.
+   Uses the SFUI --color-primary-* tokens so it follows the theme automatically. */
+* {
+  scrollbar-color: var(--color-primary-500) var(--color-primary-100);
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-primary-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-500);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-600);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-primary-100);
+}
+
+/* Lock the page to vertical scrolling only — no left/right pan anywhere.
+   `clip` (not `hidden`) so no scroll container is created and sticky headers keep working. */
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+  overscroll-behavior-x: none; /* stops trackpad/iOS horizontal swipe from panning or bouncing the page */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
 }
