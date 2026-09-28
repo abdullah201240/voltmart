@@ -39,7 +39,7 @@ export function HeroSlider() {
     <Container className="py-2 sm:py-2.5">
       <div className="grid gap-1.5 sm:gap-2 lg:grid-cols-3">
         {/* Left (2/3): large banner carousel */}
-        <div className="relative h-[270px] overflow-hidden rounded-md bg-neutral-100 sm:h-[340px] lg:col-span-2 lg:h-[390px]">
+        <div className="relative h-[220px] overflow-hidden rounded-md bg-neutral-100 sm:h-[280px] lg:col-span-2 lg:h-[320px]">
           {HERO_SLIDES.map((s, idx) => (
             <div
               key={s.poster}
@@ -51,14 +51,14 @@ export function HeroSlider() {
               <div className="absolute inset-0 bg-primary-500/25 mix-blend-color" />
               <div className="absolute inset-0 bg-gradient-to-r from-primary-950/80 via-primary-900/35 to-transparent" />
               <div className="relative z-10 flex h-full items-center">
-                <div className="max-w-sm p-4 text-white sm:p-6">
-                  <p className="mb-2 inline-flex items-center gap-1 rounded-sm bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-white/20 lg:text-xs">
+                <div className="max-w-sm p-3.5 text-white sm:p-5">
+                  <p className="mb-1.5 inline-flex items-center gap-1 rounded-sm bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-white/20 lg:text-xs">
                     <SfIconPercent size="xs" /> {s.eyebrow}
                   </p>
-                  <h1 className="font-headings text-xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-4xl">{s.title}</h1>
-                  <p className="mt-1 font-headings text-2xl font-extrabold leading-none text-primary-300 drop-shadow-sm sm:text-4xl lg:text-5xl">{s.offer}</p>
-                  <p className="mt-2 hidden text-xs text-neutral-200 sm:block lg:text-sm">{s.subtitle}</p>
-                  <SfButton as={Link} href={s.href} size="sm" className="mt-3 !rounded-md !bg-white !px-3 !py-1 text-xs font-semibold !text-neutral-900 hover:!bg-neutral-100 lg:!px-4 lg:!py-1.5 lg:text-sm">
+                  <h1 className="font-headings text-lg font-bold leading-tight tracking-tight sm:text-2xl lg:text-3xl">{s.title}</h1>
+                  <p className="mt-0.5 font-headings text-xl font-extrabold leading-none text-primary-300 drop-shadow-sm sm:text-3xl lg:text-4xl">{s.offer}</p>
+                  <p className="mt-1 hidden text-xs text-neutral-200 sm:block lg:text-sm">{s.subtitle}</p>
+                  <SfButton as={Link} href={s.href} size="sm" className="mt-2.5 !rounded-md !bg-white !px-3 !py-1 text-xs font-semibold !text-neutral-900 hover:!bg-neutral-100 lg:!px-4 lg:!py-1.5 lg:text-sm">
                     {s.cta} <SfIconChevronRight size="xs" />
                   </SfButton>
                 </div>
@@ -84,24 +84,24 @@ export function HeroSlider() {
 
         {/* Right (1/3): two stacked promo cards */}
         <div className="grid gap-1.5 sm:gap-2 lg:grid-rows-2">
-          <Link href={happyHour.href} className="group relative block h-36 overflow-hidden rounded-md border border-neutral-200/90 bg-primary-50 lg:h-auto">
+          <Link href={happyHour.href} className="group relative block h-28 overflow-hidden rounded-md border border-neutral-200/90 bg-primary-50 sm:h-32 lg:h-auto">
             <Image src={happyHour.image} alt="Happy Hour" fill sizes="(max-width: 1023px) 100vw, 33vw" className="object-cover object-left transition-transform duration-300 group-hover:scale-105" />
             <div className="absolute inset-0 bg-primary-500/20 mix-blend-color" />
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-primary-50/70" />
             <div className="relative z-10 flex h-full flex-col items-end justify-center gap-0.5 p-3 text-right sm:p-4">
-              <span className="font-headings text-lg font-extrabold uppercase leading-none tracking-tight text-primary-700 sm:text-xl lg:text-2xl">Happy Hour</span>
-              <span className="text-sm font-bold leading-tight text-neutral-900 sm:text-base lg:text-lg">{happyHour.title}</span>
-              <span className="text-[11px] font-semibold text-neutral-600 lg:text-xs">{happyHour.time}</span>
+              <span className="font-headings text-base font-extrabold uppercase leading-none tracking-tight text-primary-700 sm:text-lg lg:text-xl">Happy Hour</span>
+              <span className="text-xs font-bold leading-tight text-neutral-900 sm:text-sm lg:text-base">{happyHour.title}</span>
+              <span className="text-[10px] font-semibold text-neutral-600 lg:text-xs">{happyHour.time}</span>
             </div>
           </Link>
-          <Link href={proSound.href} className="group relative block h-36 overflow-hidden rounded-md border border-neutral-200/90 bg-gradient-to-br from-emerald-50 via-white to-primary-50 lg:h-auto">
+          <Link href={proSound.href} className="group relative block h-28 overflow-hidden rounded-md border border-neutral-200/90 bg-gradient-to-br from-emerald-50 via-white to-primary-50 sm:h-32 lg:h-auto">
             <Image src={proSound.image} alt="Pro Sound" fill sizes="(max-width: 1023px) 100vw, 33vw" className="object-cover object-left transition-transform duration-300 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-white/95" />
             <div className="relative z-10 flex h-full flex-col items-end justify-center gap-0.5 p-3 text-right sm:p-4">
-              <span className="font-headings text-base font-bold leading-tight text-neutral-900 sm:text-lg lg:text-xl">{proSound.title}</span>
-              <span className="text-sm font-extrabold leading-none text-primary-700 sm:text-lg lg:text-xl">{proSound.price}</span>
+              <span className="font-headings text-sm font-bold leading-tight text-neutral-900 sm:text-base lg:text-lg">{proSound.title}</span>
+              <span className="text-xs font-extrabold leading-none text-primary-700 sm:text-base lg:text-lg">{proSound.price}</span>
               <span className="mt-1 rounded-sm bg-primary-700 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white transition group-hover:bg-primary-800 lg:text-xs">Buy Now</span>
-              <span className="text-[10px] font-medium text-neutral-600 lg:text-xs">{proSound.product}</span>
+              <span className="text-[9px] font-medium text-neutral-600 lg:text-[11px]">{proSound.product}</span>
             </div>
           </Link>
         </div>
@@ -266,20 +266,21 @@ export function PosterBanner({
   href: string;
 }) {
   return (
-    <Container className="py-3 sm:py-4">
+    <Container className="py-2.5 sm:py-3.5">
       <Link
         href={href}
         aria-label={alt}
         className="group relative block w-full overflow-hidden rounded-md border border-neutral-200/90 bg-white transition-colors duration-150 hover:border-primary-400"
       >
-        <Image
-          src={image}
-          alt={alt}
-          width={1376}
-          height={768}
-          sizes="(max-width: 1280px) 100vw, 1200px"
-          className="h-auto w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.008]"
-        />
+        <div className="relative h-28 w-full sm:h-36 md:h-44 lg:h-52 xl:h-56">
+          <Image
+            src={image}
+            alt={alt}
+            fill
+            sizes="(max-width: 1280px) 100vw, 1200px"
+            className="object-cover object-center transition-transform duration-200 ease-out group-hover:scale-[1.008]"
+          />
+        </div>
       </Link>
     </Container>
   );
@@ -291,8 +292,8 @@ export function DualPosterBanners({
   banners: { image: string; alt: string; href: string }[];
 }) {
   return (
-    <Container className="py-3 sm:py-4">
-      <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2">
+    <Container className="py-2.5 sm:py-3.5">
+      <div className="grid gap-2 sm:gap-2.5 sm:grid-cols-2">
         {banners.map((b) => (
           <Link
             key={b.image}
@@ -300,14 +301,15 @@ export function DualPosterBanners({
             aria-label={b.alt}
             className="group relative block w-full overflow-hidden rounded-md border border-neutral-200/90 bg-white transition-colors duration-150 hover:border-primary-400"
           >
-            <Image
-              src={b.image}
-              alt={b.alt}
-              width={1376}
-              height={768}
-              sizes="(max-width: 640px) 100vw, 50vw"
-              className="h-auto w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.01]"
-            />
+            <div className="relative h-28 w-full sm:h-36 md:h-40 lg:h-44 xl:h-48">
+              <Image
+                src={b.image}
+                alt={b.alt}
+                fill
+                sizes="(max-width: 640px) 100vw, 50vw"
+                className="object-cover object-center transition-transform duration-200 ease-out group-hover:scale-[1.01]"
+              />
+            </div>
           </Link>
         ))}
       </div>
