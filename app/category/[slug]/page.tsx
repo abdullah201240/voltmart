@@ -7,7 +7,6 @@ import { useParams } from "next/navigation";
 import {
   SfButton,
   SfCheckbox,
-  SfSelect,
   SfDrawer,
   SfChip,
   SfIconTune,
@@ -24,7 +23,7 @@ import {
 import { formatPrice } from "@/lib/format";
 import { classNames } from "@/lib/format";
 import { ProductCard } from "@/components/ProductCard";
-import { Container, EmptyState } from "@/components/ui";
+import { Container, EmptyState, CustomSelect } from "@/components/ui";
 
 type Sort = "recommended" | "newest" | "price-asc" | "price-desc" | "rating" | "bestselling";
 
@@ -49,14 +48,17 @@ function matches(product: Product, selected: Record<string, string[]>, maxPrice:
 
 function SortSelect({ value, onChange }: { value: Sort; onChange: (v: Sort) => void }) {
   return (
-    <label className="flex items-center gap-2 text-sm text-neutral-600">
-      <span className="hidden sm:inline">Sort:</span>
-      <SfSelect value={value} onChange={(e) => onChange(e.target.value as Sort)} className="w-48" size="sm">
-        {SORTS.map((s) => (
-          <option key={s.value} value={s.value}>{s.label}</option>
-        ))}
-      </SfSelect>
-    </label>
+    <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-600">
+      <span className="hidden sm:inline font-medium">Sort:</span>
+      <CustomSelect<Sort>
+        value={value}
+        onChange={onChange}
+        options={SORTS}
+        className="w-44 sm:w-48"
+        size="sm"
+        align="right"
+      />
+    </div>
   );
 }
 

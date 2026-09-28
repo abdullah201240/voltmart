@@ -16,7 +16,7 @@ import {
 import { useCartLines, useStore } from "@/lib/store";
 import { formatPrice } from "@/lib/format";
 import { classNames } from "@/lib/format";
-import { Container } from "@/components/ui";
+import { Container, CustomSelect } from "@/components/ui";
 import { ProductImage } from "@/components/ProductImage";
 
 const STEPS = ["Address", "Delivery", "Payment", "Review"];
@@ -26,6 +26,16 @@ const DELIVERY = [
   { id: "pickup", name: "Store Pickup", note: "Ready in 2 hours — Dhaka", price: 0 },
 ];
 const PAYMENTS = ["Card", "bKash", "Nagad", "Cash on Delivery"];
+const DIVISIONS = [
+  { value: "Dhaka", label: "Dhaka Division" },
+  { value: "Chittagong", label: "Chittagong Division" },
+  { value: "Sylhet", label: "Sylhet Division" },
+  { value: "Rajshahi", label: "Rajshahi Division" },
+  { value: "Khulna", label: "Khulna Division" },
+  { value: "Barishal", label: "Barishal Division" },
+  { value: "Rangpur", label: "Rangpur Division" },
+  { value: "Mymensingh", label: "Mymensingh Division" },
+];
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -106,9 +116,16 @@ export default function CheckoutPage() {
                   <Field label="Full name"><SfInput value={form.name} onChange={set("name")} className="!rounded-md" /></Field>
                   <Field label="Phone"><SfInput value={form.phone} onChange={set("phone")} className="!rounded-md" /></Field>
                   <Field label="Email" className="sm:col-span-2"><SfInput type="email" value={form.email} onChange={set("email")} className="!rounded-md" /></Field>
-                  <Field label="Address" className="sm:col-span-2"><SfInput value={form.address} onChange={set("address")} className="!rounded-md" /></Field>
-                  <Field label="City"><SfInput value={form.city} onChange={set("city")} className="!rounded-md" /></Field>
-                  <Field label="Area"><SfInput value={form.area} onChange={set("area")} className="!rounded-md" /></Field>
+                  <Field label="Division / Region">
+                    <CustomSelect
+                      value={form.city}
+                      onChange={(val) => setForm((f) => ({ ...f, city: val }))}
+                      options={DIVISIONS}
+                      className="w-full"
+                      size="sm"
+                    />
+                  </Field>
+                  <Field label="Area / Thana"><SfInput value={form.area} onChange={set("area")} className="!rounded-md" /></Field>
                 </div>
               </div>
             )}

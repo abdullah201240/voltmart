@@ -1,23 +1,47 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SfChip, SfIconSearch } from "@storefront-ui/react";
 import { PRODUCTS, CATEGORIES, BRANDS } from "@/lib/data";
-import { Container, EmptyState, SkeletonGrid } from "@/components/ui";
+import { Container, EmptyState, SkeletonGrid, CustomSelect } from "@/components/ui";
 import { ProductCard } from "@/components/ProductCard";
 import { SearchBox } from "@/components/layout/SearchBox";
+
+type Sort = "recommended" | "newest" | "price-asc" | "price-desc" | "rating" | "bestselling";
+
+const SORTS: { value: Sort; label: string }[] = [
+  { value: "recommended", label: "Recommended" },
+  { value: "newest", label: "Newest" },
+  { value: "price-asc", label: "Price: Low → High" },
+  { value: "price-desc", label: "Price: High → Low" },
+  { value: "rating", label: "Best Rated" },
+  { value: "bestselling", label: "Best Selling" },
+];
 
 function SearchView() {
   const params = useSearchParams();
   const q = (params.get("q") ?? "").trim();
   const term = q.toLowerCase();
+  const [sort, setSort] = useState<Sort>("recommended");
 
   const results = useMemo(() => {
     if (!term) return [];
     return PRODUCTS.filter((p) => `${p.name} ${p.brand} ${p.category} ${Object.values(p.attrs).join(" ")}`.toLowerCase().includes(term));
   }, [term]);
+
+  const sortedResults = useMemo(() => {
+    const list = [...results];
+    switch (sort) {
+      case "price-asc": list.sort((a, b) => a.price - b.price); break;
+      case "price-desc": list.sort((a, b) => b.price - a.price); break;
+      case "rating": list.sort((a, b) => b.rating - a.rating); break;
+      case "newest": list.sort((a, b) => Number(b.isNew ?? false) - Number(a.isNew ?? false)); break;
+      case "bestselling": list.sort((a, b) => Number(b.isBestSeller ?? false) - Number(a.isBestSeller ?? false)); break;
+    }
+    return list;
+  }, [results, sort]);
 
   const related = useMemo(() => {
     const set = new Set<string>();
@@ -35,9 +59,24 @@ function SearchView() {
         <EmptyState icon={<SfIconSearch />} title="Search the store" description="Try “iPhone”, “laptop”, “headphones” or a brand name to find products, categories and more." />
       ) : (
         <>
-          <p className="text-xs sm:text-sm text-neutral-500">
-            <span className="text-base sm:text-lg font-bold text-neutral-900">{results.length}</span> result{results.length === 1 ? "" : "s"} for “{q}”
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs sm:text-sm text-neutral-500">
+              <span className="text-base sm:text-lg font-bold text-neutral-900">{results.length}</span> result{results.length === 1 ? "" : "s"} for “{q}”
+            </p>
+            {results.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline text-xs font-medium text-neutral-600">Sort:</span>
+                <CustomSelect<Sort>
+                  value={sort}
+                  onChange={setSort}
+                  options={SORTS}
+                  className="w-44 sm:w-48"
+                  size="sm"
+                  align="right"
+                />
+              </div>
+            )}
+          </div>
 
           {related.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -48,9 +87,9 @@ function SearchView() {
             </div>
           )}
 
-          {results.length > 0 ? (
+          {sortedResults.length > 0 ? (
             <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-              {results.map((p) => <ProductCard key={p.id} product={p} />)}
+              {sortedResults.map((p) => <ProductCard key={p.id} product={p} />)}
             </div>
           ) : (
             <div className="mt-6">

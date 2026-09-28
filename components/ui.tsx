@@ -138,3 +138,6 @@ export function Stars({ value }: { value: number }) {
     </span>
   );
 }
+
+export { CustomSelect, type SelectOption, type CustomSelectProps } from "./CustomSelect";
+
