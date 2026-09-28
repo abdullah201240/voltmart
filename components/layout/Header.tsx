@@ -158,7 +158,7 @@ export function Header() {
       )}
 
       {/* Desktop category nav */}
-      <nav className="hidden border-t border-neutral-200 lg:block">
+      <nav className="hidden lg:block">
         <Container className="relative flex items-center gap-1">
           <div className="group">
             <button type="button" className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-primary-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-800 lg:text-sm">
