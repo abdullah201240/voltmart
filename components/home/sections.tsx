@@ -39,7 +39,7 @@ export function HeroSlider() {
     <Container className="py-2 sm:py-2.5">
       <div className="grid gap-1.5 sm:gap-2 lg:grid-cols-3">
         {/* Left (2/3): large banner carousel */}
-        <div className="relative h-[270px] overflow-hidden rounded-lg bg-neutral-100 sm:h-[340px] lg:col-span-2 lg:h-[390px]">
+        <div className="relative h-[270px] overflow-hidden rounded-md bg-neutral-100 sm:h-[340px] lg:col-span-2 lg:h-[390px]">
           {HERO_SLIDES.map((s, idx) => (
             <div
               key={s.poster}
@@ -84,7 +84,7 @@ export function HeroSlider() {
 
         {/* Right (1/3): two stacked promo cards */}
         <div className="grid gap-1.5 sm:gap-2 lg:grid-rows-2">
-          <Link href={happyHour.href} className="group relative block h-36 overflow-hidden rounded-lg bg-primary-50 lg:h-auto">
+          <Link href={happyHour.href} className="group relative block h-36 overflow-hidden rounded-md border border-neutral-200/90 bg-primary-50 lg:h-auto">
             <Image src={happyHour.image} alt="Happy Hour" fill sizes="(max-width: 1023px) 100vw, 33vw" className="object-cover object-left transition-transform duration-300 group-hover:scale-105" />
             <div className="absolute inset-0 bg-primary-500/20 mix-blend-color" />
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-primary-50/70" />
@@ -94,7 +94,7 @@ export function HeroSlider() {
               <span className="text-[11px] font-semibold text-neutral-600 lg:text-xs">{happyHour.time}</span>
             </div>
           </Link>
-          <Link href={proSound.href} className="group relative block h-36 overflow-hidden rounded-lg border border-neutral-200/80 bg-gradient-to-br from-emerald-50 via-white to-primary-50 lg:h-auto">
+          <Link href={proSound.href} className="group relative block h-36 overflow-hidden rounded-md border border-neutral-200/90 bg-gradient-to-br from-emerald-50 via-white to-primary-50 lg:h-auto">
             <Image src={proSound.image} alt="Pro Sound" fill sizes="(max-width: 1023px) 100vw, 33vw" className="object-cover object-left transition-transform duration-300 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-white/95" />
             <div className="relative z-10 flex h-full flex-col items-end justify-center gap-0.5 p-3 text-right sm:p-4">
@@ -120,29 +120,26 @@ export function CategoryGrid() {
           <Link
             key={c.slug}
             href={`/category/${c.slug}`}
-            className="group relative block overflow-hidden rounded-xl bg-neutral-900 transition-shadow duration-200 hover:shadow-lg"
+            className="group flex flex-col rounded-md border border-neutral-200/90 bg-white p-2 transition-colors duration-150 hover:border-primary-400 sm:p-2.5"
           >
-            <div className="relative aspect-[4/3] w-full">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-sm bg-neutral-50">
               <ProductImage
                 category={c.slug}
                 tone={c.tone}
                 name={c.name}
                 src={c.image}
-                className="h-full w-full transition-transform duration-300 group-hover:scale-105"
+                className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                 rounded="rounded-none"
               />
             </div>
-            {/* Readability gradient over the photo */}
-            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/45 to-transparent" />
-
-            {/* Text pinned to the bottom of the tile */}
-            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-2.5 sm:p-3">
+            <div className="mt-2 flex items-center justify-between gap-1">
               <div className="min-w-0">
-                <h3 className="truncate text-sm font-bold text-white sm:text-[15px]">{c.name}</h3>
-                <p className="hidden truncate text-[11px] font-medium text-neutral-100 sm:block">{c.blurb}</p>
-                <p className="mt-0.5 text-[10px] font-medium text-primary-300 sm:text-xs">{c.count} products</p>
+                <h3 className="truncate text-xs font-semibold text-neutral-900 group-hover:text-primary-700 sm:text-sm lg:text-[15px]">
+                  {c.name}
+                </h3>
+                <p className="text-[10px] text-neutral-500 lg:text-xs">{c.count} products</p>
               </div>
-              <span className="grid h-7 w-7 shrink-0 translate-y-1 place-items-center rounded-full bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm transition-all duration-200 group-hover:translate-y-0 group-hover:bg-primary-500 group-hover:ring-primary-500">
+              <span className="text-neutral-400 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-primary-600">
                 <SfIconChevronRight size="xs" />
               </span>
             </div>
@@ -172,7 +169,7 @@ export function FlashDeals() {
   const deals = PRODUCTS.filter((p) => p.oldPrice).slice(0, 5);
   return (
     <Container className="py-4 sm:py-5">
-      <div className="rounded-lg border border-negative-200/70 bg-gradient-to-br from-negative-50/20 via-white to-white p-3 sm:p-4">
+      <div className="rounded-md border border-neutral-200/90 bg-white p-3 sm:p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h2 className="flex items-center gap-1.5 text-lg font-bold text-neutral-900 sm:text-xl lg:text-2xl">
@@ -258,21 +255,54 @@ export function BestSellers() {
   );
 }
 
-/* --------------------------- Promo Banners -------------------------- */
-export function PromoBanners() {
+/* --------------------------- Promotional Poster Banners (for section gaps) -------------------------- */
+export function PosterBanner({
+  image,
+  alt,
+  href,
+}: {
+  image: string;
+  alt: string;
+  href: string;
+}) {
   return (
-    <Container className="py-4 sm:py-5">
+    <Container className="py-3 sm:py-4">
+      <Link
+        href={href}
+        aria-label={alt}
+        className="group relative block w-full overflow-hidden rounded-md border border-neutral-200/90 bg-white transition-colors duration-150 hover:border-primary-400"
+      >
+        <Image
+          src={image}
+          alt={alt}
+          width={1376}
+          height={768}
+          sizes="(max-width: 1280px) 100vw, 1200px"
+          className="h-auto w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.008]"
+        />
+      </Link>
+    </Container>
+  );
+}
+
+export function DualPosterBanners({
+  banners,
+}: {
+  banners: { image: string; alt: string; href: string }[];
+}) {
+  return (
+    <Container className="py-3 sm:py-4">
       <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2">
-        {PROMO_BANNERS.map((b) => (
+        {banners.map((b) => (
           <Link
-            key={b.title}
+            key={b.image}
             href={b.href}
-            aria-label={`${b.title} - ${b.text}`}
-            className="group relative block w-full overflow-hidden rounded-lg border border-neutral-200/90 bg-white transition-colors duration-150 hover:border-neutral-300"
+            aria-label={b.alt}
+            className="group relative block w-full overflow-hidden rounded-md border border-neutral-200/90 bg-white transition-colors duration-150 hover:border-primary-400"
           >
             <Image
               src={b.image}
-              alt={b.title}
+              alt={b.alt}
               width={1376}
               height={768}
               sizes="(max-width: 640px) 100vw, 50vw"
@@ -285,6 +315,17 @@ export function PromoBanners() {
   );
 }
 
+export function PromoBanners() {
+  return (
+    <DualPosterBanners
+      banners={[
+        { image: "/promos/promo-gaming.jpg", alt: "Ultimate Gaming", href: "/gaming" },
+        { image: "/promos/promo-work.jpg", alt: "Work From Anywhere", href: "/category/laptops" },
+      ]}
+    />
+  );
+}
+
 /* --------------------------- Brands --------------------------------- */
 function BrandTile({ b }: { b: string }) {
   const [failed, setFailed] = useState(false);
@@ -293,33 +334,33 @@ function BrandTile({ b }: { b: string }) {
     <Link
       href={`/brand/${b.toLowerCase()}`}
       title={`${b} official store`}
-      className="group flex h-24 flex-col items-center justify-center gap-2.5 rounded-xl border border-neutral-200 bg-white px-3 transition-all duration-200 hover:border-primary-500 hover:shadow-md sm:h-28"
+      className="group flex h-20 sm:h-22 flex-col items-center justify-center gap-1.5 rounded-md border border-neutral-200/90 bg-white px-2.5 transition-colors duration-150 hover:border-primary-400"
     >
       {logo && !failed ? (
         // SVGs are tiny static files — skip the image optimizer entirely.
         <Image
           src={logo}
           alt={`${b} logo`}
-          width={128}
-          height={56}
+          width={100}
+          height={40}
           unoptimized
-          sizes="128px"
-          className="h-11 w-auto max-w-[120px] object-contain transition duration-300 group-hover:scale-110 sm:h-12"
+          sizes="100px"
+          className="h-8 w-auto max-w-[90px] object-contain transition duration-200 group-hover:scale-105 sm:h-9"
           onError={() => setFailed(true)}
         />
       ) : (
-        <span className="text-lg font-bold text-neutral-500 transition-colors group-hover:text-primary-700">{b}</span>
+        <span className="text-sm font-bold text-neutral-600 transition-colors group-hover:text-primary-700 sm:text-base">{b}</span>
       )}
-      <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400 transition-colors group-hover:text-primary-700">{b}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400 transition-colors group-hover:text-primary-700 sm:text-xs">{b}</span>
     </Link>
   );
 }
 
 export function BrandStrip() {
   return (
-    <Container className="py-6 sm:py-8">
+    <Container className="py-4 sm:py-5">
       <SectionHeading title="Shop by Brand" subtitle="Official stores from the world's leading brands" />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 sm:gap-2.5">
         {BRANDS.map((b) => (
           <BrandTile key={b} b={b} />
         ))}
@@ -352,7 +393,7 @@ export function GamingSection() {
 
   return (
     <Container className="py-4 sm:py-5">
-      <div className="rounded-lg border border-neutral-200/90 bg-white p-3 sm:p-4">
+      <div className="rounded-md border border-neutral-200/90 bg-white p-3 sm:p-4">
         <div>
           {/* Clean header: title + filter pills only */}
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
@@ -401,7 +442,7 @@ export function GamingSection() {
 export function Newsletter() {
   return (
     <Container className="py-4 sm:py-5">
-      <div className="relative overflow-hidden rounded-lg border border-neutral-200/90">
+      <div className="relative overflow-hidden rounded-md border border-neutral-200/90">
         {/* Background Image */}
         <Image
           src="/newsletter-bg.jpg"
