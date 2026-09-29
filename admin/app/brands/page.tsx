@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Award, Layers, CircleDollarSign, Building2, Plus, RotateCcw } from "lucide-react";
+import { Award, Layers, Banknote, Building2, Plus, RotateCcw } from "lucide-react";
 import { getBrands, type BrandRow } from "@/lib/data/catalog";
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
 const BRAND_COLUMNS: CentralTableColumn<BrandRow>[] = [
@@ -102,7 +102,7 @@ export default function BrandsPage() {
       <KpiGrid columns={3}>
         <KpiCard title="Brands" value={String(stats.total)} icon={Building2} tone="blue" />
         <KpiCard title="Products Branded" value={String(stats.products)} icon={Layers} tone="emerald" tooltip="Products attributed to a brand" />
-        <KpiCard title="Catalog Value" value={money(stats.revenue)} icon={CircleDollarSign} tone="violet" tooltip="Total value across branded products" />
+        <KpiCard title="Catalog Value" value={money(stats.revenue)} icon={Banknote} tone="violet" tooltip="Total value across branded products" />
       </KpiGrid>
 
       <CentralTable

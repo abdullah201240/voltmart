@@ -86,10 +86,10 @@ export async function getGeneralSettings(): Promise<GeneralSettings> {
   return {
     storeName: "VoltMart",
     email: "ops@voltmart.example",
-    phone: "+1 (555) 010-2030",
-    address: "500 Market Street, San Francisco, CA, United States",
-    currency: "USD",
-    timezone: "America/Los_Angeles (PST)",
+    phone: "+880 1700-010203",
+    address: "House 42, Road 11, Banani, Dhaka 1213, Bangladesh",
+    currency: "BDT",
+    timezone: "Asia/Dhaka (BST)",
     weightUnit: "kg",
     lengthUnit: "cm",
   };
@@ -97,18 +97,18 @@ export async function getGeneralSettings(): Promise<GeneralSettings> {
 
 export async function getChannels(): Promise<ChannelRow[]> {
   return [
-    { id: "CH1", name: "Default Channel", slug: "default-channel", currency: "USD", warehouse: "Main Warehouse", publishedProducts: 210, active: true },
-    { id: "CH2", name: "Eurozone Store", slug: "channel-eur", currency: "EUR", warehouse: "Main Warehouse", publishedProducts: 188, active: true },
-    { id: "CH3", name: "Poland Channel", slug: "channel-pln", currency: "PLN", warehouse: "Warsaw Hub", publishedProducts: 142, active: true },
-    { id: "CH4", name: "B2B Wholesale", slug: "b2b-wholesale", currency: "USD", warehouse: "Main Warehouse", publishedProducts: 96, active: false },
+    { id: "CH1", name: "Default Channel", slug: "default-channel", currency: "BDT", warehouse: "Main Warehouse", publishedProducts: 210, active: true },
+    { id: "CH2", name: "Dhaka Store", slug: "channel-eur", currency: "BDT", warehouse: "Main Warehouse", publishedProducts: 188, active: true },
+    { id: "CH3", name: "Chattogram Store", slug: "channel-pln", currency: "BDT", warehouse: "Chattogram Hub", publishedProducts: 142, active: true },
+    { id: "CH4", name: "B2B Wholesale", slug: "b2b-wholesale", currency: "BDT", warehouse: "Main Warehouse", publishedProducts: 96, active: false },
   ];
 }
 
 export async function getWarehouses(): Promise<WarehouseRow[]> {
   return [
-    { id: "WH1", name: "Main Warehouse", code: "WH", location: "San Francisco, US", steps: 3, active: true },
-    { id: "WH2", name: "Warsaw Hub", code: "WAR", location: "Warsaw, PL", steps: 1, active: true },
-    { id: "WH3", name: "Berlin Returns", code: "BER", location: "Berlin, DE", steps: 1, active: true },
+    { id: "WH1", name: "Main Warehouse", code: "WH", location: "Dhaka, Bangladesh", steps: 3, active: true },
+    { id: "WH2", name: "Chattogram Hub", code: "CTG", location: "Chattogram, Bangladesh", steps: 1, active: true },
+    { id: "WH3", name: "Sylhet Returns", code: "SYL", location: "Sylhet, Bangladesh", steps: 1, active: true },
   ];
 }
 
@@ -120,26 +120,27 @@ export async function getLocations(): Promise<LocationRow[]> {
     { id: "L4", name: "Shelf A2", warehouse: "Main Warehouse", type: "Stock", products: 62, parent: "Stock" },
     { id: "L5", name: "Output", warehouse: "Main Warehouse", type: "Output", products: 12, parent: "WH" },
     { id: "L6", name: "Packers", warehouse: "Main Warehouse", type: "Transit", products: 5, parent: "WH" },
-    { id: "L7", name: "Warsaw Stock", warehouse: "Warsaw Hub", type: "Stock", products: 88, parent: "WAR" },
+    { id: "L7", name: "Chattogram Stock", warehouse: "Chattogram Hub", type: "Stock", products: 88, parent: "CTG" },
   ];
 }
 
 export async function getTaxes(): Promise<TaxRow[]> {
   return [
-    { id: "TX1", name: "US Sales Tax", country: "United States", amount: 0, scope: "Sales", active: true },
-    { id: "TX2", name: "VAT 21%", country: "Netherlands", amount: 21, scope: "Sales", active: true },
-    { id: "TX3", name: "VAT 19%", country: "Germany", amount: 19, scope: "Sales", active: true },
-    { id: "TX4", name: "VAT 23%", country: "Poland", amount: 23, scope: "Sales", active: true },
-    { id: "TX5", name: "Purchase VAT 21%", country: "Eurozone", amount: 21, scope: "Purchases", active: true },
+    { id: "TX1", name: "VAT 15%", country: "Bangladesh", amount: 15, scope: "Sales", active: true },
+    { id: "TX2", name: "VAT 10% (Reduced)", country: "Bangladesh", amount: 10, scope: "Sales", active: true },
+    { id: "TX3", name: "Supplementary Duty 5%", country: "Bangladesh", amount: 5, scope: "Sales", active: true },
+    { id: "TX4", name: "Purchase VAT 15%", country: "Bangladesh", amount: 15, scope: "Purchases", active: true },
+    { id: "TX5", name: "CIS 2.5%", country: "Bangladesh", amount: 2.5, scope: "Purchases", active: true },
   ];
 }
 
 export async function getPaymentProviders(): Promise<PaymentProviderRow[]> {
   return [
-    { id: "PP1", name: "Stripe", kind: "Card", channels: ["Default Channel", "Eurozone Store"], captured: 184200, active: true },
-    { id: "PP2", name: "PayPal", kind: "Wallet", channels: ["Default Channel"], captured: 62400, active: true },
-    { id: "PP3", name: "Bank Transfer", kind: "Bank", channels: ["B2B Wholesale"], captured: 41800, active: true },
-    { id: "PP4", name: "Cash on Delivery", kind: "COD", channels: ["Poland Channel"], captured: 9200, active: false },
+    { id: "PP1", name: "bKash", kind: "Wallet", channels: ["Default Channel", "Dhaka Store"], captured: 22104000, active: true },
+    { id: "PP2", name: "Nagad", kind: "Wallet", channels: ["Default Channel"], captured: 7488000, active: true },
+    { id: "PP3", name: "SSLCommerz Cards", kind: "Card", channels: ["Default Channel", "Dhaka Store", "Chattogram Store"], captured: 14850000, active: true },
+    { id: "PP4", name: "Bank Transfer", kind: "Bank", channels: ["B2B Wholesale"], captured: 5016000, active: true },
+    { id: "PP5", name: "Cash on Delivery", kind: "COD", channels: ["Chattogram Store"], captured: 1104000, active: false },
   ];
 }
 

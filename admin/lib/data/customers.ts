@@ -59,21 +59,18 @@ export const CUSTOMER_SEGMENT_OPTIONS = [
 
 export const COUNTRY_OPTIONS = [
   { value: "all", label: "All Countries" },
-  { value: "United States", label: "United States" },
-  { value: "United Kingdom", label: "United Kingdom" },
-  { value: "Germany", label: "Germany" },
-  { value: "Poland", label: "Poland" },
+  { value: "Bangladesh", label: "Bangladesh" },
 ];
 
 const CUSTOMERS: CustomerRow[] = [
-  { id: "CUS-1001", name: "Olivia Martin", email: "olivia@example.com", country: "United States", city: "New York", orders: 14, totalSpent: 18240, joined: "Jan 12, 2024", tags: ["VIP", "Repeat"], status: "Active" },
-  { id: "CUS-1002", name: "Liam Anderson", email: "liam@example.com", country: "United Kingdom", city: "London", orders: 6, totalSpent: 7390, joined: "Mar 03, 2025", tags: ["Repeat"], status: "Active" },
-  { id: "CUS-1003", name: "Emma Brown", email: "emma@example.com", country: "Germany", city: "Berlin", orders: 2, totalSpent: 2180, joined: "Jul 21, 2026", tags: ["New"], status: "Active" },
-  { id: "CUS-1004", name: "Noah Wilson", email: "noah@example.com", country: "United States", city: "Austin", orders: 21, totalSpent: 41250, joined: "Aug 30, 2022", tags: ["VIP", "Wholesale", "Repeat"], status: "Active" },
-  { id: "CUS-1005", name: "James Davis", email: "james@example.com", country: "United States", city: "Chicago", orders: 9, totalSpent: 63400, joined: "Feb 14, 2023", tags: ["Wholesale"], status: "Active" },
-  { id: "CUS-1006", name: "Sophia Taylor", email: "sophia@example.com", country: "United Kingdom", city: "Manchester", orders: 4, totalSpent: 3120, joined: "May 09, 2025", tags: ["Repeat"], status: "Active" },
-  { id: "CUS-1007", name: "Lucas White", email: "lucas@example.com", country: "Poland", city: "Warsaw", orders: 1, totalSpent: 79.99, joined: "Sep 26, 2026", tags: ["New"], status: "Active" },
-  { id: "CUS-1008", name: "Mia Clark", email: "mia@example.com", country: "Poland", city: "Krakow", orders: 11, totalSpent: 15980, joined: "Nov 02, 2023", tags: ["VIP", "Repeat"], status: "Archived" },
+  { id: "CUS-1001", name: "Olivia Martin", email: "olivia@example.com", country: "Bangladesh", city: "Dhaka", orders: 14, totalSpent: 2188800, joined: "Jan 12, 2024", tags: ["VIP", "Repeat"], status: "Active" },
+  { id: "CUS-1002", name: "Liam Anderson", email: "liam@example.com", country: "Bangladesh", city: "Chattogram", orders: 6, totalSpent: 886800, joined: "Mar 03, 2025", tags: ["Repeat"], status: "Active" },
+  { id: "CUS-1003", name: "Emma Brown", email: "emma@example.com", country: "Bangladesh", city: "Sylhet", orders: 2, totalSpent: 261600, joined: "Jul 21, 2026", tags: ["New"], status: "Active" },
+  { id: "CUS-1004", name: "Noah Wilson", email: "noah@example.com", country: "Bangladesh", city: "Dhaka", orders: 21, totalSpent: 4950000, joined: "Aug 30, 2022", tags: ["VIP", "Wholesale", "Repeat"], status: "Active" },
+  { id: "CUS-1005", name: "James Davis", email: "james@example.com", country: "Bangladesh", city: "Khulna", orders: 9, totalSpent: 7608000, joined: "Feb 14, 2023", tags: ["Wholesale"], status: "Active" },
+  { id: "CUS-1006", name: "Sophia Taylor", email: "sophia@example.com", country: "Bangladesh", city: "Rajshahi", orders: 4, totalSpent: 374400, joined: "May 09, 2025", tags: ["Repeat"], status: "Active" },
+  { id: "CUS-1007", name: "Lucas White", email: "lucas@example.com", country: "Bangladesh", city: "Barishal", orders: 1, totalSpent: 9599, joined: "Sep 26, 2026", tags: ["New"], status: "Active" },
+  { id: "CUS-1008", name: "Mia Clark", email: "mia@example.com", country: "Bangladesh", city: "Rangpur", orders: 11, totalSpent: 1917600, joined: "Nov 02, 2023", tags: ["VIP", "Repeat"], status: "Archived" },
 ];
 
 const TAGS: CustomerTag[] = [
@@ -98,11 +95,11 @@ export async function getCustomerById(id: string): Promise<CustomerDetail | unde
     id: `ORD-${7390 - i}`,
     date: ["Sep 29, 2026", "Sep 21, 2026", "Sep 12, 2026", "Aug 30, 2026"][i],
     status: (["Invoiced", "Fulfilled", "Confirmed", "Quotation"] as OrderStatus[])[i],
-    total: `$${(row.totalSpent / (row.orders || 1)).toFixed(2)}`,
+    total: `৳${Math.round(row.totalSpent / (row.orders || 1)).toLocaleString("en-IN")}`,
   }));
   return {
     ...row,
-    phone: "+1 (555) 010-0" + row.id.slice(-2),
+    phone: "+880 1712-34" + row.id.slice(-2),
     company: row.tags.includes("Wholesale") ? `${row.name.split(" ")[1]} Enterprises LLC` : "—",
     shippingAddress: `${row.city}, ${row.country}`,
     billingAddress: `${row.city}, ${row.country}`,

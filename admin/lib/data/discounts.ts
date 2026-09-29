@@ -67,23 +67,23 @@ export const VOUCHER_TYPE_OPTIONS = [
 const VOUCHERS: VoucherRow[] = [
   { id: "V-01", code: "WELCOME10", type: "Percentage", value: 10, discount: "10% off", usageLimit: 0, used: 342, startsAt: "Jan 01, 2026", expiresAt: "Dec 31, 2026", status: "Active" },
   { id: "V-02", code: "FREESHIP", type: "Shipping", value: 0, discount: "Free shipping", usageLimit: 1000, used: 618, startsAt: "Aug 01, 2026", expiresAt: "Oct 31, 2026", status: "Active" },
-  { id: "V-03", code: "SAVE50", type: "Fixed", value: 50, discount: "$50 off", usageLimit: 500, used: 500, startsAt: "Jun 01, 2026", expiresAt: "Aug 31, 2026", status: "Expired" },
+  { id: "V-03", code: "SAVE50", type: "Fixed", value: 6000, discount: "৳6,000 off", usageLimit: 500, used: 500, startsAt: "Jun 01, 2026", expiresAt: "Aug 31, 2026", status: "Expired" },
   { id: "V-04", code: "BFCM25", type: "Percentage", value: 25, discount: "25% off", usageLimit: 2000, used: 0, startsAt: "Nov 25, 2026", expiresAt: "Dec 01, 2026", status: "Scheduled" },
 ];
 
 const PRICELISTS: PricelistRow[] = [
-  { id: "PL-01", name: "Public Pricelist", currency: "USD", policy: "Fixed Price", isBase: true, items: 0, status: "Active" },
-  { id: "PL-02", name: "VIP Members", currency: "USD", policy: "Percentage", isBase: false, items: 46, status: "Active" },
-  { id: "PL-03", name: "B2B Wholesale", currency: "USD", policy: "Discount", isBase: false, items: 120, status: "Active" },
-  { id: "PL-04", name: "Eurozone Retail", currency: "EUR", policy: "Fixed Price", isBase: false, items: 88, status: "Active" },
-  { id: "PL-05", name: "Clearance Markup", currency: "USD", policy: "Markup", isBase: false, items: 12, status: "Archived" },
+  { id: "PL-01", name: "Public Pricelist", currency: "BDT", policy: "Fixed Price", isBase: true, items: 0, status: "Active" },
+  { id: "PL-02", name: "VIP Members", currency: "BDT", policy: "Percentage", isBase: false, items: 46, status: "Active" },
+  { id: "PL-03", name: "B2B Wholesale", currency: "BDT", policy: "Discount", isBase: false, items: 120, status: "Active" },
+  { id: "PL-04", name: "Dhaka Retail", currency: "BDT", policy: "Fixed Price", isBase: false, items: 88, status: "Active" },
+  { id: "PL-05", name: "Clearance Markup", currency: "BDT", policy: "Markup", isBase: false, items: 12, status: "Archived" },
 ];
 
 const PROMOTIONS: PromotionRow[] = [
-  { id: "PR-01", name: "Buy 2 Get 10% Off", rule: "Cart has 2+ of same product", channel: "Default Channel (USD)", discount: "10% off", status: "Active" },
-  { id: "PR-02", name: "Spend $200, Free Shipping", rule: "Order subtotal >= $200", channel: "Default Channel (USD)", discount: "Free shipping", status: "Active" },
-  { id: "PR-03", name: "Laptop +Accessory Bundle", rule: "Laptop + any accessory", channel: "Eurozone Store (EUR)", discount: "€30 off", status: "Scheduled" },
-  { id: "PR-04", name: "Weekend Flash Sale", rule: "All items, Sat–Sun", channel: "Poland Channel (PLN)", discount: "15% off", status: "Expired" },
+  { id: "PR-01", name: "Buy 2 Get 10% Off", rule: "Cart has 2+ of same product", channel: "Default Channel (BDT)", discount: "10% off", status: "Active" },
+  { id: "PR-02", name: "Spend ৳20,000, Free Shipping", rule: "Order subtotal >= ৳20,000", channel: "Default Channel (BDT)", discount: "Free shipping", status: "Active" },
+  { id: "PR-03", name: "Laptop +Accessory Bundle", rule: "Laptop + any accessory", channel: "Dhaka Store (BDT)", discount: "৳3,600 off", status: "Scheduled" },
+  { id: "PR-04", name: "Weekend Flash Sale", rule: "All items, Sat–Sun", channel: "Chattogram Store (BDT)", discount: "15% off", status: "Expired" },
 ];
 
 export async function getVouchers(): Promise<VoucherRow[]> {

@@ -38,7 +38,7 @@ const RATE_COLUMNS: CentralTableColumn<ShippingRateRow>[] = [
     align: "right",
     cell: ({ value }) =>
       value != null ? (
-        <span className="font-mono text-sm text-emerald-600 dark:text-emerald-400">${value}</span>
+        <span className="font-mono text-sm text-emerald-600 dark:text-emerald-400">৳{Number(value).toLocaleString("en-IN")}</span>
       ) : (
         <span className="text-xs text-muted-foreground/60 italic">—</span>
       ),

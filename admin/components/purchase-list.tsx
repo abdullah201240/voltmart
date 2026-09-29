@@ -14,7 +14,7 @@ import { useAdminLayout } from "@/components/admin-shell";
 import {
   FileText,
   Send,
-  CircleDollarSign,
+  Banknote,
   PackageCheck,
   Plus,
   RotateCcw,
@@ -40,7 +40,7 @@ const STATE_CLASS: Record<PoState, string> = {
 };
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
 interface PurchaseListProps {
@@ -177,7 +177,7 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
       <KpiGrid columns={4}>
         <KpiCard title={rfq ? "Open RFQs" : "Active POs"} value={String(stats.open)} icon={rfq ? FileText : Send} tone="blue" />
         <KpiCard title="Awaiting Receipt" value={String(stats.awaitingReceipt)} icon={PackageCheck} tone="amber" badge="TODO" tooltip="Confirmed POs not yet received" />
-        <KpiCard title="Committed Spend" value={money(stats.committed)} icon={CircleDollarSign} tone="emerald" tooltip="Confirmed + locked purchase value" />
+        <KpiCard title="Committed Spend" value={money(stats.committed)} icon={Banknote} tone="emerald" tooltip="Confirmed + locked purchase value" />
         <KpiCard title={`Total ${shortTitle}`} value={String(stats.total)} icon={FileText} tone="violet" />
       </KpiGrid>
 

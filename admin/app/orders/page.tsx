@@ -14,7 +14,7 @@ import { CentralTable, type CentralTableColumn } from "@/components/ui/central-t
 import { useAdminLayout } from "@/components/admin-shell";
 import {
   ShoppingCart,
-  CircleDollarSign,
+  Banknote,
   Clock,
   Truck,
   Download,
@@ -41,7 +41,7 @@ const STATUS_META: Record<OrderStatus, string> = {
 };
 
 function fmtMoney(v: number) {
-  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return "৳" + v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 const ORDER_COLUMNS: CentralTableColumn<OrderRow>[] = [
@@ -208,7 +208,7 @@ export default function OrdersPage() {
         <KpiCard
           title="Gross Revenue"
           value={fmtMoney(stats.revenue)}
-          icon={CircleDollarSign}
+          icon={Banknote}
           tone="emerald"
           badge="LIVE"
           tooltip="Sum of non-cancelled order totals"

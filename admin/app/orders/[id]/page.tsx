@@ -33,7 +33,7 @@ const STATUS_META: Record<OrderStatus, string> = {
 };
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return "৳" + v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /** Horizontal lifecycle stepper (Quotation -> Confirmed -> Fulfilled -> Invoiced). */

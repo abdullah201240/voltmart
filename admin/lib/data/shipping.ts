@@ -39,7 +39,7 @@ export interface ShippingRateRow {
   zone: string;
   /** Pricing model label. */
   basis: string;
-  /** Human price, e.g. "$12.50" / "+ $2.00 / kg". */
+  /** Human price, e.g. "৳1,440" / "+ ৳240 / kg". */
   price: string;
   freeAbove: number | null;
 }
@@ -62,19 +62,19 @@ const CARRIERS: CarrierRow[] = [
 ];
 
 const ZONES: ShippingZoneRow[] = [
-  { id: "ZN-01", name: "Domestic", countries: ["United States"], carriers: 3, deliveryDays: "1–2 days" },
-  { id: "ZN-02", name: "Europe", countries: ["Germany", "Poland", "Netherlands", "France"], carriers: 4, deliveryDays: "3–5 days" },
-  { id: "ZN-03", name: "United Kingdom", countries: ["United Kingdom"], carriers: 3, deliveryDays: "2–4 days" },
-  { id: "ZN-04", name: "Rest of World", countries: ["Rest of world"], carriers: 2, deliveryDays: "7–14 days" },
+  { id: "ZN-01", name: "Inside Dhaka City", countries: ["Dhaka"], carriers: 3, deliveryDays: "Same day – 1 day" },
+  { id: "ZN-02", name: "Dhaka Division", countries: ["Dhaka", "Narayanganj", "Gazipur", "Tangail"], carriers: 4, deliveryDays: "1–2 days" },
+  { id: "ZN-03", name: "Chattogram & North-East", countries: ["Chattogram", "Sylhet", "Cox's Bazar", "Cumilla"], carriers: 3, deliveryDays: "2–3 days" },
+  { id: "ZN-04", name: "Rest of Bangladesh", countries: ["Khulna", "Rajshahi", "Barishal", "Rangpur", "Mymensingh"], carriers: 2, deliveryDays: "3–5 days" },
 ];
 
 const RATES: ShippingRateRow[] = [
-  { id: "RT-01", carrier: "DHL International", zone: "Europe", basis: "First 1kg", price: "$18.00", freeAbove: 200 },
-  { id: "RT-02", carrier: "DHL International", zone: "Rest of World", basis: "First 1kg", price: "$34.00", freeAbove: null },
-  { id: "RT-03", carrier: "UPS Standard", zone: "Domestic", basis: "Flat", price: "$9.50", freeAbove: 100 },
-  { id: "RT-04", carrier: "FedEx Priority", zone: "United Kingdom", basis: "Flat", price: "$22.00", freeAbove: null },
-  { id: "RT-05", carrier: "City Same-Day", zone: "Domestic", basis: "Flat", price: "$12.00", freeAbove: 150 },
-  { id: "RT-06", carrier: "PostNL Europe", basis: "Order value", zone: "Europe", price: "5% of order", freeAbove: 250 },
+  { id: "RT-01", carrier: "DHL International", zone: "Rest of Bangladesh", basis: "First 1kg", price: "৳2,160", freeAbove: 24000 },
+  { id: "RT-02", carrier: "DHL International", zone: "Chattogram & North-East", basis: "First 1kg", price: "৳4,080", freeAbove: null },
+  { id: "RT-03", carrier: "UPS Standard", zone: "Dhaka Division", basis: "Flat", price: "৳1,140", freeAbove: 12000 },
+  { id: "RT-04", carrier: "FedEx Priority", zone: "Inside Dhaka City", basis: "Flat", price: "৳2,640", freeAbove: null },
+  { id: "RT-05", carrier: "City Same-Day", zone: "Inside Dhaka City", basis: "Flat", price: "৳1,440", freeAbove: 18000 },
+  { id: "RT-06", carrier: "PostNL Europe", basis: "Order value", zone: "Rest of Bangladesh", price: "5% of order", freeAbove: 30000 },
 ];
 
 export async function getCarriers(): Promise<CarrierRow[]> {

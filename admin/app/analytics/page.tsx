@@ -53,7 +53,7 @@ const PIE_COLORS = [
 ];
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
 export default function AnalyticsPage() {
@@ -119,7 +119,7 @@ export default function AnalyticsPage() {
         />
         <KpiCard
           title="Avg Order Value"
-          value={summary ? `$${summary.aov.toFixed(2)}` : "—"}
+          value={summary ? money(summary.aov) : "—"}
           icon={Receipt}
           tone="emerald"
           loading={loading}
@@ -155,7 +155,7 @@ export default function AnalyticsPage() {
             </defs>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
-            <YAxis tickLine={false} axisLine={false} fontSize={12} width={48} tickFormatter={(v) => `$${Math.round(Number(v) / 1000)}k`} />
+            <YAxis tickLine={false} axisLine={false} fontSize={12} width={48} tickFormatter={(v) => `৳${Math.round(Number(v) / 100000)}L`} />
             <ChartTooltip content={<ChartTooltipContent />} />
             <Area
               dataKey="revenue"
@@ -223,7 +223,7 @@ export default function AnalyticsPage() {
           <ChartContainer config={channelConfig} className="h-64 w-full">
             <BarChart data={categories} layout="vertical" margin={{ left: 12, right: 16 }}>
               <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-              <XAxis type="number" tickLine={false} axisLine={false} fontSize={12} tickFormatter={(v) => `$${Math.round(Number(v) / 1000)}k`} />
+              <XAxis type="number" tickLine={false} axisLine={false} fontSize={12} tickFormatter={(v) => `৳${Math.round(Number(v) / 100000)}L`} />
               <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} fontSize={12} width={80} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="value" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />

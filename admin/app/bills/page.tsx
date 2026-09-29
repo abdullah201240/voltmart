@@ -10,7 +10,7 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Receipt, CircleDollarSign, AlertTriangle, FileClock, Plus, RotateCcw } from "lucide-react";
+import { Receipt, Banknote, AlertTriangle, FileClock, Plus, RotateCcw } from "lucide-react";
 import { getBills, billStats, MOVE_STATE_OPTIONS, type BillRow, type MoveState } from "@/lib/data/finance";
 
 const STATE_CLASS: Record<MoveState, "default" | "secondary" | "outline"> = {
@@ -21,7 +21,7 @@ const STATE_CLASS: Record<MoveState, "default" | "secondary" | "outline"> = {
 };
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return "৳" + v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 const BILL_COLUMNS: CentralTableColumn<BillRow>[] = [
@@ -138,7 +138,7 @@ export default function BillsPage() {
       <KpiGrid columns={4}>
         <KpiCard title="Total Bills" value={String(stats.total)} icon={Receipt} tone="blue" />
         <KpiCard title="Owed" value={money(stats.owed)} icon={AlertTriangle} tone="rose" tooltip="Unpaid vendor balance" />
-        <KpiCard title="Paid" value={money(stats.paid)} icon={CircleDollarSign} tone="emerald" />
+        <KpiCard title="Paid" value={money(stats.paid)} icon={Banknote} tone="emerald" />
         <KpiCard title="In Draft" value={String(stats.draft)} icon={FileClock} tone="amber" />
       </KpiGrid>
 

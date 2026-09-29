@@ -17,7 +17,7 @@ const STATUS_CLASS: Record<PaymentRow["status"], "default" | "secondary" | "outl
 };
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return "৳" + v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 const PAYMENT_COLUMNS: CentralTableColumn<PaymentRow>[] = [

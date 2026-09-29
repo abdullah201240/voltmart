@@ -45,10 +45,10 @@ export interface ProductRow {
 /** Filter options reused by the toolbar dropdowns (SearchableDropbox). */
 export const CHANNEL_OPTIONS = [
   { value: "all", label: "All Channels", badge: "GLOBAL" },
-  { value: "default-channel", label: "Default Channel (USD)", badge: "USD" },
-  { value: "channel-pln", label: "Poland Channel (PLN)", badge: "PLN" },
-  { value: "channel-eur", label: "Eurozone Store (EUR)", badge: "EUR" },
-  { value: "b2b-wholesale", label: "B2B Wholesale (USD)", badge: "TIERED" },
+  { value: "default-channel", label: "Default Channel (BDT)", badge: "BDT" },
+  { value: "channel-pln", label: "Chattogram Store (BDT)", badge: "BDT" },
+  { value: "channel-eur", label: "Dhaka Store (BDT)", badge: "BDT" },
+  { value: "b2b-wholesale", label: "B2B Wholesale (BDT)", badge: "TIERED" },
 ];
 
 export const CATEGORY_OPTIONS = [
@@ -74,16 +74,16 @@ export const AVAILABILITY_OPTIONS = [
  * and keep the `ProductRow[]` return contract.
  */
 const PRODUCTS: ProductRow[] = [
-  { id: "P-1001", name: "Galaxy S24 Ultra 512GB", sku: "MOB-S24U-512", barcode: "8806095309421", category: "Mobiles & Tablets", categoryKey: "mobiles", channel: "Default Channel (USD)", channelKey: "default-channel", price: "$1,419.00", priceValue: 1419, stock: 42, onOrder: 6, variants: 3, status: "Active", reorderPoint: 10 },
-  { id: "P-1002", name: "iPhone 15 Pro 256GB", sku: "MOB-IP15P-256", barcode: "194253306721", category: "Mobiles & Tablets", categoryKey: "mobiles", channel: "Default Channel (USD)", channelKey: "default-channel", price: "$1,199.00", priceValue: 1199, stock: 8, onOrder: 4, variants: 4, status: "Active", reorderPoint: 10 },
-  { id: "P-1003", name: "MacBook Pro 14 M3 Pro", sku: "LAP-MBP14-M3", barcode: "950575505109", category: "Computing", categoryKey: "computing", channel: "Eurozone Store (EUR)", channelKey: "channel-eur", price: "€2,199.00", priceValue: 2199, stock: 0, onOrder: 0, variants: 2, status: "Active", reorderPoint: 5 },
-  { id: "P-1004", name: "Sony WH-1000XM5 Headphones", sku: "AUD-XM5-BLK", barcode: "4548736135063", category: "Audio", categoryKey: "audio", channel: "Default Channel (USD)", channelKey: "default-channel", price: "$349.99", priceValue: 349.99, stock: 3, onOrder: 2, variants: 3, status: "Active", reorderPoint: 8 },
-  { id: "P-1005", name: "PlayStation 5 Slim Console", sku: "GAM-PS5-SLIM", barcode: "071171957726", category: "Gaming", categoryKey: "gaming", channel: "Poland Channel (PLN)", channelKey: "channel-pln", price: "2,199.00 PLN", priceValue: 549, stock: 27, onOrder: 9, variants: 2, status: "Active", reorderPoint: 10 },
-  { id: "P-1006", name: "Apple Watch Series 9 45mm", sku: "WEAR-AW9-45", barcode: "950575594332", category: "Wearables", categoryKey: "wearables", channel: "Default Channel (USD)", channelKey: "default-channel", price: "$429.00", priceValue: 429, stock: 15, onOrder: 1, variants: 6, status: "Active", reorderPoint: 6 },
-  { id: "P-1007", name: "USB-C Fast Charging Hub 100W", sku: "ACC-HUB-100W", barcode: "", category: "Accessories", categoryKey: "accessories", channel: "B2B Wholesale (USD)", channelKey: "b2b-wholesale", price: "$59.00", priceValue: 59, stock: 5, onOrder: 12, variants: 1, status: "Active", reorderPoint: 15 },
-  { id: "P-1008", name: "LG OLED evo C4 65\"", sku: "TV-LGC4-65", barcode: "8806087156234", category: "Computing", categoryKey: "computing", channel: "Eurozone Store (EUR)", channelKey: "channel-eur", price: "€1,899.00", priceValue: 1899, stock: 11, onOrder: 0, variants: 3, status: "Draft", reorderPoint: 4 },
-  { id: "P-1009", name: "Logitech G Pro X Superlight 2", sku: "GAM-GPX2-WHT", barcode: "5099206101047", category: "Gaming", categoryKey: "gaming", channel: "Default Channel (USD)", channelKey: "default-channel", price: "$159.99", priceValue: 159.99, stock: 0, onOrder: 0, variants: 2, status: "Archived", reorderPoint: 8 },
-  { id: "P-1010", name: "iPad Air 11\" M2 256GB", sku: "TAB-IPAIR-M2", barcode: "950575514826", category: "Mobiles & Tablets", categoryKey: "mobiles", channel: "Poland Channel (PLN)", channelKey: "channel-pln", price: "3,199.00 PLN", priceValue: 799, stock: 19, onOrder: 3, variants: 4, status: "Active", reorderPoint: 6 },
+  { id: "P-1001", name: "Galaxy S24 Ultra 512GB", sku: "MOB-S24U-512", barcode: "8806095309421", category: "Mobiles & Tablets", categoryKey: "mobiles", channel: "Default Channel (BDT)", channelKey: "default-channel", price: "৳1,70,280", priceValue: 170280, stock: 42, onOrder: 6, variants: 3, status: "Active", reorderPoint: 10 },
+  { id: "P-1002", name: "iPhone 15 Pro 256GB", sku: "MOB-IP15P-256", barcode: "194253306721", category: "Mobiles & Tablets", categoryKey: "mobiles", channel: "Default Channel (BDT)", channelKey: "default-channel", price: "৳1,43,880", priceValue: 143880, stock: 8, onOrder: 4, variants: 4, status: "Active", reorderPoint: 10 },
+  { id: "P-1003", name: "MacBook Pro 14 M3 Pro", sku: "LAP-MBP14-M3", barcode: "950575505109", category: "Computing", categoryKey: "computing", channel: "Dhaka Store (BDT)", channelKey: "channel-eur", price: "৳2,63,880", priceValue: 263880, stock: 0, onOrder: 0, variants: 2, status: "Active", reorderPoint: 5 },
+  { id: "P-1004", name: "Sony WH-1000XM5 Headphones", sku: "AUD-XM5-BLK", barcode: "4548736135063", category: "Audio", categoryKey: "audio", channel: "Default Channel (BDT)", channelKey: "default-channel", price: "৳41,999", priceValue: 41999, stock: 3, onOrder: 2, variants: 3, status: "Active", reorderPoint: 8 },
+  { id: "P-1005", name: "PlayStation 5 Slim Console", sku: "GAM-PS5-SLIM", barcode: "071171957726", category: "Gaming", categoryKey: "gaming", channel: "Chattogram Store (BDT)", channelKey: "channel-pln", price: "৳65,880", priceValue: 65880, stock: 27, onOrder: 9, variants: 2, status: "Active", reorderPoint: 10 },
+  { id: "P-1006", name: "Apple Watch Series 9 45mm", sku: "WEAR-AW9-45", barcode: "950575594332", category: "Wearables", categoryKey: "wearables", channel: "Default Channel (BDT)", channelKey: "default-channel", price: "৳51,480", priceValue: 51480, stock: 15, onOrder: 1, variants: 6, status: "Active", reorderPoint: 6 },
+  { id: "P-1007", name: "USB-C Fast Charging Hub 100W", sku: "ACC-HUB-100W", barcode: "", category: "Accessories", categoryKey: "accessories", channel: "B2B Wholesale (BDT)", channelKey: "b2b-wholesale", price: "৳7,080", priceValue: 7080, stock: 5, onOrder: 12, variants: 1, status: "Active", reorderPoint: 15 },
+  { id: "P-1008", name: "LG OLED evo C4 65\"", sku: "TV-LGC4-65", barcode: "8806087156234", category: "Computing", categoryKey: "computing", channel: "Dhaka Store (BDT)", channelKey: "channel-eur", price: "৳2,27,880", priceValue: 227880, stock: 11, onOrder: 0, variants: 3, status: "Draft", reorderPoint: 4 },
+  { id: "P-1009", name: "Logitech G Pro X Superlight 2", sku: "GAM-GPX2-WHT", barcode: "5099206101047", category: "Gaming", categoryKey: "gaming", channel: "Default Channel (BDT)", channelKey: "default-channel", price: "৳19,199", priceValue: 19199, stock: 0, onOrder: 0, variants: 2, status: "Archived", reorderPoint: 8 },
+  { id: "P-1010", name: "iPad Air 11\" M2 256GB", sku: "TAB-IPAIR-M2", barcode: "950575514826", category: "Mobiles & Tablets", categoryKey: "mobiles", channel: "Chattogram Store (BDT)", channelKey: "channel-pln", price: "৳95,880", priceValue: 95880, stock: 19, onOrder: 3, variants: 4, status: "Active", reorderPoint: 6 },
 ];
 
 /** Derive availability from on-hand stock vs the reorder point. */

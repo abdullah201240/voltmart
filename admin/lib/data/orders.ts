@@ -88,14 +88,14 @@ export const ORDER_FLOW: OrderStatus[] = [
 ];
 
 const ORDERS: OrderRow[] = [
-  { id: "ORD-7392", customer: "Olivia Martin", email: "olivia@example.com", channel: "Default Channel (USD)", channelKey: "default-channel", date: "Sep 29, 2026", totalValue: 1878.99, total: "$1,878.99", itemCount: 3, status: "Quotation", paymentStatus: "Pending", fulfillmentStatus: "Unfulfilled" },
-  { id: "ORD-7391", customer: "Liam Anderson", email: "liam@example.com", channel: "Eurozone Store (EUR)", channelKey: "channel-eur", date: "Sep 29, 2026", totalValue: 2199, total: "€2,199.00", itemCount: 1, status: "Confirmed", paymentStatus: "Paid", fulfillmentStatus: "Unfulfilled" },
-  { id: "ORD-7390", customer: "Emma Brown", email: "emma@example.com", channel: "Poland Channel (PLN)", channelKey: "channel-pln", date: "Sep 28, 2026", totalValue: 1840, total: "1,840.00 PLN", itemCount: 2, status: "Fulfilled", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
-  { id: "ORD-7389", customer: "Noah Wilson", email: "noah@example.com", channel: "Default Channel (USD)", channelKey: "default-channel", date: "Sep 28, 2026", totalValue: 429, total: "$429.00", itemCount: 1, status: "Invoiced", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
-  { id: "ORD-7388", customer: "James Davis", email: "james@example.com", channel: "B2B Wholesale (USD)", channelKey: "b2b-wholesale", date: "Sep 27, 2026", totalValue: 14200, total: "$14,200.00", itemCount: 8, status: "Confirmed", paymentStatus: "Pending", fulfillmentStatus: "Partially" },
-  { id: "ORD-7387", customer: "Sophia Taylor", email: "sophia@example.com", channel: "Eurozone Store (EUR)", channelKey: "channel-eur", date: "Sep 27, 2026", totalValue: 430, total: "€430.00", itemCount: 2, status: "Fulfilled", paymentStatus: "Paid", fulfillmentStatus: "Partially" },
-  { id: "ORD-7386", customer: "Lucas White", email: "lucas@example.com", channel: "Default Channel (USD)", channelKey: "default-channel", date: "Sep 26, 2026", totalValue: 79.99, total: "$79.99", itemCount: 1, status: "Cancelled", paymentStatus: "Refunded", fulfillmentStatus: "Unfulfilled" },
-  { id: "ORD-7385", customer: "Mia Clark", email: "mia@example.com", channel: "Poland Channel (PLN)", channelKey: "channel-pln", date: "Sep 26, 2026", totalValue: 3199, total: "3,199.00 PLN", itemCount: 2, status: "Invoiced", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
+  { id: "ORD-7392", customer: "Olivia Martin", email: "olivia@example.com", channel: "Default Channel (BDT)", channelKey: "default-channel", date: "Sep 29, 2026", totalValue: 225478.8, total: "৳2,25,478.80", itemCount: 3, status: "Quotation", paymentStatus: "Pending", fulfillmentStatus: "Unfulfilled" },
+  { id: "ORD-7391", customer: "Liam Anderson", email: "liam@example.com", channel: "Dhaka Store (BDT)", channelKey: "channel-eur", date: "Sep 29, 2026", totalValue: 263880, total: "৳2,63,880.00", itemCount: 1, status: "Confirmed", paymentStatus: "Paid", fulfillmentStatus: "Unfulfilled" },
+  { id: "ORD-7390", customer: "Emma Brown", email: "emma@example.com", channel: "Chattogram Store (BDT)", channelKey: "channel-pln", date: "Sep 28, 2026", totalValue: 220800, total: "৳2,20,800.00", itemCount: 2, status: "Fulfilled", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
+  { id: "ORD-7389", customer: "Noah Wilson", email: "noah@example.com", channel: "Default Channel (BDT)", channelKey: "default-channel", date: "Sep 28, 2026", totalValue: 51480, total: "৳51,480.00", itemCount: 1, status: "Invoiced", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
+  { id: "ORD-7388", customer: "James Davis", email: "james@example.com", channel: "B2B Wholesale (BDT)", channelKey: "b2b-wholesale", date: "Sep 27, 2026", totalValue: 1704000, total: "৳17,04,000.00", itemCount: 8, status: "Confirmed", paymentStatus: "Pending", fulfillmentStatus: "Partially" },
+  { id: "ORD-7387", customer: "Sophia Taylor", email: "sophia@example.com", channel: "Dhaka Store (BDT)", channelKey: "channel-eur", date: "Sep 27, 2026", totalValue: 51600, total: "৳51,600.00", itemCount: 2, status: "Fulfilled", paymentStatus: "Paid", fulfillmentStatus: "Partially" },
+  { id: "ORD-7386", customer: "Lucas White", email: "lucas@example.com", channel: "Default Channel (BDT)", channelKey: "default-channel", date: "Sep 26, 2026", totalValue: 9598.8, total: "৳9,598.80", itemCount: 1, status: "Cancelled", paymentStatus: "Refunded", fulfillmentStatus: "Unfulfilled" },
+  { id: "ORD-7385", customer: "Mia Clark", email: "mia@example.com", channel: "Chattogram Store (BDT)", channelKey: "channel-pln", date: "Sep 26, 2026", totalValue: 383880, total: "৳3,83,880.00", itemCount: 2, status: "Invoiced", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
 ];
 
 export async function getOrders(): Promise<OrderRow[]> {
@@ -111,7 +111,7 @@ export async function getOrderById(id: string): Promise<OrderDetail | undefined>
   if (!row) return undefined;
   const lines = SAMPLE_LINES[row.itemCount % SAMPLE_LINES_POOL.length];
   const subtotal = lines.reduce((s, l) => s + l.total, 0);
-  const shipping = row.channelKey === "b2b-wholesale" ? 0 : 14.5;
+  const shipping = row.channelKey === "b2b-wholesale" ? 0 : 1740;
   const tax = Math.round(subtotal * 0.21 * 100) / 100;
   return {
     ...row,
@@ -119,8 +119,8 @@ export async function getOrderById(id: string): Promise<OrderDetail | undefined>
     subtotal,
     shipping,
     tax,
-    shippingAddress: "221B Baker Street, London, NW1 6XE, United Kingdom",
-    billingAddress: "221B Baker Street, London, NW1 6XE, United Kingdom",
+    shippingAddress: "House 42, Road 11, Banani, Dhaka 1213, Bangladesh",
+    billingAddress: "House 42, Road 11, Banani, Dhaka 1213, Bangladesh",
     carrier: row.fulfillmentStatus === "Unfulfilled" ? "Not assigned" : "DHL Express",
     trackingUrl: row.fulfillmentStatus !== "Unfulfilled" ? "https://tracking.example.com/" + row.id : undefined,
   };
@@ -138,12 +138,12 @@ export function orderStats(rows: OrderRow[]) {
 // --- sample line pools keyed by itemCount bucket (demo realism) ---
 const SAMPLE_LINES: OrderLine[][] = [
   [
-    { id: "L1", productName: "USB-C Fast Charging Hub 100W", sku: "ACC-HUB-100W", variant: "Space Grey", quantity: 1, unitPrice: 59, total: 59 },
-    { id: "L2", productName: "Galaxy S24 Ultra 512GB", sku: "MOB-S24U-512", variant: "Titanium Black / 512GB", quantity: 1, unitPrice: 1419, total: 1419 },
-    { id: "L3", productName: "Apple Watch Series 9 45mm", sku: "WEAR-AW9-45", variant: "Midnight / Sport Band", quantity: 1, unitPrice: 429, total: 429 },
+    { id: "L1", productName: "USB-C Fast Charging Hub 100W", sku: "ACC-HUB-100W", variant: "Space Grey", quantity: 1, unitPrice: 7080, total: 7080 },
+    { id: "L2", productName: "Galaxy S24 Ultra 512GB", sku: "MOB-S24U-512", variant: "Titanium Black / 512GB", quantity: 1, unitPrice: 170280, total: 170280 },
+    { id: "L3", productName: "Apple Watch Series 9 45mm", sku: "WEAR-AW9-45", variant: "Midnight / Sport Band", quantity: 1, unitPrice: 51480, total: 51480 },
   ],
   [
-    { id: "L1", productName: "MacBook Pro 14 M3 Pro", sku: "LAP-MBP14-M3", variant: "Space Black / 18GB", quantity: 1, unitPrice: 2199, total: 2199 },
+    { id: "L1", productName: "MacBook Pro 14 M3 Pro", sku: "LAP-MBP14-M3", variant: "Space Black / 18GB", quantity: 1, unitPrice: 263880, total: 263880 },
   ],
 ];
 const SAMPLE_LINES_POOL = SAMPLE_LINES;

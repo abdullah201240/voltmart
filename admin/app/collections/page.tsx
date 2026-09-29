@@ -15,9 +15,9 @@ import { getCollections, type CollectionRow } from "@/lib/data/catalog";
 
 const CHANNEL_FILTER: DropboxOption[] = [
   { value: "all", label: "All channels..." },
-  { value: "Default Channel (USD)", label: "Default Channel (USD)" },
-  { value: "Eurozone Store (EUR)", label: "Eurozone Store (EUR)" },
-  { value: "Poland Channel (PLN)", label: "Poland Channel (PLN)" },
+  { value: "Default Channel (BDT)", label: "Default Channel (BDT)" },
+  { value: "Dhaka Store (BDT)", label: "Dhaka Store (BDT)" },
+  { value: "Chattogram Store (BDT)", label: "Chattogram Store (BDT)" },
 ];
 
 const TYPE_FILTER: DropboxOption[] = [

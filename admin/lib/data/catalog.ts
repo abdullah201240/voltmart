@@ -61,13 +61,13 @@ export async function getVariantsFor(productId: string): Promise<VariantRow[]> {
   // Demo variants keyed by a stable template id; real resolver = one query.
   const map: Record<string, VariantRow[]> = {
     "P-1001": [
-      { id: "V1", sku: "MOB-S24U-512-BLK", barcode: "8806095309421", attributes: "Titanium Black / 512GB", price: "$1,419.00", stock: 18 },
-      { id: "V2", sku: "MOB-S24U-512-GRY", barcode: "8806095309438", attributes: "Titanium Grey / 512GB", price: "$1,419.00", stock: 14 },
-      { id: "V3", sku: "MOB-S24U-256-BLK", barcode: "8806095309407", attributes: "Titanium Black / 256GB", price: "$1,199.00", stock: 10 },
+      { id: "V1", sku: "MOB-S24U-512-BLK", barcode: "8806095309421", attributes: "Titanium Black / 512GB", price: "৳1,70,280", stock: 18 },
+      { id: "V2", sku: "MOB-S24U-512-GRY", barcode: "8806095309438", attributes: "Titanium Grey / 512GB", price: "৳1,70,280", stock: 14 },
+      { id: "V3", sku: "MOB-S24U-256-BLK", barcode: "8806095309407", attributes: "Titanium Black / 256GB", price: "৳1,43,880", stock: 10 },
     ],
   };
   return map[productId] ?? [
-    { id: "V1", sku: `${productId}-STD`, barcode: "0000000000000", attributes: "Default", price: "$0.00", stock: 0 },
+    { id: "V1", sku: `${productId}-STD`, barcode: "0000000000000", attributes: "Default", price: "৳0", stock: 0 },
   ];
 }
 
@@ -96,20 +96,20 @@ export async function getAttributes(): Promise<AttributeRow[]> {
 
 export async function getCollections(): Promise<CollectionRow[]> {
   return [
-    { id: "CL1", name: "Flagship Smartphones", channel: "Default Channel (USD)", products: 8, published: true, type: "Automatic" },
-    { id: "CL2", name: "Back to School", channel: "Eurozone Store (EUR)", products: 15, published: true, type: "Manual" },
-    { id: "CL3", name: "Gaming Zone", channel: "Default Channel (USD)", products: 12, published: true, type: "Automatic" },
-    { id: "CL4", name: "Clearance", channel: "Poland Channel (PLN)", products: 21, published: false, type: "Automatic" },
+    { id: "CL1", name: "Flagship Smartphones", channel: "Default Channel (BDT)", products: 8, published: true, type: "Automatic" },
+    { id: "CL2", name: "Back to School", channel: "Dhaka Store (BDT)", products: 15, published: true, type: "Manual" },
+    { id: "CL3", name: "Gaming Zone", channel: "Default Channel (BDT)", products: 12, published: true, type: "Automatic" },
+    { id: "CL4", name: "Clearance", channel: "Chattogram Store (BDT)", products: 21, published: false, type: "Automatic" },
   ];
 }
 
 export async function getBrands(): Promise<BrandRow[]> {
   return [
-    { id: "B1", name: "Samsung", slug: "samsung", products: 24, revenue: 184500 },
-    { id: "B2", name: "Apple", slug: "apple", products: 19, revenue: 320400 },
-    { id: "B3", name: "Sony", slug: "sony", products: 14, revenue: 96200 },
-    { id: "B4", name: "LG", slug: "lg", products: 8, revenue: 74100 },
-    { id: "B5", name: "Logitech", slug: "logitech", products: 11, revenue: 51300 },
-    { id: "B6", name: "OnePlus", slug: "oneplus", products: 6, revenue: 38900 },
+    { id: "B1", name: "Samsung", slug: "samsung", products: 24, revenue: 22140000 },
+    { id: "B2", name: "Apple", slug: "apple", products: 19, revenue: 38448000 },
+    { id: "B3", name: "Sony", slug: "sony", products: 14, revenue: 11544000 },
+    { id: "B4", name: "LG", slug: "lg", products: 8, revenue: 8892000 },
+    { id: "B5", name: "Logitech", slug: "logitech", products: 11, revenue: 6156000 },
+    { id: "B6", name: "OnePlus", slug: "oneplus", products: 6, revenue: 4668000 },
   ];
 }

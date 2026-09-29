@@ -11,7 +11,7 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Users, UserCheck, CircleDollarSign, ShoppingCart, Plus, RotateCcw } from "lucide-react";
+import { Users, UserCheck, Banknote, ShoppingCart, Plus, RotateCcw } from "lucide-react";
 import {
   getCustomers,
   customerStats,
@@ -21,7 +21,7 @@ import {
 } from "@/lib/data/customers";
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
 const TAG_CLASS: Record<string, string> = {
@@ -156,7 +156,7 @@ export default function CustomersPage() {
       <KpiGrid columns={4}>
         <KpiCard title="Total Customers" value={String(stats.total)} icon={Users} tone="blue" />
         <KpiCard title="Active" value={String(stats.active)} icon={UserCheck} tone="emerald" badge="LIVE" />
-        <KpiCard title="Lifetime Revenue" value={money(stats.revenue)} icon={CircleDollarSign} tone="violet" tooltip="Total spend across all customers" />
+        <KpiCard title="Lifetime Revenue" value={money(stats.revenue)} icon={Banknote} tone="violet" tooltip="Total spend across all customers" />
         <KpiCard title="Avg Orders / Customer" value={String(stats.avgOrders)} icon={ShoppingCart} tone="amber" />
       </KpiGrid>
 

@@ -62,26 +62,26 @@ export const MOVE_STATE_OPTIONS = [
 ];
 
 const INVOICES: InvoiceRow[] = [
-  { id: "INV-3001", number: "INV/2026/0031", reference: "ORD-7389", partner: "Noah Wilson", date: "Sep 28, 2026", dueDate: "Oct 28, 2026", subtotal: 354.55, tax: 74.45, total: 429, state: "Paid" },
-  { id: "INV-3002", number: "INV/2026/0030", reference: "ORD-7385", partner: "Mia Clark", date: "Sep 26, 2026", dueDate: "Oct 26, 2026", subtotal: 2644.63, tax: 554.37, total: 3199, state: "Posted" },
-  { id: "INV-3003", number: "INV/2026/0029", reference: "ORD-7388", partner: "James Davis", date: "Sep 27, 2026", dueDate: "Oct 27, 2026", subtotal: 11745.45, tax: 2464.55, total: 14210, state: "Draft" },
-  { id: "INV-3004", number: "INV/2026/0028", reference: "ORD-7390", partner: "Emma Brown", date: "Sep 28, 2026", dueDate: "Oct 28, 2026", subtotal: 1521.49, tax: 318.51, total: 1840, state: "Paid" },
-  { id: "INV-3005", number: "INV/2026/0027", reference: "ORD-7386", partner: "Lucas White", date: "Sep 26, 2026", dueDate: "Oct 26, 2026", subtotal: 66.11, tax: 13.88, total: 79.99, state: "Cancelled" },
+  { id: "INV-3001", number: "INV/2026/0031", reference: "ORD-7389", partner: "Noah Wilson", date: "Sep 28, 2026", dueDate: "Oct 28, 2026", subtotal: 42546, tax: 8934, total: 51480, state: "Paid" },
+  { id: "INV-3002", number: "INV/2026/0030", reference: "ORD-7385", partner: "Mia Clark", date: "Sep 26, 2026", dueDate: "Oct 26, 2026", subtotal: 317355.6, tax: 66524.4, total: 383880, state: "Posted" },
+  { id: "INV-3003", number: "INV/2026/0029", reference: "ORD-7388", partner: "James Davis", date: "Sep 27, 2026", dueDate: "Oct 27, 2026", subtotal: 1409454, tax: 295746, total: 1705200, state: "Draft" },
+  { id: "INV-3004", number: "INV/2026/0028", reference: "ORD-7390", partner: "Emma Brown", date: "Sep 28, 2026", dueDate: "Oct 28, 2026", subtotal: 182578.8, tax: 38221.2, total: 220800, state: "Paid" },
+  { id: "INV-3005", number: "INV/2026/0027", reference: "ORD-7386", partner: "Lucas White", date: "Sep 26, 2026", dueDate: "Oct 26, 2026", subtotal: 7933.2, tax: 1665.6, total: 9598.8, state: "Cancelled" },
 ];
 
 const BILLS: BillRow[] = [
-  { id: "BILL-2001", number: "BILL/2026/0014", reference: "PO-8801", vendor: "TechDist GmbH", billDate: "Sep 20, 2026", dueDate: "Oct 20, 2026", amountTotal: 18400, amountPaid: 18400, state: "Paid" },
-  { id: "BILL-2002", number: "BILL/2026/0015", reference: "PO-8803", vendor: "Shenzhen Mobile Supply", billDate: "Sep 24, 2026", dueDate: "Oct 24, 2026", amountTotal: 42500, amountPaid: 0, state: "Posted" },
-  { id: "BILL-2003", number: "BILL/2026/0016", reference: "PO-8805", vendor: "AudioWorks Inc", billDate: "Sep 26, 2026", dueDate: "Oct 26, 2026", amountTotal: 7800, amountPaid: 3000, state: "Posted" },
-  { id: "BILL-2004", number: "BILL/2026/0017", reference: "PO-8806", vendor: "Logitech Distribution", billDate: "Sep 28, 2026", dueDate: "Oct 28, 2026", amountTotal: 5200, amountPaid: 0, state: "Draft" },
+  { id: "BILL-2001", number: "BILL/2026/0014", reference: "PO-8801", vendor: "TechDist GmbH", billDate: "Sep 20, 2026", dueDate: "Oct 20, 2026", amountTotal: 2208000, amountPaid: 2208000, state: "Paid" },
+  { id: "BILL-2002", number: "BILL/2026/0015", reference: "PO-8803", vendor: "Shenzhen Mobile Supply", billDate: "Sep 24, 2026", dueDate: "Oct 24, 2026", amountTotal: 5100000, amountPaid: 0, state: "Posted" },
+  { id: "BILL-2003", number: "BILL/2026/0016", reference: "PO-8805", vendor: "AudioWorks Inc", billDate: "Sep 26, 2026", dueDate: "Oct 26, 2026", amountTotal: 936000, amountPaid: 360000, state: "Posted" },
+  { id: "BILL-2004", number: "BILL/2026/0017", reference: "PO-8806", vendor: "Logitech Distribution", billDate: "Sep 28, 2026", dueDate: "Oct 28, 2026", amountTotal: 624000, amountPaid: 0, state: "Draft" },
 ];
 
 const PAYMENTS: PaymentRow[] = [
-  { id: "PAY-5001", date: "Sep 28, 2026", partner: "Noah Wilson", direction: "Inbound", method: "Stripe", reference: "INV/2026/0031", amount: 429, status: "Reconciled" },
-  { id: "PAY-5002", date: "Sep 28, 2026", partner: "Emma Brown", direction: "Inbound", method: "Bank Transfer", reference: "INV/2026/0028", amount: 1840, status: "Reconciled" },
-  { id: "PAY-5003", date: "Sep 26, 2026", partner: "TechDist GmbH", direction: "Outbound", method: "Bank Transfer", reference: "BILL/2026/0014", amount: 18400, status: "Reconciled" },
-  { id: "PAY-5004", date: "Sep 29, 2026", partner: "Olivia Martin", direction: "Inbound", method: "PayPal", reference: "ORD-7392", amount: 1878.99, status: "Pending" },
-  { id: "PAY-5005", date: "Sep 27, 2026", partner: "Lucas White", direction: "Inbound", method: "Stripe", reference: "INV/2026/0027", amount: 79.99, status: "Failed" },
+  { id: "PAY-5001", date: "Sep 28, 2026", partner: "Noah Wilson", direction: "Inbound", method: "bKash", reference: "INV/2026/0031", amount: 51480, status: "Reconciled" },
+  { id: "PAY-5002", date: "Sep 28, 2026", partner: "Emma Brown", direction: "Inbound", method: "Bank Transfer", reference: "INV/2026/0028", amount: 220800, status: "Reconciled" },
+  { id: "PAY-5003", date: "Sep 26, 2026", partner: "TechDist GmbH", direction: "Outbound", method: "Bank Transfer", reference: "BILL/2026/0014", amount: 2208000, status: "Reconciled" },
+  { id: "PAY-5004", date: "Sep 29, 2026", partner: "Olivia Martin", direction: "Inbound", method: "Nagad", reference: "ORD-7392", amount: 225478.8, status: "Pending" },
+  { id: "PAY-5005", date: "Sep 27, 2026", partner: "Lucas White", direction: "Inbound", method: "bKash", reference: "INV/2026/0027", amount: 9598.8, status: "Failed" },
 ];
 
 export async function getInvoices(): Promise<InvoiceRow[]> {

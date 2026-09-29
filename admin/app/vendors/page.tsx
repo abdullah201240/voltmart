@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Store, CircleDollarSign, Timer, Target, Plus, RotateCcw } from "lucide-react";
+import { Store, Banknote, Timer, Target, Plus, RotateCcw } from "lucide-react";
 import { getVendors, vendorStats, type VendorRow } from "@/lib/data/purchasing";
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
 const VENDOR_COLUMNS: CentralTableColumn<VendorRow>[] = [
@@ -120,7 +120,7 @@ export default function VendorsPage() {
       {/* Vendor KPIs */}
       <KpiGrid columns={4}>
         <KpiCard title="Active Vendors" value={String(stats.total)} icon={Store} tone="blue" />
-        <KpiCard title="Total Purchased" value={money(stats.spend)} icon={CircleDollarSign} tone="emerald" tooltip="Annual purchase spend" />
+        <KpiCard title="Total Purchased" value={money(stats.spend)} icon={Banknote} tone="emerald" tooltip="Annual purchase spend" />
         <KpiCard title="Avg Lead Time" value={`${stats.avgLead}d`} icon={Timer} tone="amber" tooltip="Average days from PO to receipt" />
         <KpiCard title="Avg On-Time Rate" value={`${stats.avgOnTime}%`} icon={Target} tone="violet" tooltip="Average vendor delivery reliability" />
       </KpiGrid>

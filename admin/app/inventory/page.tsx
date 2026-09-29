@@ -10,7 +10,7 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Boxes, Layers, CircleDollarSign, TriangleAlert, ArrowDownToLine, RotateCcw } from "lucide-react";
+import { Boxes, Layers, Banknote, TriangleAlert, ArrowDownToLine, RotateCcw } from "lucide-react";
 import {
   getStock,
   stockStats,
@@ -25,7 +25,7 @@ function availability(row: StockRow) {
 }
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
 const STOCK_COLUMNS: CentralTableColumn<StockRow>[] = [
@@ -115,7 +115,7 @@ export default function InventoryPage() {
       const matchesWh =
         selectedWarehouse === "all" ||
         (selectedWarehouse === "wh-main" && s.warehouse.includes("Main")) ||
-        (selectedWarehouse === "wh-chicago" && s.warehouse.includes("Chicago"));
+        (selectedWarehouse === "wh-ctg" && s.warehouse.includes("Chattogram"));
       const matchesQuery =
         !effectiveQuery ||
         s.product.toLowerCase().includes(effectiveQuery) ||
@@ -151,7 +151,7 @@ export default function InventoryPage() {
       <KpiGrid columns={4}>
         <KpiCard title="Tracked SKUs" value={String(stats.skus)} icon={Boxes} tone="blue" tooltip="Product/location stock lines" />
         <KpiCard title="Total Units" value={String(stats.totalUnits)} icon={Layers} tone="indigo" tooltip="Sum of on-hand units" />
-        <KpiCard title="Stock Value" value={money(stats.value)} icon={CircleDollarSign} tone="emerald" tooltip="Inventory valuation at cost" />
+        <KpiCard title="Stock Value" value={money(stats.value)} icon={Banknote} tone="emerald" tooltip="Inventory valuation at cost" />
         <KpiCard title="Low / Out of Stock" value={`${stats.low} / ${stats.out}`} icon={TriangleAlert} tone="amber" badge="ALERT" tooltip="At/below reorder point / zero on hand" />
       </KpiGrid>
 

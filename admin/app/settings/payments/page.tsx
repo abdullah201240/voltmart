@@ -8,7 +8,7 @@ import { CreditCard, Plus } from "lucide-react";
 import { getPaymentProviders, type PaymentProviderRow } from "@/lib/data/settings";
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
 const PROVIDER_COLUMNS: CentralTableColumn<PaymentProviderRow>[] = [

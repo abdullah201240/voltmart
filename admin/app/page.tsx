@@ -16,7 +16,7 @@ import { CentralTable, type CentralTableColumn } from "@/components/ui/central-t
 import { ProductFormDrawer } from "@/components/product-form-drawer";
 import { useAdminLayout } from "@/components/admin-shell";
 import {
-  DollarSign,
+  Banknote,
   Package,
   ShoppingCart,
   Users,
@@ -42,23 +42,23 @@ const CHANNEL_OPTIONS: DropboxOption[] = [
   },
   {
     value: "default-channel",
-    label: "Default Channel (USD)",
-    badge: "USD",
-    description: "Primary international online store",
+    label: "Default Channel (BDT)",
+    badge: "BDT",
+    description: "Primary nationwide online store",
     icon: <Store className="h-4 w-4" />,
   },
   {
     value: "channel-pln",
-    label: "Poland Channel (PLN)",
-    badge: "PLN",
-    description: "Central & Eastern Europe localized channel",
+    label: "Chattogram Store (BDT)",
+    badge: "BDT",
+    description: "Chattogram regional storefront",
     icon: <Store className="h-4 w-4" />,
   },
   {
     value: "channel-eur",
-    label: "Eurozone Store (EUR)",
-    badge: "EUR",
-    description: "Western Europe direct-to-consumer store",
+    label: "Dhaka Store (BDT)",
+    badge: "BDT",
+    description: "Dhaka direct-to-consumer store",
     icon: <Store className="h-4 w-4" />,
   },
   {
@@ -119,9 +119,9 @@ const ALL_ORDERS = [
     id: "ORD-7392",
     customer: "Liam Johnson",
     email: "liam@example.com",
-    channel: "Default Channel (USD)",
+    channel: "Default Channel (BDT)",
     channelKey: "default-channel",
-    total: "$359.00",
+    total: "৳43,080",
     status: "Fulfilled",
     date: "Sep 29, 2026",
   },
@@ -131,7 +131,7 @@ const ALL_ORDERS = [
     email: "olivia@example.com",
     channel: "Mobile App Channel",
     channelKey: "mobile-app",
-    total: "$899.50",
+    total: "৳1,07,940",
     status: "Processing",
     date: "Sep 29, 2026",
   },
@@ -139,9 +139,9 @@ const ALL_ORDERS = [
     id: "ORD-7390",
     customer: "Noah Williams",
     email: "noah@example.com",
-    channel: "Default Channel (USD)",
+    channel: "Default Channel (BDT)",
     channelKey: "default-channel",
-    total: "$124.00",
+    total: "৳14,880",
     status: "Fulfilled",
     date: "Sep 28, 2026",
   },
@@ -149,9 +149,9 @@ const ALL_ORDERS = [
     id: "ORD-7389",
     customer: "Emma Brown",
     email: "emma@example.com",
-    channel: "Poland Channel (PLN)",
+    channel: "Chattogram Store (BDT)",
     channelKey: "channel-pln",
-    total: "1,840.00 PLN",
+    total: "৳2,20,800",
     status: "Pending",
     date: "Sep 28, 2026",
   },
@@ -161,7 +161,7 @@ const ALL_ORDERS = [
     email: "james@example.com",
     channel: "B2B Wholesale Portal",
     channelKey: "b2b-wholesale",
-    total: "$14,200.00",
+    total: "৳17,04,000",
     status: "Fulfilled",
     date: "Sep 27, 2026",
   },
@@ -169,9 +169,9 @@ const ALL_ORDERS = [
     id: "ORD-7387",
     customer: "Sophia Taylor",
     email: "sophia@example.com",
-    channel: "Eurozone Store (EUR)",
+    channel: "Dhaka Store (BDT)",
     channelKey: "channel-eur",
-    total: "€430.00",
+    total: "৳51,600",
     status: "Processing",
     date: "Sep 27, 2026",
   },
@@ -179,9 +179,9 @@ const ALL_ORDERS = [
     id: "ORD-7386",
     customer: "Lucas White",
     email: "lucas@example.com",
-    channel: "Default Channel (USD)",
+    channel: "Default Channel (BDT)",
     channelKey: "default-channel",
-    total: "$79.99",
+    total: "৳9,599",
     status: "Cancelled",
     date: "Sep 26, 2026",
   },
@@ -379,16 +379,16 @@ export default function AdminDashboardPage() {
             <KpiGrid columns={4}>
               <KpiCard
                 title="Total Revenue"
-                value="$45,231.89"
+                value="৳54,27,827"
                 change="+20.1%"
                 trend="up"
                 period="vs last month"
-                icon={DollarSign}
+                icon={Banknote}
                 tone="emerald"
                 tooltip="Net gross sales processed across all verified channels"
                 progress={82}
-                progressLabel="Monthly Target: $55,000"
-                sparkline={[31000, 33500, 32000, 38000, 42000, 41000, 45231]}
+                progressLabel="Monthly Target: ৳66,00,000"
+                sparkline={[3720000, 4020000, 3840000, 4560000, 5040000, 4920000, 5427827]}
               />
               <KpiCard
                 title="Total Orders"
@@ -432,7 +432,7 @@ export default function AdminDashboardPage() {
             <KpiGrid columns={4}>
               <KpiCard
                 title="Average Cart Value (AOV)"
-                value="$76.40"
+                value="৳9,168"
                 change="+8.4%"
                 trend="up"
                 period="vs previous period"
@@ -440,7 +440,7 @@ export default function AdminDashboardPage() {
                 tone="cyan"
                 variant="accent"
                 tooltip="Average order value per completed checkout cart"
-                sparkline={[64, 66, 68, 70, 72, 74, 76.4]}
+                sparkline={[7680, 7920, 8160, 8400, 8640, 8880, 9168]}
               />
               <KpiCard
                 title="Cart Abandonment Rate"
@@ -491,10 +491,10 @@ export default function AdminDashboardPage() {
             <KpiGrid columns={4}>
               <KpiCard
                 title="Gross Revenue"
-                value="$45.2k"
+                value="৳54.3L"
                 change="+20.1%"
                 trend="up"
-                icon={DollarSign}
+                icon={Banknote}
                 tone="emerald"
                 variant="compact"
               />

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import {
   Package,
-  DollarSign,
+  Banknote,
   Layers,
   Image as ImageIcon,
   CheckCircle,
@@ -32,9 +32,9 @@ const CATEGORY_OPTIONS: DropboxOption[] = [
 ];
 
 const CHANNEL_OPTIONS: DropboxOption[] = [
-  { value: "default-channel", label: "Default Channel (USD)", badge: "Primary" },
-  { value: "global-channel", label: "Global Cross-Border (EUR)", badge: "Active" },
-  { value: "b2b-wholesale", label: "B2B Wholesale (USD)", badge: "Tiered" },
+  { value: "default-channel", label: "Default Channel (BDT)", badge: "Primary" },
+  { value: "global-channel", label: "Cross-Border Store (BDT)", badge: "Active" },
+  { value: "b2b-wholesale", label: "B2B Wholesale (BDT)", badge: "Tiered" },
 ];
 
 export interface ProductFormDrawerProps {
@@ -111,7 +111,7 @@ export function ProductFormDrawer({
       setLoading(false);
       setSubmitted(true);
       if (onProductCreated) {
-        onProductCreated({ title, price: `$${Number(price).toFixed(2)}` });
+        onProductCreated({ title, price: `৳${Number(price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
       }
       setTimeout(() => {
         setSubmitted(false);
@@ -227,7 +227,7 @@ export function ProductFormDrawer({
           <CentralFormSection
             title="Pricing & Margins"
             description="Set customer price, discount baseline, and internal unit cost."
-            icon={DollarSign}
+            icon={Banknote}
             columns={3}
           >
             <CentralFormField
@@ -241,11 +241,11 @@ export function ProductFormDrawer({
                 id="prod-price"
                 type="number"
                 step="0.01"
-                prefixText="$"
-                suffixText="USD"
+                prefixText="৳"
+                suffixText="BDT"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder="299.00"
+                placeholder="35000.00"
                 error={Boolean(errors.price)}
               />
             </CentralFormField>
@@ -260,11 +260,11 @@ export function ProductFormDrawer({
                 id="prod-compare-price"
                 type="number"
                 step="0.01"
-                prefixText="$"
-                suffixText="USD"
+                prefixText="৳"
+                suffixText="BDT"
                 value={comparePrice}
                 onChange={(e) => setComparePrice(e.target.value)}
-                placeholder="349.00"
+                placeholder="42000.00"
               />
             </CentralFormField>
 
@@ -278,11 +278,11 @@ export function ProductFormDrawer({
                 id="prod-cost"
                 type="number"
                 step="0.01"
-                prefixText="$"
-                suffixText="USD"
+                prefixText="৳"
+                suffixText="BDT"
                 value={costPrice}
                 onChange={(e) => setCostPrice(e.target.value)}
-                placeholder="145.00"
+                placeholder="22000.00"
               />
             </CentralFormField>
           </CentralFormSection>

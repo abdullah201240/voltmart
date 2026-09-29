@@ -36,34 +36,34 @@ export interface AnalyticsSummary {
 }
 
 const TREND: TrendPoint[] = [
-  { label: "Apr", revenue: 184200, orders: 1620 },
-  { label: "May", revenue: 201450, orders: 1780 },
-  { label: "Jun", revenue: 196800, orders: 1710 },
-  { label: "Jul", revenue: 224900, orders: 1940 },
-  { label: "Aug", revenue: 238100, orders: 2050 },
-  { label: "Sep", revenue: 261300, orders: 2230 },
+  { label: "Apr", revenue: 22104000, orders: 1620 },
+  { label: "May", revenue: 24174000, orders: 1780 },
+  { label: "Jun", revenue: 23616000, orders: 1710 },
+  { label: "Jul", revenue: 26988000, orders: 1940 },
+  { label: "Aug", revenue: 28572000, orders: 2050 },
+  { label: "Sep", revenue: 31356000, orders: 2230 },
 ];
 
 const BY_CHANNEL: BreakdownSlice[] = [
-  { name: "Default (USD)", value: 128400 },
-  { name: "Eurozone (EUR)", value: 74200 },
-  { name: "Poland (PLN)", value: 38900 },
-  { name: "B2B Wholesale", value: 19800 },
+  { name: "Default (BDT)", value: 15408000 },
+  { name: "Dhaka (BDT)", value: 8904000 },
+  { name: "Chattogram (BDT)", value: 4668000 },
+  { name: "B2B Wholesale", value: 2376000 },
 ];
 
 const BY_CATEGORY: BreakdownSlice[] = [
-  { name: "Mobiles", value: 96200 },
-  { name: "Computing", value: 78400 },
-  { name: "Audio", value: 41300 },
-  { name: "Gaming", value: 28900 },
-  { name: "Wearables", value: 16500 },
+  { name: "Mobiles", value: 11544000 },
+  { name: "Computing", value: 9408000 },
+  { name: "Audio", value: 4956000 },
+  { name: "Gaming", value: 3468000 },
+  { name: "Wearables", value: 1980000 },
 ];
 
 const TOP_PRODUCTS: TopProduct[] = [
-  { name: "Galaxy S24 Ultra 512GB", sku: "MOB-S24U-512", units: 420, revenue: 596180 },
-  { name: "MacBook Pro 14 M3 Pro", sku: "LAP-MBP14-M3", units: 210, revenue: 461790 },
-  { name: "Sony WH-1000XM5", sku: "AUD-XM5", units: 380, revenue: 113620 },
-  { name: "Apple Watch Series 9", sku: "WEAR-AW9-45", units: 240, revenue: 102960 },
+  { name: "Galaxy S24 Ultra 512GB", sku: "MOB-S24U-512", units: 420, revenue: 71541600 },
+  { name: "MacBook Pro 14 M3 Pro", sku: "LAP-MBP14-M3", units: 210, revenue: 55414800 },
+  { name: "Sony WH-1000XM5", sku: "AUD-XM5", units: 380, revenue: 13634400 },
+  { name: "Apple Watch Series 9", sku: "WEAR-AW9-45", units: 240, revenue: 12355200 },
 ];
 
 export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {

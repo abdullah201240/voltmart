@@ -14,7 +14,7 @@ import {
   MapPin,
   Building2,
   ShoppingBag,
-  CircleDollarSign,
+  Banknote,
 } from "lucide-react";
 import { getCustomerById, type CustomerDetail } from "@/lib/data/customers";
 import type { OrderStatus } from "@/lib/data/orders";
@@ -28,7 +28,7 @@ const STATUS_CLASS: Record<OrderStatus, "default" | "secondary" | "outline"> = {
 };
 
 function money(v: number) {
-  return "$" + v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
 function InfoRow({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon?: React.ComponentType<{ className?: string }> }) {
@@ -109,7 +109,7 @@ export default function CustomerDetailPage() {
       {/* Snapshot KPIs */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card className="p-5 shadow-xs border-border/80">
-          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider"><CircleDollarSign className="h-4 w-4" /> Lifetime Spent</div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider"><Banknote className="h-4 w-4" /> Lifetime Spent</div>
           <div className="mt-2 text-2xl font-bold font-mono">{money(customer.totalSpent)}</div>
         </Card>
         <Card className="p-5 shadow-xs border-border/80">
