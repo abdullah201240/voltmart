@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/searchable-dropbox";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
+import { ProductFormDrawer } from "@/components/product-form-drawer";
 import { useAdminLayout } from "@/components/admin-shell";
 import {
   DollarSign,
@@ -257,6 +258,7 @@ const ORDER_COLUMNS: CentralTableColumn<(typeof ALL_ORDERS)[0]>[] = [
 
 export default function AdminDashboardPage() {
   const { searchQuery } = useAdminLayout();
+  const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -311,7 +313,10 @@ export default function AdminDashboardPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button className="h-11 px-5 text-sm font-medium">
+            <Button
+              onClick={() => setIsProductDrawerOpen(true)}
+              className="h-11 px-5 text-sm font-medium cursor-pointer"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Add Product
             </Button>
@@ -703,6 +708,12 @@ export default function AdminDashboardPage() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Reusable Central Form Drawer Demonstration */}
+        <ProductFormDrawer
+          open={isProductDrawerOpen}
+          onOpenChange={setIsProductDrawerOpen}
+        />
     </>
   );
 }

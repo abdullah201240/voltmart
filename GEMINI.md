@@ -102,3 +102,28 @@ Do NOT reinvent custom tables, stat blocks, or dropdowns. Always import and use 
 ### D. Theme Toggle (`ThemeToggle`)
 - **Import**: `import { ThemeToggle } from "@/components/theme-toggle";`
 - **Features**: Seamless switching between Light, Dark, and System theme.
+
+### E. Central Form (`CentralForm`)
+- **Import**:
+  ```tsx
+  import {
+    CentralForm,
+    CentralFormSection,
+    CentralFormField,
+    CentralFormInput,
+    CentralFormTextarea,
+    CentralFormSwitch,
+    CentralFormDropzone,
+    CentralFormActions,
+    CentralFormDrawer,
+  } from "@/components/ui/central-form";
+  ```
+- **Features**:
+  - Full-width panoramic responsive layouts with zero `max-w-*`
+  - Flexible multi-column sections (`columns={1 | 2 | 3 | 4}`) with icons and subtitles
+  - Standardized field wrapper with labels, required asterisks, helper text, and validation errors
+  - Enhanced inputs with prefix/suffix text & icons (currencies, units, passwords)
+  - Integrated switch toggle cards, searchable selects, and media drag-and-drop dropzones
+  - Standardized action bars with loading states, dirty indicators, and discard handlers
+  - Slide-over drawer wrapper (`CentralFormDrawer`) for seamless creation flows from any view
+
