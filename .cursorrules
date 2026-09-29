@@ -1,0 +1,20 @@
+# UI Design System & Architecture Rules
+
+Follow these rules strictly across all code changes:
+
+1. ZERO MAX-WIDTH: Never use `max-w-*` on layout containers, pages, headers, or tables. All layouts must be 100% full width (`w-full`).
+2. GENEROUS PADDING:
+   - Header: `h-18 px-8 md:px-12 w-full`
+   - Main page: `px-8 md:px-12 py-8 md:py-10 w-full space-y-8`
+   - Cards: `p-6` or `p-6 md:p-8`
+   - Table cells: `py-4.5 px-6`
+   - Buttons: `h-10 px-4` or `h-11 px-5`
+3. ROOT TYPOGRAPHY: Scaled to 18px base (`html { font-size: 18px; }`). Always use `text-foreground` and `text-muted-foreground`.
+4. BALANCED BORDERS: Hairline subtle borders `border border-border/80`, modern 6-8px radius `rounded-md`, micro-shadows `shadow-xs`.
+5. THEMES: Strict dark and light mode support via `next-themes`. Never hardcode hex colors or raw `bg-white`/`bg-black`. Use CSS variables.
+6. TACTILE INTERACTIONS: Always add `cursor-pointer` to clickable elements and active feedback `active:scale-[0.98]`.
+7. MANDATORY CENTRAL COMPONENTS:
+   - CentralTable: `@/components/ui/central-table`
+   - KpiCard & KpiGrid: `@/components/ui/kpi-card`
+   - SearchableDropbox: `@/components/ui/searchable-dropbox`
+   - ThemeToggle: `@/components/theme-toggle`
