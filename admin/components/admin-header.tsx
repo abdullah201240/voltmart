@@ -35,7 +35,7 @@ const BREADCRUMB_MAP: Record<string, { section: string; page: string }> = {
   "/inventory": { section: "Catalog", page: "Inventory Stock" },
   "/customers": { section: "Growth", page: "Customer Directory" },
   "/discounts": { section: "Growth", page: "Discounts & Vouchers" },
-  "/channels": { section: "Saleor Backend", page: "Sales Channels" },
+  "/channels": { section: "System", page: "Sales Channels" },
   "/settings": { section: "System", page: "Store Settings" },
 };
 

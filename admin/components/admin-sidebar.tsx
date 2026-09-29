@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -9,37 +9,31 @@ import {
   Package,
   Users,
   BarChart3,
-  Tag,
   Settings,
-  Store,
-  Boxes,
-  Layers,
-  Radio,
-  ExternalLink,
+  ChevronRight,
   X,
-  CreditCard,
-  Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-export interface NavItem {
+export interface SubNavItem {
   title: string;
   href: string;
+}
+
+export interface NavItem {
+  title: string;
+  href?: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
-  badgeTone?: "default" | "emerald" | "amber" | "blue";
-  external?: boolean;
+  children?: SubNavItem[];
 }
 
 export interface NavGroup {
-  label: string;
   items: NavItem[];
 }
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Main",
     items: [
       {
         title: "Dashboard",
@@ -50,88 +44,48 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Analytics",
         href: "/analytics",
         icon: BarChart3,
-        badge: "LIVE",
-        badgeTone: "emerald",
       },
     ],
   },
   {
-    label: "Commerce",
     items: [
       {
         title: "Orders",
-        href: "/orders",
         icon: ShoppingCart,
-        badge: "12",
-        badgeTone: "blue",
+        children: [
+          { title: "All Orders", href: "/orders" },
+          { title: "Fulfillment", href: "/fulfillment" },
+          { title: "Transactions", href: "/transactions" },
+        ],
       },
       {
-        title: "Fulfillment",
-        href: "/fulfillment",
-        icon: Truck,
-      },
-      {
-        title: "Transactions",
-        href: "/transactions",
-        icon: CreditCard,
-      },
-    ],
-  },
-  {
-    label: "Catalog",
-    items: [
-      {
-        title: "Products",
-        href: "/products",
+        title: "Catalog",
         icon: Package,
+        children: [
+          { title: "Products", href: "/products" },
+          { title: "Categories", href: "/categories" },
+          { title: "Inventory", href: "/inventory" },
+        ],
       },
-      {
-        title: "Categories",
-        href: "/categories",
-        icon: Layers,
-      },
-      {
-        title: "Inventory",
-        href: "/inventory",
-        icon: Boxes,
-        badge: "Alert",
-        badgeTone: "amber",
-      },
-    ],
-  },
-  {
-    label: "Customers & Growth",
-    items: [
       {
         title: "Customers",
-        href: "/customers",
         icon: Users,
-      },
-      {
-        title: "Discounts & Vouchers",
-        href: "/discounts",
-        icon: Tag,
+        children: [
+          { title: "Directory", href: "/customers" },
+          { title: "Discounts & Vouchers", href: "/discounts" },
+        ],
       },
     ],
   },
   {
-    label: "System",
     items: [
       {
-        title: "Sales Channels",
-        href: "/channels",
-        icon: Store,
-      },
-      {
-        title: "GraphQL Playground",
-        href: "http://localhost:8081/graphql/",
-        icon: Radio,
-        external: true,
-      },
-      {
         title: "Settings",
-        href: "/settings",
         icon: Settings,
+        children: [
+          { title: "General Settings", href: "/settings" },
+          { title: "Sales Channels", href: "/channels" },
+        ],
       },
     ],
   },
@@ -153,31 +107,65 @@ export function AdminSidebar({
   className,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const getBadgeClass = (tone?: "default" | "emerald" | "amber" | "blue") => {
-    switch (tone) {
-      case "emerald":
-        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
-      case "amber":
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
-      case "blue":
-        return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
-      default:
-        return "bg-muted text-muted-foreground border-border";
+  // Auto-expand the dropdown containing the active route
+  useEffect(() => {
+    if (collapsed) {
+      setOpenDropdown(null);
+      return;
     }
+
+    for (const group of NAV_GROUPS) {
+      for (const item of group.items) {
+        if (item.children) {
+          const hasActiveChild = item.children.some((child) =>
+            child.href === "/" ? pathname === "/" : pathname.startsWith(child.href)
+          );
+          if (hasActiveChild) {
+            setOpenDropdown(item.title);
+            return;
+          }
+        }
+      }
+    }
+  }, [collapsed, pathname]);
+
+  // Close collapsed flyout menus on click outside
+  useEffect(() => {
+    if (!collapsed) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target as Node)
+      ) {
+        setOpenDropdown(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [collapsed]);
+
+  const handleToggleDropdown = (title: string) => {
+    // Accordion behavior: opening one automatically closes all others
+    setOpenDropdown((current) => (current === title ? null : title));
   };
 
   const sidebarContent = (
-    <div className="flex h-full flex-col justify-between overflow-y-auto overflow-x-hidden p-3 md:p-4">
-      {/* Brand Header */}
-      <div className="space-y-5">
+    <div
+      ref={sidebarRef}
+      className="flex h-full flex-col justify-between overflow-y-auto overflow-x-hidden p-3 md:p-4"
+    >
+      {/* Brand Header & Navigation */}
+      <div className="space-y-4">
         {collapsed ? (
           /* Collapsed Header: Clean Centered Logo */
           <div className="flex flex-col items-center py-1">
             <Link
               href="/"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground font-black text-lg shadow-xs hover:scale-105 transition-transform cursor-pointer"
-              title="VoltMart Admin Dashboard"
+              title="VoltMart"
             >
               V
             </Link>
@@ -192,14 +180,9 @@ export function AdminSidebar({
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground font-black text-lg shadow-xs">
                 V
               </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-base font-bold tracking-tight truncate">
-                  VoltMart
-                </span>
-                <span className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase">
-                  Enterprise Admin
-                </span>
-              </div>
+              <span className="text-base font-bold tracking-tight truncate">
+                VoltMart
+              </span>
             </Link>
 
             {/* Mobile close button (only visible inside mobile drawer) */}
@@ -217,117 +200,228 @@ export function AdminSidebar({
         )}
 
         {/* Nav Groups */}
-        <nav className="space-y-5 pt-1">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.label} className="space-y-1.5">
-              {collapsed ? (
-                <div className="h-px w-7 mx-auto bg-border/60 my-2" />
-              ) : (
-                <div className="px-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                  {group.label}
-                </div>
+        <nav className="space-y-3 pt-1">
+          {NAV_GROUPS.map((group, groupIdx) => (
+            <div key={groupIdx} className="space-y-1">
+              {groupIdx > 0 && (
+                <div className="h-px bg-border/60 my-2 mx-1" />
               )}
 
-              <div className="space-y-1">
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive =
-                    item.href === "/"
-                      ? pathname === "/"
-                      : pathname.startsWith(item.href);
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const hasChildren = Boolean(item.children && item.children.length > 0);
+                const isOpen = openDropdown === item.title;
 
-                  return item.external ? (
-                    <a
-                      key={item.title}
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={cn(
-                        "group flex items-center gap-3 rounded-md px-3 py-2 text-xs font-semibold text-muted-foreground transition-all duration-150 cursor-pointer",
-                        "hover:bg-muted/60 hover:text-foreground active:scale-[0.98]",
-                        collapsed && "justify-center px-0 h-10 w-10 mx-auto"
-                      )}
-                      title={item.title}
-                    >
-                      <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
-                      {!collapsed && (
+                // Check if any child is active
+                const isChildActive = hasChildren
+                  ? item.children!.some((child) =>
+                      child.href === "/" ? pathname === "/" : pathname.startsWith(child.href)
+                    )
+                  : false;
+
+                // Check if direct link is active
+                const isDirectActive = item.href
+                  ? item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href)
+                  : false;
+
+                const isItemActive = isDirectActive || isChildActive;
+
+                // Case 1: Dropdown Menu Item (with children)
+                if (hasChildren) {
+                  return (
+                    <div key={item.title} className="relative">
+                      {collapsed ? (
+                        /* Collapsed Dropdown Button & Floating Flyout */
                         <>
-                          <span className="flex-1 truncate">{item.title}</span>
-                          <ExternalLink className="h-3 w-3 text-muted-foreground/60" />
-                        </>
-                      )}
-                    </a>
-                  ) : (
-                    <Link
-                      key={item.title}
-                      href={item.href}
-                      onClick={() => onMobileClose()}
-                      className={cn(
-                        "group flex items-center gap-3 rounded-md px-3 py-2 text-xs font-semibold transition-all duration-150 cursor-pointer",
-                        isActive
-                          ? "bg-primary text-primary-foreground shadow-xs font-bold"
-                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground active:scale-[0.98]",
-                        collapsed && "justify-center px-0 h-10 w-10 mx-auto"
-                      )}
-                      title={item.title}
-                    >
-                      <Icon
-                        className={cn(
-                          "h-4 w-4 shrink-0",
-                          isActive
-                            ? "text-primary-foreground"
-                            : "text-muted-foreground group-hover:text-foreground"
-                        )}
-                      />
-                      {!collapsed && (
-                        <>
-                          <span className="flex-1 truncate">{item.title}</span>
-                          {item.badge && (
-                            <span
-                              className={cn(
-                                "rounded px-1.5 py-0.5 text-[10px] font-bold border",
-                                isActive
-                                  ? "bg-primary-foreground/20 text-primary-foreground border-transparent"
-                                  : getBadgeClass(item.badgeTone)
-                              )}
-                            >
-                              {item.badge}
-                            </span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleDropdown(item.title)}
+                            aria-expanded={isOpen}
+                            className={cn(
+                              "flex h-10 w-10 mx-auto items-center justify-center rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer",
+                              isItemActive
+                                ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground active:scale-[0.98]",
+                              isOpen && !isItemActive && "bg-muted text-foreground"
+                            )}
+                            title={item.title}
+                          >
+                            <Icon className="h-4 w-4 shrink-0" />
+                          </button>
+
+                          {/* Floating Popover in Collapsed Rail */}
+                          {isOpen && (
+                            <div className="absolute left-full top-0 ml-2 z-50 min-w-44 rounded-lg border border-border/80 bg-popover p-1.5 shadow-lg animate-in fade-in-0 zoom-in-95 duration-150">
+                              <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/60 mb-1">
+                                {item.title}
+                              </div>
+                              <div className="space-y-0.5">
+                                {item.children!.map((child) => {
+                                  const isSubActive =
+                                    child.href === "/"
+                                      ? pathname === "/"
+                                      : pathname.startsWith(child.href);
+
+                                  return (
+                                    <Link
+                                      key={child.href}
+                                      href={child.href}
+                                      onClick={() => {
+                                        setOpenDropdown(null);
+                                        onMobileClose();
+                                      }}
+                                      className={cn(
+                                        "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all duration-150 cursor-pointer",
+                                        isSubActive
+                                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground active:scale-[0.98]"
+                                      )}
+                                    >
+                                      <span
+                                        className={cn(
+                                          "h-1.5 w-1.5 rounded-full shrink-0 transition-colors",
+                                          isSubActive
+                                            ? "bg-primary-foreground"
+                                            : "bg-muted-foreground/50"
+                                        )}
+                                      />
+                                      <span className="truncate">{child.title}</span>
+                                    </Link>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           )}
                         </>
+                      ) : (
+                        /* Expanded Dropdown Accordion */
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleDropdown(item.title)}
+                            aria-expanded={isOpen}
+                            className={cn(
+                              "group flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold transition-all duration-150 cursor-pointer",
+                              isChildActive
+                                ? "bg-muted/60 text-foreground font-bold"
+                                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground active:scale-[0.98]",
+                              isOpen && "bg-muted/40 text-foreground"
+                            )}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Icon
+                                className={cn(
+                                  "h-4 w-4 shrink-0 transition-colors",
+                                  isChildActive || isOpen
+                                    ? "text-primary"
+                                    : "text-muted-foreground group-hover:text-foreground"
+                                )}
+                              />
+                              <span className="truncate">{item.title}</span>
+                            </div>
+                            <ChevronRight
+                              className={cn(
+                                "h-3.5 w-3.5 shrink-0 transition-transform duration-200 text-muted-foreground/70 group-hover:text-foreground",
+                                isOpen && "rotate-90 text-foreground"
+                              )}
+                            />
+                          </button>
+
+                          {/* Accordion Sub-options Tray */}
+                          {isOpen && (
+                            <div className="mt-1 space-y-0.5 border-l border-border/70 ml-5 pl-2.5 animate-in slide-in-from-top-1 fade-in-0 duration-150">
+                              {item.children!.map((child) => {
+                                const isSubActive =
+                                  child.href === "/"
+                                    ? pathname === "/"
+                                    : pathname.startsWith(child.href);
+
+                                return (
+                                  <Link
+                                    key={child.href}
+                                    href={child.href}
+                                    onClick={() => onMobileClose()}
+                                    className={cn(
+                                      "group flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all duration-150 cursor-pointer",
+                                      isSubActive
+                                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground active:scale-[0.98]"
+                                    )}
+                                  >
+                                    <span
+                                      className={cn(
+                                        "h-1.5 w-1.5 rounded-full shrink-0 transition-colors",
+                                        isSubActive
+                                          ? "bg-primary-foreground"
+                                          : "bg-muted-foreground/40 group-hover:bg-foreground"
+                                      )}
+                                    />
+                                    <span className="truncate">{child.title}</span>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       )}
-                    </Link>
+                    </div>
                   );
-                })}
-              </div>
+                }
+
+                // Case 2: Direct Single Link Item
+                return (
+                  <Link
+                    key={item.title}
+                    href={item.href!}
+                    onClick={() => onMobileClose()}
+                    className={cn(
+                      "group flex items-center gap-3 rounded-md px-3 py-2 text-xs font-semibold transition-all duration-150 cursor-pointer",
+                      isDirectActive
+                        ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground active:scale-[0.98]",
+                      collapsed && "justify-center px-0 h-10 w-10 mx-auto"
+                    )}
+                    title={item.title}
+                  >
+                    <Icon
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        isDirectActive
+                          ? "text-primary-foreground"
+                          : "text-muted-foreground group-hover:text-foreground"
+                      )}
+                    />
+                    {!collapsed && (
+                      <span className="flex-1 truncate">{item.title}</span>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           ))}
         </nav>
       </div>
 
       {/* User Footer Profile Chip */}
-      <div className="pt-4 border-t border-border/80">
+      <div className="pt-3 border-t border-border/80">
         {collapsed ? (
           <div
-            className="mx-auto relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer"
-            title="Super Administrator (admin@example.com)"
+            className="mx-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer"
+            title="admin@example.com"
           >
             AD
-            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500" />
           </div>
         ) : (
           <div className="flex items-center gap-3 rounded-lg border border-border/70 p-2.5 bg-muted/20 transition-all hover:bg-muted/40 cursor-pointer">
-            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
               AD
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500" />
             </div>
 
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-xs font-bold text-foreground truncate">
+              <span className="text-xs font-semibold text-foreground truncate">
                 admin@example.com
-              </span>
-              <span className="text-[10px] font-medium text-muted-foreground">
-                Super Administrator
               </span>
             </div>
           </div>

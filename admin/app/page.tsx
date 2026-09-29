@@ -2,46 +2,27 @@
 
 import React, { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
   SearchableDropbox,
   type DropboxOption,
 } from "@/components/ui/searchable-dropbox";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
 import {
-  ArrowUpRight,
-  ArrowDownRight,
   DollarSign,
   Package,
   ShoppingCart,
   Users,
-  Search,
-  Bell,
   Download,
   Plus,
   Store,
   Layers,
-  Filter,
   RotateCcw,
   AlertCircle,
   ShoppingBag,
@@ -130,41 +111,6 @@ const CATEGORY_OPTIONS: DropboxOption[] = [
   { value: "audio", label: "Audio & Acoustics", description: "Noise-canceling & studio gear" },
   { value: "gaming", label: "Gaming Gear", description: "Consoles, handhelds, peripherals" },
   { value: "accessories", label: "Peripherals & Cables", description: "Chargers, hubs, adapters" },
-];
-
-const STATS = [
-  {
-    title: "Total Revenue",
-    value: "$45,231.89",
-    change: "+20.1%",
-    trend: "up",
-    period: "vs last month",
-    icon: DollarSign,
-  },
-  {
-    title: "Total Orders",
-    value: "1,248",
-    change: "+12.4%",
-    trend: "up",
-    period: "vs last month",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Active Customers",
-    value: "3,842",
-    change: "+18.2%",
-    trend: "up",
-    period: "new registered buyers",
-    icon: Users,
-  },
-  {
-    title: "Pending Stock Alerts",
-    value: "14 Items",
-    change: "-4.5%",
-    trend: "down",
-    period: "threshold alerts",
-    icon: Package,
-  },
 ];
 
 const ALL_ORDERS = [
@@ -310,7 +256,7 @@ const ORDER_COLUMNS: CentralTableColumn<(typeof ALL_ORDERS)[0]>[] = [
 ];
 
 export default function AdminDashboardPage() {
-  const { searchQuery, setSearchQuery } = useAdminLayout();
+  const { searchQuery } = useAdminLayout();
   const [selectedChannel, setSelectedChannel] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
