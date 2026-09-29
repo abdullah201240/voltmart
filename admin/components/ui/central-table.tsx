@@ -462,13 +462,13 @@ export function CentralTable<TData>({
           <thead className="bg-muted/40 border-b border-border/80">
             <tr>
               {selectable && (
-                <th className="w-12 px-6 py-4 text-left align-middle">
+                <th className="w-14 px-6 py-4 text-left align-middle">
                   <div className="flex items-center">
                     <Checkbox
                       checked={isAllPageSelected}
+                      indeterminate={isSomePageSelected}
                       onCheckedChange={toggleSelectAll}
                       aria-label="Select all on this page"
-                      className="cursor-pointer"
                     />
                   </div>
                 </th>
@@ -587,15 +587,16 @@ export function CentralTable<TData>({
                   >
                     {selectable && (
                       <td
-                        className="w-12 px-6 py-4.5 align-middle"
+                        className="w-14 px-6 py-4.5 align-middle"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSelectRow(rowKey)}
-                          aria-label={`Select row ${rowKey}`}
-                          className="cursor-pointer"
-                        />
+                        <div className="flex items-center">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleSelectRow(rowKey)}
+                            aria-label={`Select row ${rowKey}`}
+                          />
+                        </div>
                       </td>
                     )}
 

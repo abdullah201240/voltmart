@@ -27,6 +27,7 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
+import { useAdminLayout } from "@/components/admin-shell";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -309,11 +310,14 @@ const ORDER_COLUMNS: CentralTableColumn<(typeof ALL_ORDERS)[0]>[] = [
 ];
 
 export default function AdminDashboardPage() {
+  const { searchQuery, setSearchQuery } = useAdminLayout();
   const [selectedChannel, setSelectedChannel] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
   const [kpiTab, setKpiTab] = useState<"overview" | "cart" | "compact">("overview");
+
+  const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
 
   const filteredOrders = useMemo(() => {
     return ALL_ORDERS.filter((order) => {
@@ -322,17 +326,20 @@ export default function AdminDashboardPage() {
       const matchesStatus =
         selectedStatus === "all" || order.status === selectedStatus;
       const matchesQuery =
-        !searchTableQuery.trim() ||
-        order.id.toLowerCase().includes(searchTableQuery.toLowerCase()) ||
-        order.customer.toLowerCase().includes(searchTableQuery.toLowerCase()) ||
-        order.email.toLowerCase().includes(searchTableQuery.toLowerCase());
+        !effectiveQuery ||
+        order.id.toLowerCase().includes(effectiveQuery) ||
+        order.customer.toLowerCase().includes(effectiveQuery) ||
+        order.email.toLowerCase().includes(effectiveQuery);
 
       return matchesChannel && matchesStatus && matchesQuery;
     });
-  }, [selectedChannel, selectedStatus, searchTableQuery]);
+  }, [selectedChannel, selectedStatus, effectiveQuery]);
 
   const hasActiveFilters =
-    selectedChannel !== "all" || selectedStatus !== "all" || selectedCategory !== "all" || searchTableQuery.length > 0;
+    selectedChannel !== "all" ||
+    selectedStatus !== "all" ||
+    selectedCategory !== "all" ||
+    effectiveQuery.length > 0;
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -343,52 +350,7 @@ export default function AdminDashboardPage() {
   }, [selectedChannel, selectedStatus, selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
-      {/* Top Navbar: Full width with spacious horizontal padding */}
-      <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur w-full">
-        <div className="flex h-18 items-center justify-between px-8 md:px-12 w-full">
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-base shadow-xs">
-              E
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="font-bold text-lg tracking-tight">
-                Admin Panel
-              </span>
-              <span className="rounded-md bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
-                shadcn/ui
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {/* Quick search bar with comfortable padding */}
-            <div className="relative w-72 md:w-96">
-              <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
-              <input
-                type="search"
-                value={searchTableQuery}
-                onChange={(e) => setSearchTableQuery(e.target.value)}
-                placeholder="Search orders, customers..."
-                className="h-11 w-full rounded-md border border-input/80 bg-muted/40 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
-
-            <ThemeToggle />
-
-            <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground">
-              <Bell className="h-4 w-4" />
-            </Button>
-
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
-              AD
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content: Full width with generous padding and vertical spacing */}
-      <main className="px-8 md:px-12 py-8 md:py-10 w-full space-y-8">
+    <main className="px-8 md:px-12 py-8 md:py-10 w-full space-y-8">
         {/* Title & Actions Bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
@@ -796,6 +758,5 @@ export default function AdminDashboardPage() {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
   );
 }

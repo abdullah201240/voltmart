@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AdminShell } from "@/components/admin-shell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,11 +16,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Admin Panel | E-Commerce",
-  description: "E-Commerce Admin Dashboard and Management System",
+  title: "Admin Panel | VoltMart E-Commerce",
+  description: "Enterprise E-Commerce Admin Dashboard and Management System powered by Saleor Core",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="en"
@@ -36,7 +41,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            <AdminShell>{children}</AdminShell>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
