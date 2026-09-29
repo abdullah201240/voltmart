@@ -12,6 +12,11 @@ import {
   Settings,
   ChevronRight,
   X,
+  Store,
+  Boxes,
+  Truck,
+  Wallet,
+  Ticket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -52,10 +57,25 @@ const NAV_GROUPS: NavGroup[] = [
       {
         title: "Orders",
         icon: ShoppingCart,
+        children: [{ title: "All Orders", href: "/orders" }],
+      },
+      {
+        title: "Purchasing",
+        icon: Store,
         children: [
-          { title: "All Orders", href: "/orders" },
-          { title: "Fulfillment", href: "/fulfillment" },
-          { title: "Transactions", href: "/transactions" },
+          { title: "Requests (RFQs)", href: "/purchases/rfqs" },
+          { title: "Purchase Orders", href: "/purchases/orders" },
+          { title: "Vendors", href: "/vendors" },
+        ],
+      },
+      {
+        title: "Warehouse",
+        icon: Boxes,
+        children: [
+          { title: "Receipts", href: "/inventory/receipts" },
+          { title: "Deliveries", href: "/inventory/deliveries" },
+          { title: "Transfers", href: "/inventory/transfers" },
+          { title: "Stock Levels", href: "/inventory" },
         ],
       },
       {
@@ -64,15 +84,48 @@ const NAV_GROUPS: NavGroup[] = [
         children: [
           { title: "Products", href: "/products" },
           { title: "Categories", href: "/categories" },
-          { title: "Inventory", href: "/inventory" },
+          { title: "Attributes", href: "/attributes" },
+          { title: "Collections", href: "/collections" },
+          { title: "Brands", href: "/brands" },
         ],
       },
+    ],
+  },
+  {
+    items: [
       {
         title: "Customers",
         icon: Users,
         children: [
           { title: "Directory", href: "/customers" },
+          { title: "Customer Tags", href: "/customers/tags" },
+        ],
+      },
+      {
+        title: "Marketing",
+        icon: Ticket,
+        children: [
           { title: "Discounts & Vouchers", href: "/discounts" },
+          { title: "Pricelists", href: "/pricelists" },
+          { title: "Promotions", href: "/promotions" },
+        ],
+      },
+      {
+        title: "Shipping",
+        icon: Truck,
+        children: [
+          { title: "Shipping Methods", href: "/shipping/methods" },
+          { title: "Shipping Zones", href: "/shipping/zones" },
+          { title: "Shipping Rates", href: "/shipping/rates" },
+        ],
+      },
+      {
+        title: "Finance",
+        icon: Wallet,
+        children: [
+          { title: "Invoices", href: "/invoices" },
+          { title: "Bills", href: "/bills" },
+          { title: "Payments", href: "/payments" },
         ],
       },
     ],
@@ -83,8 +136,13 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Settings",
         icon: Settings,
         children: [
-          { title: "General Settings", href: "/settings" },
-          { title: "Sales Channels", href: "/channels" },
+          { title: "General", href: "/settings/general" },
+          { title: "Sales Channels", href: "/settings/channels" },
+          { title: "Warehouses", href: "/settings/warehouses" },
+          { title: "Locations", href: "/settings/locations" },
+          { title: "Taxes", href: "/settings/taxes" },
+          { title: "Payment Providers", href: "/settings/payments" },
+          { title: "Staff & Roles", href: "/settings/staff" },
         ],
       },
     ],

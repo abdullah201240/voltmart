@@ -1,0 +1,257 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  ArrowLeft,
+  Printer,
+  Truck,
+  ReceiptText,
+  Check,
+  MapPin,
+  User,
+} from "lucide-react";
+import {
+  getOrderById,
+  ORDER_FLOW,
+  type OrderDetail,
+  type OrderStatus,
+} from "@/lib/data/orders";
+
+const STATUS_META: Record<OrderStatus, string> = {
+  Quotation: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
+  Confirmed: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+  Fulfilled: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+  Invoiced: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+  Cancelled: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+};
+
+function money(v: number) {
+  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Horizontal lifecycle stepper (Quotation -> Confirmed -> Fulfilled -> Invoiced). */
+function StatusStepper({ status }: { status: OrderStatus }) {
+  const currentIdx = ORDER_FLOW.indexOf(status);
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {ORDER_FLOW.map((step, i) => {
+        const done = status !== "Cancelled" && currentIdx >= i;
+        const isCurrent = status !== "Cancelled" && currentIdx === i;
+        return (
+          <React.Fragment key={step}>
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold transition-colors",
+                  done
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted text-muted-foreground border-border"
+                )}
+              >
+                {done ? <Check className="h-4 w-4" /> : i + 1}
+              </span>
+              <span className={cn("text-xs font-semibold", isCurrent ? "text-foreground" : "text-muted-foreground")}>
+                {step}
+              </span>
+            </div>
+            {i < ORDER_FLOW.length - 1 && (
+              <span className={cn("h-px w-6 sm:w-10", done ? "bg-primary" : "bg-border")} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function OrderDetailPage() {
+  const params = useParams<{ id: string }>();
+  const [order, setOrder] = useState<OrderDetail | undefined>();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    getOrderById(params.id).then((data) => {
+      if (alive) {
+        setOrder(data);
+        setLoading(false);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+        <Card className="p-7 shadow-xs border-border/80">
+          <div className="h-40 animate-pulse rounded bg-muted" />
+        </Card>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="space-y-4">
+        <Link href="/orders" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Back to Orders
+        </Link>
+        <Card className="p-10 text-center shadow-xs border-border/80">
+          <h1 className="text-xl font-semibold">Order not found</h1>
+          <p className="text-sm text-muted-foreground mt-1">No order matches <span className="font-mono">{params.id}</span>.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Back link */}
+      <Link href="/orders" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground w-fit">
+        <ArrowLeft className="h-4 w-4" /> Back to Orders
+      </Link>
+
+      {/* Title & status actions */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight font-mono">{order.id}</h1>
+            <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full border", STATUS_META[order.status])}>
+              {order.status}
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {order.customer} · {order.channel} · {order.date}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="h-10 px-4 text-sm font-medium">
+            <Printer className="mr-2 h-4 w-4" /> Print
+          </Button>
+          {order.status === "Quotation" && (
+            <Button className="h-10 px-4 text-sm font-medium cursor-pointer">
+              <Check className="mr-2 h-4 w-4" /> Confirm Order
+            </Button>
+          )}
+          {(order.status === "Confirmed") && (
+            <Button className="h-10 px-4 text-sm font-medium cursor-pointer">
+              <Truck className="mr-2 h-4 w-4" /> Create Delivery
+            </Button>
+          )}
+          {(order.status === "Fulfilled" || order.status === "Confirmed") && (
+            <Button variant="outline" className="h-10 px-4 text-sm font-medium cursor-pointer">
+              <ReceiptText className="mr-2 h-4 w-4" /> Create Invoice
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Lifecycle stepper */}
+      <Card className="p-5 sm:p-6 shadow-xs border-border/80">
+        <StatusStepper status={order.status} />
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left: lines + tracking */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="p-6 sm:p-7 shadow-xs border-border/80 space-y-5">
+            <h2 className="text-lg font-semibold">Line items</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border/70">
+                    <th className="py-2 font-semibold">Product</th>
+                    <th className="py-2 font-semibold text-center">Qty</th>
+                    <th className="py-2 font-semibold text-right">Unit</th>
+                    <th className="py-2 font-semibold text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {order.lines.map((l) => (
+                    <tr key={l.id}>
+                      <td className="py-3">
+                        <div className="font-semibold text-foreground">{l.productName}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5 font-mono">{l.sku} · {l.variant}</div>
+                      </td>
+                      <td className="py-3 text-center tabular-nums">{l.quantity}</td>
+                      <td className="py-3 text-right tabular-nums font-mono">{money(l.unitPrice)}</td>
+                      <td className="py-3 text-right tabular-nums font-mono font-semibold">{money(l.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Separator />
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="font-mono tabular-nums">{money(order.subtotal)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span className="font-mono tabular-nums">{order.shipping === 0 ? "Free" : money(order.shipping)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Tax (21%)</span><span className="font-mono tabular-nums">{money(order.tax)}</span></div>
+              <div className="flex justify-between text-base font-bold pt-1"><span>Total</span><span className="font-mono tabular-nums">{money(order.subtotal + order.shipping + order.tax)}</span></div>
+            </div>
+          </Card>
+
+          <Card className="p-6 sm:p-7 shadow-xs border-border/80 space-y-4">
+            <h2 className="text-lg font-semibold">Fulfillment</h2>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="text-sm font-medium">Carrier: <span className="text-muted-foreground">{order.carrier}</span></div>
+                <div className="text-sm font-medium">Fulfillment: <span className="text-muted-foreground">{order.fulfillmentStatus}</span></div>
+                {order.trackingUrl && (
+                  <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="text-sm text-primary font-medium hover:underline">
+                    View tracking →
+                  </a>
+                )}
+              </div>
+              <Badge variant={order.fulfillmentStatus === "Fulfilled" ? "default" : "secondary"} className="text-xs font-semibold">
+                {order.fulfillmentStatus}
+              </Badge>
+            </div>
+          </Card>
+        </div>
+
+        {/* Right: customer + addresses */}
+        <div className="space-y-6">
+          <Card className="p-6 shadow-xs border-border/80 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              <User className="h-4 w-4" /> Customer
+            </div>
+            <div>
+              <div className="font-semibold text-foreground">{order.customer}</div>
+              <div className="text-sm text-muted-foreground">{order.email}</div>
+            </div>
+            <Separator />
+            <div className="text-sm">
+              <div className="text-muted-foreground mb-1">Payment</div>
+              <Badge variant={order.paymentStatus === "Paid" ? "default" : order.paymentStatus === "Refunded" ? "outline" : "secondary"} className="text-xs font-semibold">
+                {order.paymentStatus}
+              </Badge>
+            </div>
+          </Card>
+
+          <Card className="p-6 shadow-xs border-border/80 space-y-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              <MapPin className="h-4 w-4" /> Shipping address
+            </div>
+            <p className="text-sm text-foreground leading-relaxed">{order.shippingAddress}</p>
+            <Separator />
+            <div className="text-sm">
+              <div className="text-muted-foreground mb-1">Billing address</div>
+              <p className="text-foreground leading-relaxed">{order.billingAddress}</p>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </>
+  );
+}
