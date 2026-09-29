@@ -1,14 +1,9 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import {
-  Radio,
   Database,
   ExternalLink,
-  ShieldCheck,
-  HelpCircle,
-  Terminal,
   Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,13 +12,13 @@ export function AdminFooter({ className }: { className?: string }) {
   return (
     <footer
       className={cn(
-        "w-full border-t border-border/80 bg-card/40 px-8 md:px-12 py-6 text-xs text-muted-foreground transition-all",
+        "w-full shrink-0 border-t border-border/80 bg-card/95 backdrop-blur px-4 md:px-6 lg:px-8 py-3.5 text-xs text-muted-foreground transition-all z-20",
         className
       )}
     >
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between w-full">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between w-full">
         {/* Left: Backend Services Telemetry Status */}
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3.5">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -47,7 +42,7 @@ export function AdminFooter({ className }: { className?: string }) {
           <div className="flex items-center gap-1.5">
             <Activity className="h-3.5 w-3.5 text-emerald-500" />
             <span className="font-mono text-[11px] text-foreground font-medium">
-              Latency: 18ms
+              18ms
             </span>
           </div>
         </div>
@@ -58,11 +53,11 @@ export function AdminFooter({ className }: { className?: string }) {
           <span className="flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-foreground">
             ⌘K
           </span>
-          <span>Quick search</span>
+          <span>Search</span>
           <span className="flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-foreground">
-            Tab
+            ⌘B
           </span>
-          <span>Filter toggle</span>
+          <span>Sidebar</span>
         </div>
 
         {/* Right: Quick Links & Documentation */}
@@ -90,7 +85,7 @@ export function AdminFooter({ className }: { className?: string }) {
           <span className="text-border">•</span>
 
           <span className="font-medium text-foreground">
-            © 2026 VoltMart Platform
+            © 2026 VoltMart
           </span>
         </div>
       </div>

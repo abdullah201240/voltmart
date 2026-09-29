@@ -350,7 +350,7 @@ export default function AdminDashboardPage() {
   }, [selectedChannel, selectedStatus, selectedCategory]);
 
   return (
-    <main className="px-8 md:px-12 py-8 md:py-10 w-full space-y-8">
+    <>
         {/* Title & Actions Bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
@@ -373,7 +373,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Centralized Reusable KPI System with View Switcher */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
@@ -757,6 +757,6 @@ export default function AdminDashboardPage() {
             </div>
           </TabsContent>
         </Tabs>
-      </main>
+    </>
   );
 }

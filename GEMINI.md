@@ -11,12 +11,14 @@ This document establishes the mandatory UI rules, layout standards, and componen
 
 ---
 
-## 2. Generous Spacing & Padding Standards
-The UI must NEVER look cramped, squished, or dense. Always apply these standards:
-- **Navbar / Header**: `h-18 px-8 md:px-12 w-full`
-- **Main Page Content**: `px-8 md:px-12 py-8 md:py-10 w-full space-y-8`
-- **Cards & Toolbars**: `p-6` or `p-6 md:p-8`
-- **Table Cells & Headers**: `py-4.5 px-6` (Never reduce to tiny 8px padding!)
+## 2. Spacing & Streamlined Padding Standards
+The UI maximizes screen real estate with panoramic, clean spacing:
+- **Global Page Layout**: Managed centrally by `AdminShell`. Individual pages (`app/**/page.tsx`) do NOT need manual `<main>` wrappers.
+- **Main Content**: `px-2 md:px-4 lg:px-4 py-5 md:py-6 w-full space-y-4` (spacious panoramic layout).
+- **Header & Footer**: `px-4 md:px-6 lg:px-8 w-full` (permanently fixed).
+- **Sidebar Width**: `w-56` (expanded) / `w-16` (collapsed).
+- **Cards & Toolbars**: `p-6` or `p-5 md:p-6`
+- **Table Cells & Headers**: `py-4.5 px-6`
 - **Buttons**: Minimum `h-10 px-4` or `h-11 px-5` for standard actions; `h-9 px-3` for compact action chips.
 
 ---

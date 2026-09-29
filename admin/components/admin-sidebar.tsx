@@ -115,7 +115,7 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Saleor Backend",
+    label: "System",
     items: [
       {
         title: "Sales Channels",
@@ -213,36 +213,6 @@ export function AdminSidebar({
             >
               <X className="h-4 w-4" />
             </Button>
-          </div>
-        )}
-
-        {/* Live System Indicator */}
-        {collapsed ? (
-          <div
-            className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-muted/30"
-            title="Saleor Core v3.23 (PORT 8081) - Online"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-            </span>
-          </div>
-        ) : (
-          <div className="mx-2 rounded-lg border border-border/80 bg-muted/30 p-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                <span className="text-xs font-semibold text-foreground">
-                  Saleor Core v3.23
-                </span>
-              </div>
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                PORT 8081
-              </span>
-            </div>
           </div>
         )}
 
@@ -368,11 +338,11 @@ export function AdminSidebar({
 
   return (
     <>
-      {/* Desktop Sidebar - Clean, unencumbered rail */}
+      {/* Desktop Sidebar - Sleek space-efficient rail */}
       <aside
         className={cn(
           "hidden lg:flex fixed inset-y-0 left-0 z-40 flex-col border-r border-border/80 bg-card transition-all duration-300 ease-in-out select-none",
-          collapsed ? "w-18" : "w-64",
+          collapsed ? "w-16" : "w-56",
           className
         )}
       >
@@ -386,7 +356,7 @@ export function AdminSidebar({
           onClick={onMobileClose}
         >
           <div
-            className="fixed inset-y-0 left-0 z-50 w-72 border-r border-border/80 bg-card shadow-lg animate-in slide-in-from-left duration-300"
+            className="fixed inset-y-0 left-0 z-50 w-64 border-r border-border/80 bg-card shadow-lg animate-in slide-in-from-left duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             {sidebarContent}

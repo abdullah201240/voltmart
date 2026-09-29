@@ -125,7 +125,7 @@ export function AdminShell({ children, className }: AdminShellProps) {
     >
       <div
         className={cn(
-          "relative min-h-screen bg-background text-foreground flex flex-col w-full overflow-x-hidden selection:bg-primary/20",
+          "relative h-dvh w-full overflow-hidden bg-background text-foreground flex selection:bg-primary/20",
           className
         )}
       >
@@ -137,15 +137,16 @@ export function AdminShell({ children, className }: AdminShellProps) {
           onMobileClose={() => setMobileOpen(false)}
         />
 
-        {/* Dynamic Edge-to-Edge Main Panel Layout (Padding-based offset prevents horizontal overflow) */}
+        {/* Dynamic Edge-to-Edge Main Panel Layout (Fixed Header at top, Fixed Footer at bottom) */}
         <div
           className={cn(
-            "flex flex-col flex-1 w-full min-w-0 min-h-screen transition-[padding] duration-300 ease-in-out",
-            sidebarCollapsed ? "lg:pl-18" : "lg:pl-64"
+            "flex flex-col flex-1 w-full min-w-0 h-dvh overflow-hidden transition-[padding] duration-300 ease-in-out",
+            sidebarCollapsed ? "lg:pl-16" : "lg:pl-56"
           )}
         >
-          {/* Top Sticky Header */}
+          {/* Permanently Fixed Top Header */}
           <AdminHeader
+            className="shrink-0"
             onMobileMenuToggle={() => setMobileOpen(true)}
             sidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={handleToggleSidebar}
@@ -153,13 +154,13 @@ export function AdminShell({ children, className }: AdminShellProps) {
             onSearchChange={setSearchQuery}
           />
 
-          {/* Main Viewport Content - Full Width Edge-to-Edge */}
-          <div className="flex-1 w-full min-w-0">
+          {/* Smooth Scrollable Middle Content Viewport with Global Page Layout */}
+          <main className="flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden px-2 md:px-4 lg:px-4 py-5 md:py-6 space-y-4">
             {children}
-          </div>
+          </main>
 
-          {/* Bottom Telemetry & Navigation Footer */}
-          <AdminFooter />
+          {/* Permanently Fixed Bottom Telemetry Footer */}
+          <AdminFooter className="shrink-0" />
         </div>
       </div>
     </AdminLayoutContext.Provider>

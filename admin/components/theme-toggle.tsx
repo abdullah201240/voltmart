@@ -24,10 +24,10 @@ export function ThemeToggle() {
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8 text-muted-foreground"
+        className="h-9 w-9 text-muted-foreground"
         aria-label="Toggle theme"
       >
-        <Sun className="h-4 w-4" />
+        <Sun size={20} className="size-5" />
       </Button>
     );
   }
@@ -37,35 +37,35 @@ export function ThemeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors outline-none"
+        className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors outline-none cursor-pointer"
         aria-label="Select theme"
       >
         {isDark ? (
-          <Moon className="h-4 w-4 text-sky-400" />
+          <Moon size={20} className="size-5 text-sky-400" />
         ) : (
-          <Sun className="h-4 w-4 text-amber-500" />
+          <Sun size={20} className="size-5 text-amber-500" />
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="text-xs">
+      <DropdownMenuContent align="end" className="text-xs font-sans">
         <DropdownMenuItem
           onClick={() => setTheme("light")}
           className="flex items-center gap-2 cursor-pointer"
         >
-          <Sun className="h-3.5 w-3.5 text-amber-500" />
+          <Sun size={15} className="size-3.5 text-amber-500" />
           <span>Light Mode</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => setTheme("dark")}
           className="flex items-center gap-2 cursor-pointer"
         >
-          <Moon className="h-3.5 w-3.5 text-sky-400" />
+          <Moon size={15} className="size-3.5 text-sky-400" />
           <span>Dark Mode</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => setTheme("system")}
           className="flex items-center gap-2 cursor-pointer"
         >
-          <Laptop className="h-3.5 w-3.5 text-muted-foreground" />
+          <Laptop size={15} className="size-3.5 text-muted-foreground" />
           <span>System Default</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
