@@ -28,7 +28,9 @@ const AdminLayoutContext = createContext<AdminLayoutContextValue | null>(null);
 export function useAdminLayout(): AdminLayoutContextValue {
   const context = useContext(AdminLayoutContext);
   if (!context) {
-    throw new Error("useAdminLayout must be used within an AdminShell or AdminLayoutProvider");
+    throw new Error(
+      "useAdminLayout must be used within an AdminShell or AdminLayoutProvider"
+    );
   }
   return context;
 }
@@ -73,7 +75,10 @@ export function AdminShell({ children, className }: AdminShellProps) {
     setMobileOpen(false);
   }, [pathname]);
 
-  // Global keyboard shortcuts (⌘K or Ctrl+K to focus search, Esc to blur or close mobile)
+  // Global keyboard shortcuts:
+  // - ⌘K / Ctrl+K: focus global search
+  // - ⌘B / Ctrl+B: toggle sidebar collapse
+  // - Escape: close mobile drawer or blur search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -85,6 +90,9 @@ export function AdminShell({ children, className }: AdminShellProps) {
           searchInput.focus();
           searchInput.select();
         }
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        handleToggleSidebar();
       } else if (e.key === "Escape") {
         if (mobileOpen) {
           setMobileOpen(false);
@@ -115,8 +123,13 @@ export function AdminShell({ children, className }: AdminShellProps) {
         setSearchQuery,
       }}
     >
-      <div className={cn("min-h-screen bg-background text-foreground flex flex-col w-full selection:bg-primary/20", className)}>
-        {/* Desktop & Mobile Responsive Admin Sidebar */}
+      <div
+        className={cn(
+          "relative min-h-screen bg-background text-foreground flex flex-col w-full overflow-x-hidden selection:bg-primary/20",
+          className
+        )}
+      >
+        {/* Desktop & Mobile Responsive Admin Sidebar (Fixed inset-y-0) */}
         <AdminSidebar
           collapsed={sidebarCollapsed}
           onToggleCollapse={handleToggleSidebar}
@@ -124,22 +137,24 @@ export function AdminShell({ children, className }: AdminShellProps) {
           onMobileClose={() => setMobileOpen(false)}
         />
 
-        {/* Dynamic Edge-to-Edge Main Panel Layout */}
+        {/* Dynamic Edge-to-Edge Main Panel Layout (Padding-based offset prevents horizontal overflow) */}
         <div
           className={cn(
-            "flex flex-col flex-1 w-full min-h-screen transition-all duration-300 ease-in-out",
-            sidebarCollapsed ? "lg:ml-18" : "lg:ml-64"
+            "flex flex-col flex-1 w-full min-w-0 min-h-screen transition-[padding] duration-300 ease-in-out",
+            sidebarCollapsed ? "lg:pl-18" : "lg:pl-64"
           )}
         >
           {/* Top Sticky Header */}
           <AdminHeader
             onMobileMenuToggle={() => setMobileOpen(true)}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
           />
 
-          {/* Main Viewport Content - Full Width */}
-          <div className="flex-1 w-full">
+          {/* Main Viewport Content - Full Width Edge-to-Edge */}
+          <div className="flex-1 w-full min-w-0">
             {children}
           </div>
 

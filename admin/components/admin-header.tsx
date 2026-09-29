@@ -10,6 +10,8 @@ import {
   ChevronRight,
   Store,
   X,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 interface AdminHeaderProps {
   onMobileMenuToggle: () => void;
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
   searchQuery?: string;
   onSearchChange?: (val: string) => void;
   className?: string;
@@ -38,6 +42,8 @@ const BREADCRUMB_MAP: Record<string, { section: string; page: string }> = {
 
 export function AdminHeader({
   onMobileMenuToggle,
+  sidebarCollapsed = false,
+  onToggleSidebar,
   searchQuery = "",
   onSearchChange,
   className,
@@ -57,8 +63,8 @@ export function AdminHeader({
         className
       )}
     >
-      {/* Left: Mobile Toggle & Breadcrumbs */}
-      <div className="flex items-center gap-4">
+      {/* Left: Mobile Toggle, Desktop Sidebar Toggle & Breadcrumbs */}
+      <div className="flex items-center gap-3 md:gap-4">
         {/* Mobile Hamburger Button */}
         <Button
           type="button"
@@ -70,6 +76,25 @@ export function AdminHeader({
         >
           <Menu className="h-5 w-5" />
         </Button>
+
+        {/* Desktop Sidebar Toggle Button */}
+        {onToggleSidebar && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onToggleSidebar}
+            className="hidden lg:flex h-9 w-9 p-0 text-muted-foreground hover:text-foreground cursor-pointer rounded-md border-border/80 hover:bg-muted active:scale-[0.98] transition-all shrink-0"
+            title={sidebarCollapsed ? "Expand sidebar (⌘B)" : "Collapse sidebar (⌘B)"}
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen className="h-4.5 w-4.5" />
+            ) : (
+              <PanelLeftClose className="h-4.5 w-4.5" />
+            )}
+          </Button>
+        )}
 
         {/* Dynamic Breadcrumb Trail */}
         <nav

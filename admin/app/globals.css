@@ -122,8 +122,27 @@
   html {
     @apply font-sans;
     font-size: 18px;
+    scroll-behavior: smooth;
+    overflow-x: hidden;
   }
   body {
-    @apply bg-background text-foreground antialiased text-base;
+    @apply bg-background text-foreground antialiased text-base min-h-screen;
+    overflow-x: hidden;
+  }
+
+  /* Sleek modern scrollbars for data tables and panels */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
   }
 }

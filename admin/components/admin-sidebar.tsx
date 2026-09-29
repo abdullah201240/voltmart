@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,22 +12,16 @@ import {
   Tag,
   Settings,
   Store,
-  ChevronLeft,
-  ChevronRight,
-  ShieldCheck,
   Boxes,
   Layers,
-  Sparkles,
   Radio,
   ExternalLink,
-  Menu,
   X,
   CreditCard,
   Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 export interface NavItem {
   title: string;
@@ -174,18 +168,30 @@ export function AdminSidebar({
   };
 
   const sidebarContent = (
-    <div className="flex h-full flex-col justify-between overflow-y-auto overflow-x-hidden p-4">
+    <div className="flex h-full flex-col justify-between overflow-y-auto overflow-x-hidden p-3 md:p-4">
       {/* Brand Header */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between px-2 pt-2">
-          <Link
-            href="/"
-            className="flex items-center gap-3 font-bold tracking-tight text-foreground transition-all hover:opacity-90 cursor-pointer"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground font-black text-lg shadow-xs">
+      <div className="space-y-5">
+        {collapsed ? (
+          /* Collapsed Header: Clean Centered Logo */
+          <div className="flex flex-col items-center py-1">
+            <Link
+              href="/"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground font-black text-lg shadow-xs hover:scale-105 transition-transform cursor-pointer"
+              title="VoltMart Admin Dashboard"
+            >
               V
-            </div>
-            {!collapsed && (
+            </Link>
+          </div>
+        ) : (
+          /* Expanded Header: Brand Title and Mobile Close Action */
+          <div className="flex items-center justify-between px-2 pt-1">
+            <Link
+              href="/"
+              className="flex items-center gap-3 font-bold tracking-tight text-foreground transition-all hover:opacity-90 cursor-pointer"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground font-black text-lg shadow-xs">
+                V
+              </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-base font-bold tracking-tight truncate">
                   VoltMart
@@ -194,40 +200,35 @@ export function AdminSidebar({
                   Enterprise Admin
                 </span>
               </div>
-            )}
-          </Link>
+            </Link>
 
-          {/* Desktop collapse button */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onToggleCollapse}
-            className="hidden lg:flex h-8 w-8 p-0 text-muted-foreground hover:text-foreground cursor-pointer rounded-md"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </Button>
-
-          {/* Mobile close button */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onMobileClose}
-            className="lg:hidden h-8 w-8 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+            {/* Mobile close button (only visible inside mobile drawer) */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onMobileClose}
+              className="lg:hidden h-8 w-8 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+              aria-label="Close mobile navigation"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
 
         {/* Live System Indicator */}
-        {!collapsed && (
-          <div className="mx-2 rounded-lg border border-border/80 bg-muted/30 p-3">
+        {collapsed ? (
+          <div
+            className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-muted/30"
+            title="Saleor Core v3.23 (PORT 8081) - Online"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+          </div>
+        ) : (
+          <div className="mx-2 rounded-lg border border-border/80 bg-muted/30 p-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
@@ -246,10 +247,12 @@ export function AdminSidebar({
         )}
 
         {/* Nav Groups */}
-        <nav className="space-y-6 pt-2">
+        <nav className="space-y-5 pt-1">
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="space-y-1.5">
-              {!collapsed && (
+              {collapsed ? (
+                <div className="h-px w-7 mx-auto bg-border/60 my-2" />
+              ) : (
                 <div className="px-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
                   {group.label}
                 </div>
@@ -270,11 +273,11 @@ export function AdminSidebar({
                       target="_blank"
                       rel="noopener noreferrer"
                       className={cn(
-                        "group flex items-center gap-3 rounded-md px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-all duration-150 cursor-pointer",
+                        "group flex items-center gap-3 rounded-md px-3 py-2 text-xs font-semibold text-muted-foreground transition-all duration-150 cursor-pointer",
                         "hover:bg-muted/60 hover:text-foreground active:scale-[0.98]",
-                        collapsed && "justify-center px-2"
+                        collapsed && "justify-center px-0 h-10 w-10 mx-auto"
                       )}
-                      title={collapsed ? item.title : undefined}
+                      title={item.title}
                     >
                       <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
                       {!collapsed && (
@@ -290,13 +293,13 @@ export function AdminSidebar({
                       href={item.href}
                       onClick={() => onMobileClose()}
                       className={cn(
-                        "group flex items-center gap-3 rounded-md px-3 py-2.5 text-xs font-semibold transition-all duration-150 cursor-pointer",
+                        "group flex items-center gap-3 rounded-md px-3 py-2 text-xs font-semibold transition-all duration-150 cursor-pointer",
                         isActive
                           ? "bg-primary text-primary-foreground shadow-xs font-bold"
                           : "text-muted-foreground hover:bg-muted/60 hover:text-foreground active:scale-[0.98]",
-                        collapsed && "justify-center px-2"
+                        collapsed && "justify-center px-0 h-10 w-10 mx-auto"
                       )}
-                      title={collapsed ? item.title : undefined}
+                      title={item.title}
                     >
                       <Icon
                         className={cn(
@@ -334,18 +337,21 @@ export function AdminSidebar({
 
       {/* User Footer Profile Chip */}
       <div className="pt-4 border-t border-border/80">
-        <div
-          className={cn(
-            "flex items-center gap-3 rounded-lg border border-border/70 p-2.5 bg-muted/20 transition-all hover:bg-muted/40 cursor-pointer",
-            collapsed && "justify-center p-2"
-          )}
-        >
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
+        {collapsed ? (
+          <div
+            className="mx-auto relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer"
+            title="Super Administrator (admin@example.com)"
+          >
             AD
             <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500" />
           </div>
+        ) : (
+          <div className="flex items-center gap-3 rounded-lg border border-border/70 p-2.5 bg-muted/20 transition-all hover:bg-muted/40 cursor-pointer">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
+              AD
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500" />
+            </div>
 
-          {!collapsed && (
             <div className="flex flex-col min-w-0 flex-1">
               <span className="text-xs font-bold text-foreground truncate">
                 admin@example.com
@@ -354,18 +360,18 @@ export function AdminSidebar({
                 Super Administrator
               </span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
 
   return (
     <>
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar - Clean, unencumbered rail */}
       <aside
         className={cn(
-          "hidden lg:flex fixed top-0 left-0 z-40 h-screen flex-col border-r border-border/80 bg-card transition-all duration-300 ease-in-out select-none",
+          "hidden lg:flex fixed inset-y-0 left-0 z-40 flex-col border-r border-border/80 bg-card transition-all duration-300 ease-in-out select-none",
           collapsed ? "w-18" : "w-64",
           className
         )}
