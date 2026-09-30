@@ -16,7 +16,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export type KpiTone =
@@ -56,16 +55,10 @@ export interface KpiCardProps {
   variant?: KpiVariant;
   /** Optional badge chip text (e.g., "LIVE", "GOAL REACHED") */
   badge?: string;
-  /** Optional progress percentage towards a goal (0-100) */
-  progress?: number;
-  /** Optional progress target label (e.g., "Goal: $50,000") */
-  progressLabel?: string;
   /** Array of numeric data points to render a smooth inline SVG sparkline trend */
   sparkline?: number[];
   /** Optional tooltip explaining what this KPI measures */
   tooltip?: string;
-  /** Optional footer content or secondary stats row */
-  footer?: React.ReactNode;
   /** Optional URL link to navigate on click */
   href?: string;
   /** Optional click handler */
@@ -210,11 +203,8 @@ export function KpiCard({
   tone = "default",
   variant = "default",
   badge,
-  progress,
-  progressLabel,
   sparkline,
   tooltip,
-  footer,
   href,
   onClick,
   loading = false,
@@ -420,26 +410,6 @@ export function KpiCard({
               {period}
             </span>
           )}
-        </div>
-      )}
-
-      {/* Optional Progress Bar toward Goal */}
-      {typeof progress === "number" && (
-        <div className="mt-3.5 pt-3 border-t border-border/60 space-y-1.5">
-          <div className="flex justify-between text-xs font-medium">
-            <span className="text-muted-foreground">
-              {progressLabel || "Progress"}
-            </span>
-            <span className="font-bold text-foreground">{progress}%</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
-      )}
-
-      {/* Custom footer or secondary metric slot */}
-      {footer && (
-        <div className="mt-3.5 pt-3 border-t border-border/60 text-xs text-muted-foreground">
-          {footer}
         </div>
       )}
 

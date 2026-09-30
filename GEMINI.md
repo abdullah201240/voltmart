@@ -82,16 +82,17 @@ Do NOT reinvent custom tables, stat blocks, or dropdowns. Always import and use 
 
 ### B. Central KPI Card (`KpiCard` & `KpiGrid`)
 - **Import**: `import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";`
+- **Design Philosophy**: Simple, clean, glanceable metric cards across the entire website.
 - **Features**:
   - Responsive grid wrapper: `<KpiGrid columns={3 | 4}>`
   - Focused, uncluttered card structure: Title, primary Metric Value, and Icon.
   - Tones: `emerald`, `blue`, `violet`, `amber`, `rose`, `cyan`, `indigo`, `default`
   - Clean trend indicators: `trend="up" | "down"`, `change="+12.4%"`
   - Variants: `default`, `accent`, `subtle`, `compact`
-- **STRICT ANTI-CLUTTER RULE (Zero Extra Bloat)**:
-  - **NEVER** add large progress bars (`progress={...}`), progress labels (`progressLabel={...}`), or fake telemetry cards (e.g. "Operational 100%").
-  - KPI cards must ALWAYS remain clean, compact, uniform, and simple.
-  - Never add bulky secondary footers or bloated telemetry meters that disrupt visual harmony.
+- **STRICT ANTI-CLUTTER RULE (Zero Extra Bloat across Full Website)**:
+  - **NEVER** add large progress bars, progress percentage meters, or fake telemetry cards (e.g., "Operational 100%", health meters, or status bars) into KPI grids.
+  - KPI cards must ALWAYS remain clean, compact, uniform, and simple: just Title, Value, Icon, and optional Trend.
+  - Never add bulky secondary footers, progress tracks, or heavy auxiliary data that distract from primary metrics. All KPI cards across the entire website must follow this uniform simple design.
 
 ### C. Searchable Dropbox (`SearchableDropbox`)
 - **Import**: `import { SearchableDropbox, type DropboxOption } from "@/components/ui/searchable-dropbox";`
