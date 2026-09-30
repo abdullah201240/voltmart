@@ -10,7 +10,7 @@
  * `getOrderById()` with real queries and keep the return contracts.
  */
 
-import { withOverlay } from "./ops";
+import { withOverlay, listAdded } from "./ops";
 
 /** Order lifecycle — the business-process states an order moves through. */
 export type OrderStatus =
@@ -101,8 +101,10 @@ const ORDERS: OrderRow[] = [
 ];
 
 export async function getOrders(): Promise<OrderRow[]> {
-  // Merge any persisted workflow overlay so status changes show in the list.
-  return ORDERS.map((o) => withOverlay("sale.order", o.id, o));
+  // Merge newly added orders (from storefront checkout or admin creation) with base rows and overlays
+  const added = (typeof window !== "undefined" ? listAdded("sale.order") : []) as unknown as OrderRow[];
+  const base = ORDERS.map((o) => withOverlay("sale.order", o.id, o));
+  return [...added, ...base];
 }
 
 /**
@@ -110,6 +112,12 @@ export async function getOrders(): Promise<OrderRow[]> {
  * catalog-shaped product data; in a real resolver this is one query.
  */
 export async function getOrderById(id: string): Promise<OrderDetail | undefined> {
+  const dynamicOrders = (typeof window !== "undefined" ? listAdded("sale.order") : []) as unknown as OrderDetail[];
+  const dynamicMatch = dynamicOrders.find((o) => o.id === id);
+  if (dynamicMatch) {
+    return withOverlay("sale.order", id, dynamicMatch);
+  }
+
   const row = ORDERS.find((o) => o.id === id);
   if (!row) return undefined;
   const lines = SAMPLE_LINES[row.itemCount % SAMPLE_LINES_POOL.length];

@@ -72,16 +72,17 @@ export function applySaleAction(
       if (status === "Cancelled") return fail("Cannot deliver a cancelled order.");
       if (status !== "Confirmed") return fail("Confirm the order before creating a delivery.");
       if (fulfillmentStatus === "Fulfilled") return fail("This order is already delivered.");
-      const carrier = "DHL Express";
-      const trackingUrl = "https://tracking.example.com/" + ref;
+      const cid = "PTH-BD-" + (ref.replace(/\D/g, "") || Date.now().toString().slice(-6));
+      const carrier = "Pathao Courier Express";
+      const trackingUrl = `https://merchant.pathao.com/tracking?consignment_id=${cid}`;
       patchFields(SALE_ORDER, ref, {
         status: "Fulfilled",
         fulfillmentStatus: "Fulfilled",
         carrier,
         trackingUrl,
       });
-      addHistory(SALE_ORDER, ref, "Status: Confirmed → Fulfilled", `Delivery validated · carrier ${carrier} · tracking linked.`);
-      return ok("Delivery created & validated.");
+      addHistory(SALE_ORDER, ref, "Status: Confirmed → Fulfilled", `Dispatched via ${carrier} · Consignment ${cid} · Tracking active.`);
+      return ok(`Dispatched via Pathao Courier (${cid}).`);
     }
 
     case "invoice": {

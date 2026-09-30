@@ -1,3 +1,6 @@
+"use client";
+
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { SfButton, SfIconPackage, SfIconLocationOn, SfIconCreditCard } from "@storefront-ui/react";
 import { ORDERS, type Order } from "@/lib/data";
@@ -5,9 +8,32 @@ import { formatPrice } from "@/lib/format";
 import { Breadcrumbs, Container, EmptyState } from "@/components/ui";
 import { OrderTimeline, StatusBadge } from "@/components/account/OrderTimeline";
 
-export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const order: Order | undefined = ORDERS.find((o) => o.id === id);
+export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const id = resolvedParams.id;
+  const [order, setOrder] = useState<Order | undefined>(() => ORDERS.find((o) => o.id === id));
+
+  useEffect(() => {
+    if (!order && typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("sf_last_order");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.id === id) {
+            setOrder({
+              id: parsed.id,
+              date: parsed.date,
+              total: parsed.total,
+              status: "confirmed",
+              items: parsed.items || [],
+            });
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [id, order]);
 
   return (
     <Container className="py-4 sm:py-5">
@@ -50,14 +76,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <div className="grid gap-3 sm:grid-cols-2">
                 <section className="rounded-md border border-neutral-200/90 bg-white p-3.5 sm:p-4">
                   <h2 className="mb-2 flex items-center gap-1.5 text-sm font-bold"><SfIconLocationOn size="sm" className="text-primary-600" /> Delivery Address</h2>
-                  <p className="text-xs sm:text-sm font-medium">Ayesha Rahman</p>
+                  <p className="text-xs sm:text-sm font-medium">Customer Recipient</p>
                   <p className="text-xs sm:text-sm text-neutral-500">House 12, Road 5, Gulshan 2</p>
                   <p className="text-xs sm:text-sm text-neutral-500">Dhaka 1212, Bangladesh</p>
                 </section>
                 <section className="rounded-md border border-neutral-200/90 bg-white p-3.5 sm:p-4">
-                  <h2 className="mb-2 flex items-center gap-1.5 text-sm font-bold"><SfIconCreditCard size="sm" className="text-primary-600" /> Payment</h2>
-                  <p className="text-xs sm:text-sm text-neutral-600">Method: <span className="font-medium text-neutral-900">Visa •••• 4242</span></p>
-                  <p className="text-xs sm:text-sm text-neutral-600">Status: <span className="font-medium text-positive-700">Paid</span></p>
+                  <h2 className="mb-2 flex items-center gap-1.5 text-sm font-bold"><SfIconCreditCard size="sm" className="text-primary-600" /> Payment & Logistics</h2>
+                  <p className="text-xs sm:text-sm text-neutral-600">Carrier: <span className="font-medium text-neutral-900">Pathao Courier Express</span></p>
+                  <p className="text-xs sm:text-sm text-neutral-600">Status: <span className="font-medium text-positive-700">Confirmed</span></p>
                 </section>
               </div>
             </div>

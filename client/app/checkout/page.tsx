@@ -117,21 +117,38 @@ export default function CheckoutPage() {
     setCouponError("");
   }
 
-  function placeOrder() {
+  async function placeOrder() {
     if (placing) return;
     setPlacing(true);
     const now = new Date();
     const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+    const orderId = `ELX-${stamp}-${String(Math.floor(Math.random() * 100000)).padStart(5, "0")}`;
     const order = {
-      id: `ELX-${stamp}-${String(Math.floor(Math.random() * 100000)).padStart(5, "0")}`,
+      id: orderId,
       date: now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      customer: form.name,
+      email: form.email,
+      phone: form.phone,
+      address: `${form.address}, ${form.area}, ${form.city}`,
       total,
       payment,
       delivery: DELIVERY.find((d) => d.id === delivery)?.name,
       eta: new Date(now.getTime() + 2 * 864e5).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
       items: lines.map((l) => ({ name: l.product.name, qty: l.item.qty, price: l.product.price })),
     };
-    try { localStorage.setItem("sf_last_order", JSON.stringify(order)); } catch { /* ignore */ }
+
+    try {
+      localStorage.setItem("sf_last_order", JSON.stringify(order));
+      // Dispatch live order to VoltMart Admin API
+      await fetch("http://localhost:3305/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(order),
+      }).catch((e) => console.warn("[Admin Order Ingestion Offline Fallback]:", e));
+    } catch {
+      /* ignore */
+    }
+
     setTimeout(() => {
       clearCart();
       notify("Order placed successfully!");

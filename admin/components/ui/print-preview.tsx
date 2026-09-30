@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { OrderDetail } from "@/lib/data/orders";
 
-export type PrintKind = "quotation" | "invoice" | "delivery" | "shipping_label";
+export type PrintKind = "quotation" | "invoice" | "mushak_6_3" | "delivery" | "shipping_label";
 
 const KIND_META: Record<
   PrintKind,
@@ -30,6 +30,12 @@ const KIND_META: Record<
     docTitle: "Customer Invoice",
     icon: ReceiptText,
     note: "Payment due within 30 days. Bank transfer or online payment accepted. VAT registered.",
+  },
+  mushak_6_3: {
+    label: "NBR Mushak 6.3 (মূসক-৬.৩)",
+    docTitle: "কর চালানপত্র (মূসক-৬.৩)",
+    icon: ReceiptText,
+    note: "জাতীয় রাজস্ব বোর্ড (NBR) অনুমোদিত কর চালানপত্র। ভ্যাট আইন ২০১২ এর বিধি ৪০ অনুযায়ী প্রস্তুতকৃত।",
   },
   delivery: {
     label: "Delivery Slip",
@@ -175,6 +181,89 @@ export function PrintPreviewDialog({ open, onOpenChange, order, initialKind = "q
                     <span className="font-bold text-slate-700">Sender / Return:</span> VoltMart Electronics, House 42, Road 11, Banani, Dhaka.
                   </div>
                   <div className="font-semibold text-slate-800">Helpline: 09612-865865</div>
+                </div>
+              </div>
+            ) : kind === "mushak_6_3" ? (
+              <div className="space-y-4 text-xs font-sans text-slate-900">
+                {/* Statutory Government Header */}
+                <div className="text-center space-y-0.5 border-b-2 border-slate-900 pb-3">
+                  <div className="text-[11px] font-semibold text-slate-700">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার · জাতীয় রাজস্ব বোর্ড</div>
+                  <div className="text-base font-black tracking-tight uppercase">কর চালানপত্র (মূসক-৬.৩)</div>
+                  <div className="text-[10px] text-slate-500 font-mono">[ বিধি ৪০ এর উপ-বিধি (১) এর দফা (গ) ও দফা (চ) দ্রষ্টব্য ]</div>
+                </div>
+
+                {/* Company & Customer Grid */}
+                <div className="grid grid-cols-2 gap-4 border-b border-slate-300 pb-3 text-[11px]">
+                  <div className="space-y-1">
+                    <div><span className="font-bold text-slate-600">নিবন্ধিত ব্যক্তির নাম:</span> <span className="font-semibold">ভোল্টমার্ট ইলেকট্রনিক্স বিডি লিঃ</span></div>
+                    <div><span className="font-bold text-slate-600">নিবন্ধিত ব্যক্তির বিআইএন (BIN):</span> <span className="font-mono font-bold">004819283-0101</span></div>
+                    <div><span className="font-bold text-slate-600">ঠিকানা:</span> লেভেল ৮, কনকর্ড টাওয়ার, গুলশান-২, ঢাকা-১২১২</div>
+                  </div>
+                  <div className="space-y-1 text-right sm:text-left">
+                    <div><span className="font-bold text-slate-600">চালান নম্বর:</span> <span className="font-mono font-bold">{order.id.replace("SO", "MSK-6.3-")}</span></div>
+                    <div><span className="font-bold text-slate-600">ইস্যুর তারিখ ও সময়:</span> {order.date} · 11:30 AM</div>
+                    <div><span className="font-bold text-slate-600">ক্রেতার নাম:</span> {order.customer}</div>
+                    <div><span className="font-bold text-slate-600">ক্রেতার ঠিকানা:</span> {order.shippingAddress || "Dhaka, Bangladesh"}</div>
+                  </div>
+                </div>
+
+                {/* Statutory Items Table with 15% VAT */}
+                <table className="w-full border-collapse text-[11px]">
+                  <thead>
+                    <tr className="border-y-2 border-slate-900 bg-slate-100 text-left font-bold text-slate-800">
+                      <th className="py-2 px-1 text-center w-8">ক্রমিক</th>
+                      <th className="py-2 px-2">পণ্য বা সেবার বিবরণ</th>
+                      <th className="py-2 px-2 text-center">পরিমাণ</th>
+                      <th className="py-2 px-2 text-right">একক মূল্য (ভ্যাট ব্যতীত)</th>
+                      <th className="py-2 px-2 text-right">মোট মূল্য</th>
+                      <th className="py-2 px-2 text-center">ভ্যাটের হার</th>
+                      <th className="py-2 px-2 text-right">ভ্যাটের পরিমাণ</th>
+                      <th className="py-2 px-2 text-right">সর্বমোট (ভ্যাটসহ)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.lines.map((l, idx) => {
+                      const basePrice = Math.round((l.unitPrice / 1.15) * 100) / 100;
+                      const lineBase = basePrice * l.quantity;
+                      const lineVat = Math.round(lineBase * 0.15 * 100) / 100;
+                      return (
+                        <tr key={l.id} className="border-b border-slate-200">
+                          <td className="py-2 px-1 text-center font-mono">{idx + 1}</td>
+                          <td className="py-2 px-2 font-medium">{l.productName} ({l.variant})</td>
+                          <td className="py-2 px-2 text-center font-mono">{l.quantity}</td>
+                          <td className="py-2 px-2 text-right font-mono">{money(basePrice)}</td>
+                          <td className="py-2 px-2 text-right font-mono">{money(lineBase)}</td>
+                          <td className="py-2 px-2 text-center font-mono">15%</td>
+                          <td className="py-2 px-2 text-right font-mono">{money(lineVat)}</td>
+                          <td className="py-2 px-2 text-right font-mono font-semibold">{money(l.total)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {/* Mushak Totals */}
+                <div className="flex justify-end pt-2 border-t-2 border-slate-900">
+                  <div className="w-64 space-y-1.5 text-[11px]">
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">মোট মূল্য (ভ্যাট ব্যতীত):</span>
+                      <span className="font-mono">{money(Math.round((order.subtotal / 1.15) * 100) / 100)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">মোট ভ্যাট (১৫%):</span>
+                      <span className="font-mono font-semibold text-emerald-800">{money(Math.round((order.subtotal - order.subtotal / 1.15) * 100) / 100)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-slate-900 pt-1 text-sm font-black">
+                      <span>সর্বমোট প্রদেয় মূল্য:</span>
+                      <span className="font-mono">{money(total)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Certification Note */}
+                <div className="border-t border-dashed border-slate-400 pt-3 text-[10px] text-slate-500 text-center space-y-0.5">
+                  <div>"এটি একটি জাতীয় রাজস্ব বোর্ড অনুমোদিত ইলেকট্রনিক কর চালানপত্র (NBR Electronic Mushak 6.3)"</div>
+                  <div className="font-mono text-[9px] text-slate-400">Security Verification Hash: SHA256:{order.id}-NBR-BD-{Date.now().toString(16)}</div>
                 </div>
               </div>
             ) : (

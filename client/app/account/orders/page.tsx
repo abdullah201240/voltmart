@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { SfButton, SfIconPackage, SfIconChevronRight } from "@storefront-ui/react";
 import { ORDERS } from "@/lib/data";
@@ -19,11 +19,33 @@ const STATUS_FILTERS = [
 
 export default function OrdersPage() {
   const [status, setStatus] = useState("all");
+  const [localOrder, setLocalOrder] = useState<any>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("sf_last_order");
+      if (raw) setLocalOrder(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const allOrders = useMemo(() => {
+    if (!localOrder) return ORDERS;
+    const mapped = {
+      id: localOrder.id,
+      date: localOrder.date,
+      total: localOrder.total,
+      status: "confirmed" as const,
+      items: localOrder.items || [],
+    };
+    return [mapped, ...ORDERS];
+  }, [localOrder]);
 
   const filteredOrders = useMemo(() => {
-    if (status === "all") return ORDERS;
-    return ORDERS.filter((o) => o.status === status);
-  }, [status]);
+    if (status === "all") return allOrders;
+    return allOrders.filter((o) => o.status === status);
+  }, [status, allOrders]);
 
   return (
     <Container className="py-5 sm:py-6">
@@ -68,7 +90,7 @@ export default function OrdersPage() {
                     <StatusBadge status={o.status} />
                   </div>
                   <div className="flex items-center justify-between pt-3">
-                    <p className="truncate text-xs sm:text-sm text-neutral-600">{o.items.map((i) => `${i.name} × ${i.qty}`).join(", ")}</p>
+                    <p className="truncate text-xs sm:text-sm text-neutral-600">{o.items.map((i: any) => `${i.name} × ${i.qty}`).join(", ")}</p>
                     <div className="flex items-center gap-3 pl-3">
                       <span className="text-sm sm:text-base font-bold text-neutral-900">{formatPrice(o.total)}</span>
                       <SfButton size="sm" variant="secondary" className="!rounded-md">Details<SfIconChevronRight size="sm" /></SfButton>
