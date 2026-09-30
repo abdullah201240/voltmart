@@ -10,6 +10,7 @@ import { Building2, Scale, Save } from "lucide-react";
 import { getGeneralSettings, GENERAL_SETTINGS, GENERAL_SETTINGS_REF, type GeneralSettings } from "@/lib/data/settings";
 import { patchFields, addHistory } from "@/lib/data/ops";
 import { useToast } from "@/components/app-feedback";
+import { ThemeColorPicker } from "@/components/theme-color-picker";
 
 function Field({
   label,
@@ -86,6 +87,11 @@ export default function SettingsGeneralPage() {
           </Button>
         </div>
       </div>
+
+      {/* Brand Theme & Appearance Customizer */}
+      <Card className="p-6 shadow-xs border-border/80 w-full">
+        <ThemeColorPicker />
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="p-6 shadow-xs border-border/80 space-y-4">

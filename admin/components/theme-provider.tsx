@@ -17,9 +17,15 @@ if (process.env.NODE_ENV === "development") {
   };
 }
 
+import { ThemeColorProvider } from "@/lib/theme/theme-context";
+
 export function ThemeProvider({
   children,
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+  return (
+    <NextThemesProvider {...props}>
+      <ThemeColorProvider>{children}</ThemeColorProvider>
+    </NextThemesProvider>
+  );
 }
