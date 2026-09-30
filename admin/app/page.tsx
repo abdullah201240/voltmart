@@ -380,50 +380,30 @@ export default function AdminDashboardPage() {
               <KpiCard
                 title="Total Revenue"
                 value="৳54,27,827"
-                change="+20.1%"
-                trend="up"
-                period="vs last month"
                 icon={Banknote}
                 tone="emerald"
                 tooltip="Net gross sales processed across all verified channels"
-                progress={82}
-                progressLabel="Monthly Target: ৳66,00,000"
-                sparkline={[3720000, 4020000, 3840000, 4560000, 5040000, 4920000, 5427827]}
               />
               <KpiCard
                 title="Total Orders"
                 value="1,248"
-                change="+12.4%"
-                trend="up"
-                period="vs last month"
                 icon={ShoppingCart}
                 tone="blue"
-                badge="LIVE"
                 tooltip="Total completed and pending orders recorded"
-                sparkline={[920, 990, 940, 1080, 1140, 1190, 1248]}
               />
               <KpiCard
                 title="Active Customers"
                 value="3,842"
-                change="+18.2%"
-                trend="up"
-                period="new registered buyers"
                 icon={Users}
                 tone="violet"
                 tooltip="Unique customer accounts with activity in the last 30 days"
-                sparkline={[2900, 3120, 3200, 3450, 3600, 3720, 3842]}
               />
               <KpiCard
                 title="Pending Stock Alerts"
                 value="14 Items"
-                change="-4.5%"
-                trend="down"
-                period="threshold alerts"
                 icon={Package}
                 tone="amber"
-                badge="ALERT"
                 tooltip="Items whose inventory count is below minimum safety threshold"
-                sparkline={[24, 21, 19, 18, 16, 15, 14]}
               />
             </KpiGrid>
           )}
@@ -433,56 +413,30 @@ export default function AdminDashboardPage() {
               <KpiCard
                 title="Average Cart Value (AOV)"
                 value="৳9,168"
-                change="+8.4%"
-                trend="up"
-                period="vs previous period"
                 icon={ShoppingBag}
                 tone="cyan"
-                variant="accent"
                 tooltip="Average order value per completed checkout cart"
-                sparkline={[7680, 7920, 8160, 8400, 8640, 8880, 9168]}
               />
               <KpiCard
                 title="Cart Abandonment Rate"
                 value="24.6%"
-                change="-3.1%"
-                trend="down"
-                trendInverse={true}
-                period="vs last week (lower is better)"
                 icon={Percent}
                 tone="emerald"
-                variant="accent"
-                badge="HEALTHY"
                 tooltip="Percentage of carts abandoned before checkout - downward trend is positive"
-                sparkline={[31, 29.5, 28, 27.2, 26, 25.1, 24.6]}
               />
               <KpiCard
                 title="Checkout Conversion Rate"
                 value="3.82%"
-                change="+0.9%"
-                trend="up"
-                period="organic & direct sessions"
                 icon={TrendingUp}
                 tone="violet"
-                variant="accent"
-                progress={76}
-                progressLabel="Target: 5.0%"
                 tooltip="Ratio of completed transactions relative to total unique store sessions"
-                sparkline={[2.8, 2.9, 3.1, 3.2, 3.5, 3.6, 3.82]}
               />
               <KpiCard
                 title="Active Cart Sessions"
                 value="482"
-                suffix="Live"
-                change="+14.2%"
-                trend="up"
-                period="concurrent shoppers"
                 icon={Activity}
                 tone="indigo"
-                variant="accent"
-                badge="REALTIME"
                 tooltip="Shoppers currently modifying carts or proceeding through checkout"
-                sparkline={[320, 350, 390, 420, 440, 465, 482]}
               />
             </KpiGrid>
           )}
@@ -492,8 +446,6 @@ export default function AdminDashboardPage() {
               <KpiCard
                 title="Gross Revenue"
                 value="৳54.3L"
-                change="+20.1%"
-                trend="up"
                 icon={Banknote}
                 tone="emerald"
                 variant="compact"
@@ -501,8 +453,6 @@ export default function AdminDashboardPage() {
               <KpiCard
                 title="Active Orders"
                 value="1,248"
-                change="+12.4%"
-                trend="up"
                 icon={ShoppingCart}
                 tone="blue"
                 variant="compact"
@@ -510,9 +460,6 @@ export default function AdminDashboardPage() {
               <KpiCard
                 title="Cart Abandonment"
                 value="24.6%"
-                change="-3.1%"
-                trend="down"
-                trendInverse={true}
                 icon={ShoppingBag}
                 tone="cyan"
                 variant="compact"
@@ -520,9 +467,6 @@ export default function AdminDashboardPage() {
               <KpiCard
                 title="Low Inventory"
                 value="14"
-                suffix="skus"
-                change="-4.5%"
-                trend="down"
                 icon={Package}
                 tone="amber"
                 variant="compact"

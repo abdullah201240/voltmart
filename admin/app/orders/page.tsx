@@ -210,7 +210,6 @@ export default function OrdersPage() {
           value={fmtMoney(stats.revenue)}
           icon={Banknote}
           tone="emerald"
-          badge="LIVE"
           tooltip="Sum of non-cancelled order totals"
         />
         <KpiCard
@@ -226,7 +225,6 @@ export default function OrdersPage() {
           icon={Truck}
           tone="violet"
           tooltip="Orders with pending or partial fulfillment"
-          footer={`${stats.cancelled} cancelled`}
         />
       </KpiGrid>
 

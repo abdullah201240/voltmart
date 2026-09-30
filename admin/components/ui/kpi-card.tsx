@@ -225,7 +225,7 @@ export function KpiCard({
     return (
       <div
         className={cn(
-          "flex flex-col justify-between rounded-lg border border-border/80 bg-card p-6 shadow-xs space-y-4",
+          "flex flex-col justify-between rounded-lg border border-border/80 bg-card p-5 shadow-xs space-y-3",
           className
         )}
       >
@@ -322,7 +322,7 @@ export function KpiCard({
   const cardContent = (
     <div
       className={cn(
-        "group relative flex flex-col justify-between rounded-lg border border-border/80 bg-card p-6 shadow-xs transition-all duration-200",
+        "group relative flex flex-col justify-between rounded-lg border border-border/80 bg-card p-4 shadow-xs transition-all duration-200",
         variant === "accent" && TONE_ACCENT_BORDERS[tone],
         variant === "subtle" && TONE_SUBTLE_BGS[tone],
         isClickable &&
@@ -372,7 +372,7 @@ export function KpiCard({
       </div>
 
       {/* Main Metric Value & Optional Sparkline */}
-      <div className="my-2.5 flex items-baseline justify-between gap-4">
+      <div className="my-1.5 flex items-baseline justify-between gap-4">
         <div className="flex items-baseline gap-1">
           {prefix && (
             <span className="text-lg font-bold text-muted-foreground">
@@ -485,7 +485,7 @@ export function KpiGrid({
   }[columns];
 
   return (
-    <div className={cn("grid gap-5 grid-cols-1", colClass, className)}>
+    <div className={cn("grid grid-cols-1 items-start gap-5", colClass, className)}>
       {children}
     </div>
   );

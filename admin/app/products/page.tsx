@@ -229,25 +229,20 @@ export default function ProductsPage() {
           icon={Boxes}
           tone="blue"
           tooltip="Product templates in the catalog"
-          footer={`${stats.variants} total variants across all products`}
         />
         <KpiCard
           title="Published"
           value={String(stats.active)}
           icon={CheckCircle2}
           tone="emerald"
-          badge="LIVE"
           tooltip="Active products visible to buyers"
-          footer={`${stats.total - stats.active} in draft or archived`}
         />
         <KpiCard
           title="Low Stock"
           value={String(stats.low)}
           icon={TriangleAlert}
           tone="amber"
-          badge="ALERT"
           tooltip="At or below their reorder point"
-          footer="Replenish soon to avoid stockouts"
         />
         <KpiCard
           title="Out of Stock"
@@ -255,7 +250,6 @@ export default function ProductsPage() {
           icon={CircleOff}
           tone="rose"
           tooltip="No units on hand across all locations"
-          footer={`${stats.noBarcode} product(s) missing a barcode`}
         />
       </KpiGrid>
 

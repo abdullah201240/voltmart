@@ -103,9 +103,6 @@ export default function AnalyticsPage() {
           icon={TrendingUp}
           tone="blue"
           loading={loading}
-          change={summary ? `+${summary.revenueDelta}%` : undefined}
-          trend="up"
-          period="vs last period"
         />
         <KpiCard
           title="Orders"
@@ -113,9 +110,6 @@ export default function AnalyticsPage() {
           icon={ShoppingCart}
           tone="violet"
           loading={loading}
-          change={summary ? `+${summary.ordersDelta}%` : undefined}
-          trend="up"
-          period="vs last period"
         />
         <KpiCard
           title="Avg Order Value"
@@ -123,9 +117,6 @@ export default function AnalyticsPage() {
           icon={Receipt}
           tone="emerald"
           loading={loading}
-          change={summary ? `+${summary.aovDelta}%` : undefined}
-          trend="up"
-          period="vs last period"
         />
         <KpiCard
           title="Conversion Rate"
@@ -133,9 +124,6 @@ export default function AnalyticsPage() {
           icon={Percent}
           tone="amber"
           loading={loading}
-          change={summary ? `+${summary.conversionDelta}%` : undefined}
-          trend="up"
-          period="vs last period"
         />
       </KpiGrid>
 
