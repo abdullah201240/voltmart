@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, PieChart, ArrowUpRight, Split } from "lucide-react";
+import { PieChart, ArrowUpRight, Split } from "lucide-react";
 import { formatBDT, type DashboardSnapshot } from "@/lib/data/dashboard";
 import type { TopProduct } from "@/lib/data/analytics";
 

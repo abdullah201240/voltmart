@@ -195,8 +195,11 @@ export default function SerialsPage() {
             />
           </div>
         }
-        activeFiltersCount={stateFilter !== "all" ? 1 : 0}
-        onClearFilters={() => setStateFilter("all")}
+        activeFiltersCount={stateFilter !== "all" || !!searchTableQuery ? 1 : 0}
+        onClearFilters={() => {
+          setStateFilter("all");
+          setSearchTableQuery("");
+        }}
         pagination
         pageSize={10}
         pageSizeOptions={[10, 20, 50]}

@@ -99,7 +99,10 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         title: "Orders",
         icon: ShoppingCart,
-        children: [{ title: "All Orders", href: "/orders" }],
+        children: [
+          { title: "All Orders", href: "/orders" },
+          { title: "Returns & RMA", href: "/returns" },
+        ],
       },
       {
         title: "Purchasing",
@@ -118,6 +121,7 @@ export const NAV_GROUPS: NavGroup[] = [
           { title: "Deliveries", href: "/inventory/deliveries" },
           { title: "Transfers", href: "/inventory/transfers" },
           { title: "Replenishment", href: "/inventory/replenishment" },
+          { title: "Serials & IMEI", href: "/inventory/serials" },
           { title: "Stock Levels", href: "/inventory" },
         ],
       },
@@ -158,6 +162,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Ticket,
         children: [
           { title: "Discounts & Vouchers", href: "/discounts" },
+          { title: "Gift Cards", href: "/gift-cards" },
           { title: "Pricelists", href: "/pricelists" },
           { title: "Promotions", href: "/promotions" },
         ],
@@ -195,11 +200,13 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Settings,
         children: [
           { title: "General", href: "/settings/general" },
+          { title: "Units of Measure", href: "/settings/units" },
           { title: "Sales Channels", href: "/settings/channels" },
           { title: "Warehouses", href: "/settings/warehouses" },
           { title: "Locations", href: "/settings/locations" },
           { title: "Taxes", href: "/settings/taxes" },
           { title: "Payment Providers", href: "/settings/payments" },
+          { title: "Notifications", href: "/settings/notifications" },
           { title: "Staff & Roles", href: "/settings/staff" },
         ],
       },

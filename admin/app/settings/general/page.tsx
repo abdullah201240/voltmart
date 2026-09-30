@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -126,8 +127,15 @@ export default function SettingsGeneralPage() {
           </Card>
 
           <Card className="p-6 shadow-xs border-border/80 space-y-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-              <Scale className="h-4 w-4" /> Units of Measure
+            <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <Scale className="h-4 w-4" /> Units of Measure
+              </div>
+              <Button asChild variant="outline" size="sm" className="h-8 text-xs font-semibold cursor-pointer">
+                <Link href="/settings/units">
+                  Configure Units (UoM) &rarr;
+                </Link>
+              </Button>
             </div>
             <Separator />
             <div className="grid gap-4 sm:grid-cols-2">

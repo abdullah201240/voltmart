@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Admin Panel | VoltMart E-Commerce",
-  description: "Enterprise E-Commerce Admin Dashboard and Management System powered by Saleor Core",
+  description: "Enterprise E-Commerce Admin Dashboard and Management System for VoltMart",
 };
 
 export default function RootLayout({

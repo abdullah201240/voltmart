@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { SearchableDropbox, type DropboxOption } from "@/components/ui/searchable-dropbox";
@@ -187,8 +186,11 @@ export default function GiftCardsPage() {
             />
           </div>
         }
-        activeFiltersCount={stateFilter !== "all" ? 1 : 0}
-        onClearFilters={() => setStateFilter("all")}
+        activeFiltersCount={stateFilter !== "all" || !!searchTableQuery ? 1 : 0}
+        onClearFilters={() => {
+          setStateFilter("all");
+          setSearchTableQuery("");
+        }}
         pagination
         pageSize={10}
         pageSizeOptions={[10, 20, 50]}

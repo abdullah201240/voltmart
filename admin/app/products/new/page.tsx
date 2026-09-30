@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/app-feedback";
 import { addRecord } from "@/lib/data/ops";
+import { PRODUCT_UOM_OPTIONS } from "@/lib/data/uom";
 
 const CATEGORY_OPTIONS: DropboxOption[] = [
   { value: "smartphones", label: "Smartphones & Mobile", description: "Flagship & 5G devices" },
@@ -131,6 +132,7 @@ export default function CreateProductPage() {
   // Tab 3: Categorization & Channels
   const [category, setCategory] = useState("audio");
   const [channel, setChannel] = useState("default-channel");
+  const [uom, setUom] = useState("pcs");
   const [stockQuantity, setStockQuantity] = useState("50");
   const [lowStockAlert, setLowStockAlert] = useState("10");
   const [rackBinLocation, setRackBinLocation] = useState("ZONE-A-04-12");
@@ -155,9 +157,11 @@ export default function CreateProductPage() {
 
   // Tab 5: Logistics, Physical Dimensions & Weight
   const [weightKg, setWeightKg] = useState("0.45");
+  const [weightUnit, setWeightUnit] = useState("kg");
   const [lengthCm, setLengthCm] = useState("18");
   const [widthCm, setWidthCm] = useState("14");
   const [heightCm, setHeightCm] = useState("6");
+  const [dimensionUnit, setDimensionUnit] = useState("cm");
 
   // Tab 6: Compliance & BTRC
   const [countryOfOrigin, setCountryOfOrigin] = useState("Vietnam");
@@ -534,6 +538,9 @@ export default function CreateProductPage() {
         costPrice: Number(costPrice) || 0,
         category,
         brand,
+        uom,
+        weightUnit,
+        dimensionUnit,
         stock: Number(stockQuantity) || 0,
         isActive,
         hasVariants,
@@ -649,7 +656,7 @@ export default function CreateProductPage() {
           <TabsContent value="general" className="space-y-6 mt-4">
             <CentralFormSection
               title="Product Identity & Core GS1 Data"
-              description="Standard international product identifiers compliant with GS1 Bangladesh and Saleor/Odoo catalog models."
+              description="Standard international product identifiers compliant with GS1 Bangladesh catalog conventions."
               icon={Package}
               columns={3}
             >
@@ -699,6 +706,15 @@ export default function CreateProductPage() {
                   value={category}
                   onChange={setCategory}
                   placeholder="Select product category"
+                />
+              </CentralFormField>
+
+              <CentralFormField label="Unit of Measure (Sales & Inventory Unit)" colSpan={1} required helperText="e.g. Pieces, Kilograms, Box, Meters">
+                <SearchableDropbox
+                  options={PRODUCT_UOM_OPTIONS as DropboxOption[]}
+                  value={uom}
+                  onChange={setUom}
+                  placeholder="Select unit (e.g. pcs, kg)"
                 />
               </CentralFormField>
 
@@ -1339,49 +1355,75 @@ export default function CreateProductPage() {
               icon={Truck}
               columns={4}
             >
-              <CentralFormField label="Gross Weight (kg)" htmlFor="prod-weight" colSpan={1}>
-                <CentralFormInput
-                  id="prod-weight"
-                  type="number"
-                  step="0.01"
-                  suffixText="kg"
-                  value={weightKg}
-                  onChange={(e) => setWeightKg(e.target.value)}
-                  className="font-mono"
-                />
+              <CentralFormField label={`Gross Weight (${weightUnit})`} htmlFor="prod-weight" colSpan={1}>
+                <div className="flex gap-1.5">
+                  <CentralFormInput
+                    id="prod-weight"
+                    type="number"
+                    step="0.01"
+                    suffixText={weightUnit}
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(e.target.value)}
+                    className="font-mono flex-1"
+                  />
+                  <select
+                    value={weightUnit}
+                    onChange={(e) => setWeightUnit(e.target.value)}
+                    className="h-10 px-2 text-xs font-semibold rounded-md border border-input bg-background text-foreground cursor-pointer shrink-0"
+                    title="Select weight unit"
+                  >
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                    <option value="lb">lb</option>
+                    <option value="oz">oz</option>
+                  </select>
+                </div>
               </CentralFormField>
 
-              <CentralFormField label="Length (cm)" htmlFor="prod-len" colSpan={1}>
+              <CentralFormField label={`Length (${dimensionUnit})`} htmlFor="prod-len" colSpan={1}>
                 <CentralFormInput
                   id="prod-len"
                   type="number"
-                  suffixText="cm"
+                  suffixText={dimensionUnit}
                   value={lengthCm}
                   onChange={(e) => setLengthCm(e.target.value)}
                   className="font-mono"
                 />
               </CentralFormField>
 
-              <CentralFormField label="Width (cm)" htmlFor="prod-width" colSpan={1}>
+              <CentralFormField label={`Width (${dimensionUnit})`} htmlFor="prod-width" colSpan={1}>
                 <CentralFormInput
                   id="prod-width"
                   type="number"
-                  suffixText="cm"
+                  suffixText={dimensionUnit}
                   value={widthCm}
                   onChange={(e) => setWidthCm(e.target.value)}
                   className="font-mono"
                 />
               </CentralFormField>
 
-              <CentralFormField label="Height (cm)" htmlFor="prod-height" colSpan={1}>
-                <CentralFormInput
-                  id="prod-height"
-                  type="number"
-                  suffixText="cm"
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(e.target.value)}
-                  className="font-mono"
-                />
+              <CentralFormField label={`Height (${dimensionUnit})`} htmlFor="prod-height" colSpan={1}>
+                <div className="flex gap-1.5">
+                  <CentralFormInput
+                    id="prod-height"
+                    type="number"
+                    suffixText={dimensionUnit}
+                    value={heightCm}
+                    onChange={(e) => setHeightCm(e.target.value)}
+                    className="font-mono flex-1"
+                  />
+                  <select
+                    value={dimensionUnit}
+                    onChange={(e) => setDimensionUnit(e.target.value)}
+                    className="h-10 px-2 text-xs font-semibold rounded-md border border-input bg-background text-foreground cursor-pointer shrink-0"
+                    title="Select dimension unit"
+                  >
+                    <option value="cm">cm</option>
+                    <option value="m">m</option>
+                    <option value="mm">mm</option>
+                    <option value="in">in</option>
+                  </select>
+                </div>
               </CentralFormField>
 
               {/* Volumetric Calculation Card */}

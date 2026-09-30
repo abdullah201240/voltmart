@@ -175,7 +175,10 @@ const PRODUCT_COLUMNS: CentralTableColumn<ProductRow>[] = [
     sortable: true,
     align: "right",
     cell: ({ row }) => (
-      <span className="font-mono font-bold text-sm text-foreground">{row.price}</span>
+      <div className="flex flex-col items-end">
+        <span className="font-mono font-bold text-sm text-foreground">{row.price}</span>
+        <span className="text-[10px] text-muted-foreground font-mono">per {row.uom || "pcs"}</span>
+      </div>
     ),
   },
   {
@@ -188,7 +191,7 @@ const PRODUCT_COLUMNS: CentralTableColumn<ProductRow>[] = [
       return (
         <div className="flex flex-col items-end gap-1">
           <span className="font-mono font-bold text-sm text-foreground tabular-nums">
-            {row.stock}
+            {row.stock} <span className="text-xs font-normal text-muted-foreground">{row.uom || "pcs"}</span>
           </span>
           <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full border", meta.className)}>
             {meta.label}
