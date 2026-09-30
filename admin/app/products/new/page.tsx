@@ -22,6 +22,7 @@ import {
   CheckSquare,
   Square,
   Camera,
+  Scale,
 } from "lucide-react";
 import {
   CentralFormSection,
@@ -88,6 +89,40 @@ export interface ProductOption {
   name: string;
   values: string[];
 }
+
+export const MEASUREMENT_OPTION_PRESETS = [
+  {
+    name: "Weight & Pack Size",
+    badge: "Weight",
+    values: ["250g", "500g", "1kg", "2kg", "5kg"],
+  },
+  {
+    name: "Volume / Liquid",
+    badge: "Volume",
+    values: ["250mL", "500mL", "1L", "2L"],
+  },
+  {
+    name: "Packaging & Count",
+    badge: "Count",
+    values: ["Single (1 pc)", "Pack of 2", "Pack of 5", "Box of 10"],
+  },
+  {
+    name: "Length / Distance",
+    badge: "Length",
+    values: ["1m", "2m", "3m", "5m", "10m"],
+  },
+  {
+    name: "Storage Capacity",
+    badge: "Memory",
+    values: ["128GB", "256GB", "512GB", "1TB"],
+  },
+  {
+    name: "Color / Finish",
+    badge: "Visual",
+    values: ["Midnight Black", "Space Gray", "Silver"],
+  },
+];
+
 
 /**
  * Shopify / Saleor Variant Matrix Row with Variant-Wise Image
@@ -300,6 +335,43 @@ export default function CreateProductPage() {
     const defaultNames = ["Color", "Storage", "Size", "Material", "Plug Type"];
     const name = defaultNames[options.length] || `Option ${nextNum}`;
     setOptions((prev) => [...prev, { id: `opt-${Date.now()}`, name, values: [] }]);
+  };
+
+  const handleApplyPresetOption = (preset: { name: string; values: string[] }) => {
+    setHasVariants(true);
+    const existing = options.find(
+      (o) => o.name.toLowerCase() === preset.name.toLowerCase()
+    );
+    if (existing) {
+      const newVals = preset.values.filter((v) => !existing.values.includes(v));
+      if (newVals.length === 0) {
+        appToast.info("Already Added", `All values for "${preset.name}" are already present.`);
+        return;
+      }
+      setOptions((prev) =>
+        prev.map((o) =>
+          o.id === existing.id ? { ...o, values: [...o.values, ...newVals] } : o
+        )
+      );
+      appToast.success(
+        "Values Added",
+        `Added ${newVals.length} more values to "${preset.name}".`
+      );
+      return;
+    }
+
+    setOptions((prev) => [
+      ...prev,
+      {
+        id: `opt-${Date.now()}`,
+        name: preset.name,
+        values: [...preset.values],
+      },
+    ]);
+    appToast.success(
+      "Measurement Option Added",
+      `Added "${preset.name}" with ${preset.values.length} measurement values.`
+    );
   };
 
   const handleRemoveOption = (id: string) => {
@@ -954,7 +1026,7 @@ export default function CreateProductPage() {
                 <div className="space-y-0.5">
                   <div className="text-sm font-semibold text-foreground">This product has multiple options</div>
                   <div className="text-xs text-muted-foreground">
-                    Like different sizes, colors, storage capacities, or regional specifications.
+                    Enable multiple weights (250g, 500g, 1kg), packs (1 pc, Box of 10), volumes (250mL, 1L), colors, or custom sizes.
                   </div>
                 </div>
                 <CentralFormSwitch
@@ -962,6 +1034,37 @@ export default function CreateProductPage() {
                   checked={hasVariants}
                   onCheckedChange={setHasVariants}
                 />
+              </div>
+
+              {/* Quick Measurement & Option Presets */}
+              <div className="p-4 rounded-lg border border-border/80 bg-card space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div className="flex items-center gap-2">
+                    <Scale className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Quick Measurement &amp; Variant Presets
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">
+                    1-click to auto-add measurement options &amp; generate variants
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {MEASUREMENT_OPTION_PRESETS.map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => handleApplyPresetOption(preset)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border/80 bg-background hover:border-primary/50 hover:bg-primary/5 text-xs font-medium text-foreground cursor-pointer transition-all active:scale-[0.98] shadow-2xs"
+                    >
+                      <Plus className="h-3 w-3 text-primary" />
+                      <span>{preset.name}</span>
+                      <Badge variant="outline" className="text-[10px] py-0 px-1 border-border/80 text-muted-foreground">
+                        {preset.badge}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {hasVariants && (

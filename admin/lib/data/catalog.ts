@@ -130,9 +130,13 @@ export async function getAttributes(): Promise<AttributeRow[]> {
   const base: AttributeRow[] = [
     { id: "A1", name: "Color", variantCreation: "Instantly", values: ["Black", "Grey", "Silver", "Blue"], productTypes: 24 },
     { id: "A2", name: "Storage", variantCreation: "Instantly", values: ["128GB", "256GB", "512GB", "1TB"], productTypes: 16 },
-    { id: "A3", name: "Size", variantCreation: "Dynamically", values: ["S", "M", "L", "XL"], productTypes: 8 },
-    { id: "A4", name: "Material", variantCreation: "Never", values: ["Aluminium", "Titanium", "Plastic"], productTypes: 11 },
-    { id: "A5", name: "Connectivity", variantCreation: "Never", values: ["Wi-Fi", "5G", "LTE"], productTypes: 9 },
+    { id: "A3", name: "Weight & Pack Size", variantCreation: "Instantly", values: ["250g", "500g", "1kg", "2kg", "5kg"], productTypes: 14 },
+    { id: "A4", name: "Volume & Liquid", variantCreation: "Instantly", values: ["100mL", "250mL", "500mL", "1L", "2L"], productTypes: 9 },
+    { id: "A5", name: "Packaging & Count", variantCreation: "Instantly", values: ["Single (1 pc)", "Pack of 2", "Pack of 5", "Box of 10"], productTypes: 18 },
+    { id: "A6", name: "Length & Cable", variantCreation: "Instantly", values: ["1m", "2m", "3m", "5m", "10m roll"], productTypes: 7 },
+    { id: "A7", name: "Size", variantCreation: "Dynamically", values: ["S", "M", "L", "XL"], productTypes: 8 },
+    { id: "A8", name: "Material", variantCreation: "Never", values: ["Aluminium", "Titanium", "Plastic"], productTypes: 11 },
+    { id: "A9", name: "Connectivity", variantCreation: "Never", values: ["Wi-Fi", "5G", "LTE"], productTypes: 9 },
   ];
   return [...added, ...base];
 }
