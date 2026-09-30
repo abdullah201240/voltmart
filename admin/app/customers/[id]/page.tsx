@@ -26,6 +26,7 @@ import type { OrderStatus } from "@/lib/data/orders";
 import { RecordChatter } from "@/components/ui/record-chatter";
 import { useOps } from "@/lib/data/ops";
 import { useAdminLayout } from "@/components/admin-shell";
+import { useToast } from "@/components/app-feedback";
 
 /** Odoo-style smart button (count tile that filters the related list). */
 function SmartButton({
@@ -83,6 +84,7 @@ export default function CustomerDetailPage() {
   const router = useRouter();
   const { setSearchQuery } = useAdminLayout();
   const version = useOps();
+  const appToast = useToast();
   const [customer, setCustomer] = useState<CustomerDetail | undefined>();
   const [loading, setLoading] = useState(true);
   const [relCounts, setRelCounts] = useState({ orders: 0, invoices: 0, deliveries: 0 });
@@ -159,8 +161,8 @@ export default function CustomerDetailPage() {
           <p className="text-sm text-muted-foreground">Joined {customer.joined}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-10 px-4 text-sm font-medium"><Mail className="mr-2 h-4 w-4" /> Email</Button>
-          <Button className="h-10 px-4 text-sm font-medium"><ShoppingBag className="mr-2 h-4 w-4" /> New Order</Button>
+          <Button variant="outline" className="h-10 px-4 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all" onClick={() => appToast.info("Email composer", `Opening a new message to ${customer.email}.`)}><Mail className="mr-2 h-4 w-4" /> Email</Button>
+          <Button className="h-10 px-4 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all" onClick={() => { setSearchQuery(customer.name); router.push("/orders"); appToast.success("New order draft", `Preparing a sales order for ${customer.name}.`); }}><ShoppingBag className="mr-2 h-4 w-4" /> New Order</Button>
         </div>
       </div>
 

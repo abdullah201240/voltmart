@@ -8,6 +8,7 @@ import { MapPin, Plus } from "lucide-react";
 import { getLocations, LOCATION, type LocationRow } from "@/lib/data/settings";
 import { addRecord } from "@/lib/data/ops";
 import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
+import { useToast } from "@/components/app-feedback";
 
 const TYPE_CLASS: Record<LocationRow["type"], "default" | "secondary" | "outline"> = {
   Input: "secondary",
@@ -55,8 +56,10 @@ const LOCATION_COLUMNS: CentralTableColumn<LocationRow>[] = [
 ];
 
 export default function SettingsLocationsPage() {
+  const appToast = useToast();
   const [rows, setRows] = useState<LocationRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -71,6 +74,45 @@ export default function SettingsLocationsPage() {
     };
   }, []);
 
+  // Warehouse options are derived from the loaded warehouses.
+  const CREATE_FIELDS: CreateFieldDef[] = [
+    { key: "name", label: "Location Name", required: true, placeholder: "e.g. Shelf B3" },
+    {
+      key: "warehouse",
+      label: "Warehouse",
+      type: "select",
+      required: true,
+      options: [...new Set(rows.map((r) => r.warehouse))].map((w) => ({ value: w, label: w })),
+    },
+    {
+      key: "type",
+      label: "Usage Type",
+      type: "select",
+      required: true,
+      defaultValue: "Stock",
+      options: (["Input", "Stock", "Output", "Transit", "Shipment"] as const).map((t) => ({ value: t, label: t })),
+    },
+    { key: "parent", label: "Parent Location", required: true, placeholder: "e.g. Stock or WH", helper: "Internal path it lives under." },
+  ];
+
+  const createLocation = (v: Record<string, string>) => {
+    if (rows.some((r) => r.name.toLowerCase() === v.name.trim().toLowerCase() && r.warehouse === v.warehouse)) {
+      return `A location named "${v.name}" already exists in ${v.warehouse}.`;
+    }
+    const row: LocationRow = {
+      id: `L-${Date.now().toString(36)}`,
+      name: v.name,
+      warehouse: v.warehouse,
+      type: v.type as LocationRow["type"],
+      products: 0,
+      parent: v.parent,
+    };
+    addRecord(LOCATION, row as unknown as Record<string, unknown>);
+    setRows((prev) => [row, ...prev]);
+    appToast.success("Location created", `\u201C${row.name}\u201D is now available for stock movements.`);
+    return null;
+  };
+
   return (
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -78,7 +120,10 @@ export default function SettingsLocationsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Locations</h1>
           <p className="text-sm text-muted-foreground">The storage-location tree inside each warehouse.</p>
         </div>
-        <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
+        <Button
+          className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all"
+          onClick={() => setCreateOpen(true)}
+        >
           <Plus className="mr-2 h-4 w-4" /> Add Location
         </Button>
       </div>
@@ -92,6 +137,16 @@ export default function SettingsLocationsPage() {
         title="Location Tree"
         description={`${rows.length} location(s)`}
         pagination={false}
+      />
+
+      <RecordCreateDrawer
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="New Location"
+        description="Add a shelf, zone or transit point to the tree."
+        submitLabel="Create Location"
+        fields={CREATE_FIELDS}
+        onSubmit={createLocation}
       />
     </>
   );

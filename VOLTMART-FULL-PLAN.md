@@ -4,7 +4,7 @@
 > **This is a single self-contained file containing the entire VoltMart business plan.**
 > No external links required. Everything is here.
 >
-> Total content: ~9,000 lines covering every part of running a modern
+> Total content: ~10,000 lines covering every part of running a modern
 > e-commerce business in Bangladesh — from company registration to
 > delivering a product and handling a return.
 
@@ -16,6 +16,8 @@
 - [SECTION 2: E-Commerce Master Roadmap (85 Chapters)](#section-2--e-commerce-master-roadmap)
 - [SECTION 3: Product Deep Research — Standards & Integration](#section-3--product-deep-research)
 - [SECTION 4: Odoo ERP — Full Business Journey](#section-4--odoo-erp--full-business-journey)
+- [SECTION 5: Enterprise Admin Dashboard — Deep Research & VoltMart Implementation Blueprint](#section-5--enterprise-admin-dashboard-deep-research--voltmart-implementation-blueprint)
+- [SECTION 6: Next.js & React World-Class Engineering & Performance Optimization Blueprint](#section-6--nextjs--react-world-class-engineering--performance-optimization-blueprint)
 
 ---
 
@@ -8975,9 +8977,988 @@ account.payment (Refund out to customer)
 ---
 ---
 
+
+
+---
+---
+
+# SECTION 5 — ENTERPRISE ADMIN DASHBOARD: DEEP RESEARCH & VOLTMART IMPLEMENTATION BLUEPRINT
+### Saleor vs. Odoo Deep Architectural Analysis · Spatial Layout Patterns · Unified Data Display · 1-Click Operational Drill-Downs · Bangladesh E-Commerce Reality
+
+> **Research Grounding:**
+> 1. **Saleor Dashboard Core & Saleor Pulse (Saleor 3.23+)**: MacawUI Next, App Bridge widget mounts (`HOMEPAGE_WIDGETS_MOUNT`), keep-alive iframes, GraphQL analytics aggregations, multi-channel currency context, Commerce Context protocol.
+> 2. **Odoo 19 / 18 / 17 Dashboard Ecosystem**: Operational Kanban tiles (Inventory Operation Types, Accounting Journals), Actionable status counters ("To Process", "Waiting", "Late", "Backorders"), 1-click ORM domain drill-downs, Odoo Spreadsheet live BI engine.
+> 3. **VoltMart Design System & Governance (`AGENTS.md` / `GEMINI.md`)**: Panoramic full-width (`w-full`), strictly **zero `max-w-*`**, hairline borders (`border-border/80`), 18px base root scale, simple glanceable KPI cards (`KpiGrid` / `KpiCard`) with zero bloated progress tracks, and full `<CentralTable>` integration.
+
+---
+
+## 5.1 SALEOR DASHBOARD DEEP DIVE: SPATIAL MANAGEMENT & DATA ARCHITECTURE
+
+### A. Spatial Management & Visual Hierarchy in Saleor
+
+Saleor's dashboard is built with `@saleor/macaw-ui-next` (Vanilla Extract / CSS Modules based design tokens) and prioritizes clean, developer-extensible, cloud-native commerce management.
+
+```
++---------------------------------------------------------------------------------------------------+
+| SALEOR DASHBOARD TOP BAR: Channel Switcher (Default / BD / Global) | Search | User Profile        |
++---------------------------------------------------------------------------------------------------+
+| NAVIGATION TABS (Dynamic via Extension Split):                                                    |
+| [ Saleor Pulse (Fullscreen) ] [ Widgets Grid ] [ Custom Analytics App ]                         |
++---------------------------------------------------------------------------------------------------+
+| WIDGETS GRID VIEW (Responsive 2-column or 4-column layout):                                       |
+| +-----------------------------------------------+ +-----------------------------------------------+ |
+| | WIDGET 1: Financial Performance (Net Sales)   | | WIDGET 2: Operations Health (Run-the-Store)   | |
+| | - Net Sales (after refunds/discounts)         | | - Orders to Fulfill (Unfulfilled Queue)       | |
+| | - Average Order Value (AOV) + Sparkline       | | - Payments to Capture (Authorized)            | |
+| | - Regional / Country Sales Mix                | | - Order Cancellation Rate                     | |
+| +-----------------------------------------------+ +-----------------------------------------------+ |
+| +-----------------------------------------------+ +-----------------------------------------------+ |
+| | WIDGET 3: Attention & Anomaly Engine          | | WIDGET 4: Commerce Context Origin Split       | |
+| | - "3 Orders waiting fulfillment > 24 hours"   | | - Web Storefront (Next.js)                    | |
+| | - "Stockout risk on iPhone 15 Pro Max 256GB"  | | - POS Retail Store (Dhanmondi Outlet)         | |
+| | - "bKash gateway webhook retry alert"         | | - Daraz Marketplace Integration               | |
+| +-----------------------------------------------+ +-----------------------------------------------+ |
++---------------------------------------------------------------------------------------------------+
+```
+
+#### 1. The App Bridge & Extension Mount Architecture (`HOMEPAGE_WIDGETS_MOUNT`)
+In modern Saleor (v3.23+), the dashboard homepage is decoupled from hardcoded widgets. It exposes a native extension mount point:
+- **`HOMEPAGE_WIDGETS_MOUNT`**: Third-party or first-party apps register themselves to mount either as a **modular grid cell** (`kind: "widgets"`) or as a **fullscreen dedicated analytics view** (`kind: "extension"`).
+- **Keep-Alive Iframe Panels (`HomeTabPanels.tsx`)**: When navigating between the standard widget grid and fullscreen apps (like Saleor Pulse), the dashboard retains iframe instances in memory without unmounting, preventing expensive data refetches and preserving UI scroll state.
+- **Staff User Preferences (`useExtensionPreferences`)**: Each admin user can pin, hide, or reorder widgets on their personal dashboard, floating critical operational widgets to the top.
+
+#### 2. Spatial Principles of Saleor
+- **Full Panoramic Width**: Saleor dashboards fill the full screen width without rigid desktop max-width containers, using flexible CSS Grid tracks (`1fr 1fr` on desktop, `1fr` on mobile/tablet).
+- **Hairline Dividers & Subtle Contrast**: Uses semantic tokenized border lines (`borderColor="default1"`, equivalent to VoltMart's `border-border/80`).
+- **Context Bar Permanence**: The sales channel selector (`ChannelSelect`) remains permanently anchored in the top header or page toolbar, instantly recalculating all dashboard statistics when switched.
+
+---
+
+### B. What Data Saleor Displays (Core GraphQL & Saleor Pulse)
+
+Saleor structures store intelligence into three core domains:
+
+| Domain | Metrics & Aggregations | Technical GraphQL Source |
+|---|---|---|
+| **Commercial & Financials** | • **Net Sales**: Calculated after subtracting vouchers, promotional discounts, and processed refunds.<br>• **Gross Sales & Order Count**: Total orders placed today vs previous 30-day benchmark.<br>• **Average Order Value (AOV)**: Net sales divided by completed order volume.<br>• **Top Performing Products**: Top 5-10 SKUs sorted by net revenue and unit volume. | `ordersToday` query, `salesAnalytics(period: MONTH)`, `OrderDirection.DESC` aggregations. |
+| **Operations ("Run-the-Store")** | • **Orders to Fulfill**: Count of orders in `UNFULFILLED` or `PARTIALLY_FULFILLED` status.<br>• **Payments to Capture**: Count and total amount of orders with payment status `AUTHORIZED` (funds held but not yet debited).<br>• **Stock Risk**: SKUs with available stock = 0 or below variant safety thresholds.<br>• **Return & Cancellation Rate**: Percentage of orders canceled or returned within 14 days. | `orders(filter: { status: [UNFULFILLED, PARTIALLY_FULFILLED] })`, `ProductVariantFilterInput.stockQuantity`. |
+| **Attention Engine & Context** | • **Operational Alerts**: Rule-based anomaly highlights (e.g. orders pending fulfillment over SLA, sudden spike in payment gateway dropouts).<br>• **Commerce Context Protocol**: Net revenue broken down by order origin/surface (Web Storefront, POS, Daraz, Social). | Order metadata headers (`x-commerce-origin`), Saleor App Webhooks. |
+
+---
+
+## 5.2 ODOO ERP DASHBOARD DEEP DIVE: OPERATIONAL TILES & DRILL-DOWN PHILOSOPHY
+
+### A. Spatial Management & Visual Hierarchy in Odoo ERP
+
+Odoo takes an operational, transaction-driven approach. Rather than displaying passive charts, Odoo dashboards serve as **action launchpads** where every single number is an interactive filter into the underlying database records.
+
+```
++---------------------------------------------------------------------------------------------------+
+| ODOO INVENTORY OVERVIEW: Warehouse Central (WH-DHAKA) | Filter: All Operations                     |
++---------------------------------------------------------------------------------------------------+
+| KANBAN OPERATION TYPE TILES (Interactive Grid):                                                   |
+| +----------------------------------+ +----------------------------------+ +---------------------+ |
+| | RECEIPTS (Supplier PO Inbound)   | | DELIVERY ORDERS (Customer Out)   | | INTERNAL TRANSFERS  | |
+| | [ 18 To Process ]                | | [ 42 To Process ]                | | [ 6 To Process ]    | |
+| |                                  | |                                  | |                     | |
+| | * 12 Waiting (on vendor dispatch)| | * 14 Waiting (stock reservation) | | * 2 Waiting         | |
+| | * 3 LATE (Overdue supplier SLA)  | | * 8 LATE (Delivery SLA breach!)  | | * 0 Late            | |
+| | * 1 Backorder                    | | * 4 Backorders                   | | * 0 Backorders      | |
+| | [Action: 1-Click -> Filter Late] | | [Action: 1-Click -> Filter Late] | | [Action: Process]   | |
+| +----------------------------------+ +----------------------------------+ +---------------------+ |
+| +----------------------------------+ +----------------------------------+ +---------------------+ |
+| | CUSTOMER RETURNS & RMA           | | POS SESSIONS & DISPATCH          | | SCRAP & DAMAGE      | |
+| | [ 5 To Process ]                 | | [ 3 Active Counters ]            | | [ 2 Items Pending ] | |
+| | * 3 Pending Technical Inspection | | * ৳1,48,200 Cash in Drawer       | | * ৳18,500 Valuation | |
+| | * 2 Approved for Refund / Exch   | | * 1 Drawer Discrepancy Alert     | |                     | |
+| +----------------------------------+ +----------------------------------+ +---------------------+ |
++---------------------------------------------------------------------------------------------------+
+```
+
+#### 1. The Operational Kanban Tile Concept
+In Odoo's Inventory, Sales, and Accounting modules:
+- Each card represents an **Operation Type** (`stock.picking.type`) or an **Accounting Journal** (`account.journal`).
+- The primary number represents the **Ready Queue** (records that can be processed right now because all stock/documents are verified).
+- Auxiliary badges represent **Blockers and Exceptions**:
+  - **`Waiting`**: Records blocked by upstream prerequisites (e.g. goods not arrived from China/supplier, or stock not yet received into the packing bin).
+  - **`Late`**: High-priority alert highlighted in bold red. Records whose `scheduled_date < NOW()`.
+  - **`Backorders`**: Incomplete shipments requiring secondary dispatches.
+- **1-Click Drill-Down Behavior**: Clicking the "8 Late" badge does NOT merely open the list; it applies an exact domain filter `[('state', '=', 'assigned'), ('date_deadline', '<', context_today())]`, immediately placing warehouse staff in the exact triage view.
+
+#### 2. Odoo Accounting Journal Cards
+In Odoo Accounting, the dashboard displays cards for:
+- **Bank Accounts (BRAC Bank, City Bank)**: Shows General Ledger balance vs Bank Statement balance, with an immediate count: *"14 Transactions to Reconcile"*.
+- **Cash Accounts & Petty Cash**: Shows current register balance and pending reconciliations.
+- **Customer Invoices**: Unpaid balance, overdue balance, and average days to payment.
+- **Vendor Bills**: Bills awaiting validation, scheduled payments due this week.
+
+#### 3. Odoo Spreadsheet & Business Intelligence Engine
+In Odoo 17/18/19, custom analytics dashboards are powered by embedded Odoo Spreadsheets:
+- Functions like `=ODOO.PIVOT()` and `=ODOO.FILTER()` query the active PostgreSQL ORM directly without batch delays.
+- Dynamic date slicers allow instant recalculation across Fiscal Years, Quarters, Months, and Custom Intervals.
+
+---
+
+## 5.3 DEEP COMPARATIVE MATRIX: SALEOR VS. ODOO DASHBOARDS
+
+| Dimension | Saleor Dashboard (v3.23+ & Pulse) | Odoo ERP Dashboard (v17/18/19) | VoltMart Unified Synthesis |
+|---|---|---|---|
+| **Primary Design Philosophy** | Commercial & Executive: Visualizing sales, multi-channel growth, AOV, and customer trends. | Operational & Transactional: Eliminating bottlenecks, clearing queues, and managing SLA deadlines. | **Dual-Engine Cockpit**: Executive commercial KPIs at top + Operational action Kanban tiles immediately below. |
+| **Spatial Container Architecture** | Full-width responsive CSS grid (`macaw-ui-next`), zero fixed `max-w`, modular extension tab panels. | Full-width responsive Kanban cards with multi-column card trays and embedded spreadsheet views. | **100% Full-Width (`w-full`)** panoramic layout, strictly following VoltMart `AGENTS.md` (Zero `max-w-*`). |
+| **KPI Presentation Style** | Clean, minimalist metric cards with sparklines and percentage delta trends (`+12.4% vs last week`). | Dense operational tiles featuring large ready count + colored status sub-chips (Waiting, Late, Backorders). | **Clean Central KPI Cards (`KpiCard`)** for metrics, paired with **Odoo-style Operational Action Tiles** for queues. |
+| **1-Click Actionability** | High-level overview; clicking metric leads to broad list view requiring manual re-filtering. | Deeply actionable; clicking any status counter (e.g. "3 Late") opens precise filtered record set. | **Direct 1-Click Triage**: Clicking any operational badge applies instantaneous state filters to `<CentralTable>`. |
+| **Multi-Channel & Currency** | First-class channel selector (Web, POS, Mobile, International) with instant currency conversion. | Company/Branch switcher with multi-currency journal balance reconciliation. | **Channel Selector + BDT Currency First**: Web Storefront, POS Dhanmondi, POS Banani, Daraz, Social. |
+| **Inventory Status Handling** | SKU stockout count and low-inventory warning list. | Multi-stage double-entry stock tracking (Incoming, Reserved, In-Packing, Dispatched, Scrap). | **Double-Entry Status Gauges**: Reorder alerts + Warehouse fulfillment staging (Picking -> Packing -> Courier). |
+| **Cash & Payment Tracking** | Gross sales, net sales, payments authorized vs captured. | Bank statement balance vs GL book balance + live reconciliation counter. | **Bangladesh MFS & COD Settlement**: bKash/Nagad wallet balances + Courier COD pending remittance tracker. |
+| **Extensibility & Widgets** | App Bridge iframe mounts with persistent user-level ordering. | Modular QWeb widgets, XML dashboard definitions, and embedded Odoo Spreadsheets. | **Next.js Modular Component Architecture** with persistent local/server user tab preferences. |
+| **Attention & Alerting** | Saleor Pulse attention cards highlighting unusual sales trends. | Automated red badges on "Late" operations and overdue customer invoices. | **VoltMart Anomaly Banner**: Critical alerts (Courier SLA breach, bKash webhook failures, low stock). |
+| **Compliance & Tax Metrics** | Channel-level tax summary (configurable via Avalara/TaxJar). | Detailed VAT reports, tax audit journals, and fiscal position tracking. | **Live Bangladesh NBR VAT Form 9.1 Tracker**: Output VAT, Input VAT rebate, and net payable. |
+
+---
+
+## 5.4 THE VOLTMART UNIFIED DASHBOARD ARCHITECTURE
+
+The VoltMart Admin Dashboard synthesizes the visual elegance and multi-channel clarity of Saleor with the deep operational power and actionable triage workflows of Odoo.
+
+```
++=======================================================================================================================+
+| TOP ACTION BAR: Panoramic Header (Permanent Fixed)                                                                    |
+| [VoltMart Admin] | Channel: [ All Channels v ] | Date Range: [ Today (Last 24h) v ] | Live Sync: [🟢 100% Active]       |
+| Actions: [ Export Daily Dossier ] [ + Add Product Drawer ] [ + Create Order ]                                          |
++=======================================================================================================================+
+| SECTION 1: PRIMARY KPI GRID (Glanceable Executive Strip — Standardized KpiCard & KpiGrid columns={4})                |
+| +-------------------------+ +-------------------------+ +-------------------------+ +-------------------------------+ |
+| | NET REVENUE TODAY       | | ORDERS TO FULFILL       | | PAYMENTS TO SETTLE      | | STOCK RISK ALERTS             | |
+| | ৳54,27,827              | | 42 Orders               | | ৳14,82,400              | | 14 SKUs Critical              | |
+| | Icon: Banknote          | | Icon: ShoppingCart      | | Icon: CreditCard        | | Icon: AlertTriangle           | |
+| | Tone: Emerald (+14.2%)  | | Tone: Blue (8 Overdue)  | | Tone: Violet (MFS + COD)| | Tone: Amber (3 Out of Stock)  | |
+| +-------------------------+ +-------------------------+ +-------------------------+ +-------------------------------+ |
++=======================================================================================================================+
+| SECTION 2: VIEW SWITCHER TABS (Secondary Panoramic Controls)                                                          |
+| [ 📦 Warehouse & Fulfillment Pipeline ] [ 💰 Financials & MFS Reconciliation ] [ 📊 Commercial Analytics (Pulse) ]   |
++=======================================================================================================================+
+| ACTIVE TAB VIEW 1: WAREHOUSE & FULFILLMENT PIPELINE (Odoo-Style Operational Kanban Tiles)                             |
+| +--------------------------------+ +--------------------------------+ +-------------------------------------+ |
+| | TILE 1: INBOUND RECEIPTS       | | TILE 2: ORDER PACKING QUEUE    | | TILE 3: COURIER DISPATCH            | |
+| | (Supplier POs & Dock Arrivals) | | (Picked & Awaiting Boxing)     | | (Pathao / Steadfast / RedX Hub)     | |
+| | [ 18 Shipments to Receive ]    | | [ 34 Orders Ready to Pack ]    | | [ 68 Parcels Ready for Pickup ]     | |
+| | • 12 On Schedule               | | • 26 Standard Fulfillment      | | • 42 Handed Over (In Transit)       | |
+| | • 4 Waiting Custom Clearance   | | • 8 Express Same-Day Dhaka     | | • 18 Out for Delivery Today         | |
+| | • 2 LATE (Supplier SLA Breach) | | • 0 Backordered (All in Stock) | | • 8 LATE (Rider Pickup Delayed)     | |
+| | [Triage Late Inbound ->]       | | [Print All Shipping Labels ->] | | [Track Courier Manifests ->]        | |
+| +--------------------------------+ +--------------------------------+ +-------------------------------------+ |
+| +--------------------------------+ +--------------------------------+ +-------------------------------------+ |
+| | TILE 4: RETURNS & RMA TRIAGE   | | TILE 5: COD CASH REMITTANCE    | | TILE 6: SERIAL/IMEI AUDIT           | |
+| | (Customer Returns & Exchanges) | | (Courier Cash Collections)     | | (Electronics Compliance Queue)      | |
+| | [ 6 Return Requests Pending ]  | | [ ৳4,38,500 In Rider Hands ]   | | [ 12 Units Pending Serial Scan ]    | |
+| | • 3 In Technical Testing (Lab) | | • ৳3,12,000 Reconciled Today   | | • 12 High-Value Smart Devices       | |
+| | • 2 Approved for Customer Refund| | • ৳1,26,500 Overdue Remittance| | • 0 Discrepancies                   | |
+| | • 1 Rejected (Customer Damage) | | • Courier: Pathao (৳84k due)   | | • BTRC Type Approval: 100% Verified | |
+| | [Open RMA Inspection Bay ->]   | | [Reconcile Courier Invoices ->]| | [Verify Serial Scans ->]            | |
+| +--------------------------------+ +--------------------------------+ +-------------------------------------+ |
++=======================================================================================================================+
+| SECTION 3: LIVE ORDERS & ANOMALY TRIAGE (Powered by CentralTable with Integrated Filters Tray)                         |
+| Search: [ Quick filter live orders... ] | Filters: [ Channel: All v ] [ Status: All v ] [ Payment: Any v ]            |
+| Columns: [ Order ID ] [ Customer ] [ Date ] [ Channel ] [ Items ] [ Status Badge ] [ Payment Badge ] [ Total ৳ ]      |
+| Interactive Features: Batch Process, Export Selected, Row Click Drawer, Auto-Refreshed Webhook Listener             |
++=======================================================================================================================+
+```
+
+---
+
+## 5.5 COMPLETE DATA DISPLAY SPECIFICATION: EVERY METRIC, FIELD & SOURCE
+
+The VoltMart dashboard displays 6 structured data categories covering every operational and commercial requirement:
+
+### Category 1: Executive & Financial Performance (Saleor Pulse Style)
+1. **Gross Revenue Today (`gross_revenue_today`)**:
+   - Total nominal face value of all orders placed within the selected time window across all active sales channels.
+   - Calculation: `SUM(order.total_gross_amount)`.
+2. **Net Commercial Revenue (`net_revenue_today`)**:
+   - Real net cash flow after deducting promotional vouchers, campaign discounts, customer returns, and gateway processing fees.
+   - Calculation: `Gross Revenue - Total Discounts - Processed Refunds - Payment Gateway Fees (1.5% bKash / 2.5% Cards)`.
+3. **Average Order Value (AOV) (`average_order_value`)**:
+   - Average basket size of completed checkouts. Displayed with a 7-day sparkline trend indicator.
+   - Calculation: `Net Commercial Revenue / Total Paid Orders`.
+4. **Channel Revenue Contribution Split (`channel_revenue_breakdown`)**:
+   - Visual breakdown of revenue origin:
+     - Online Web Storefront (Next.js Storefront) — *Target: 60%*
+     - POS Retail Dhanmondi Outlet — *Target: 25%*
+     - Daraz Flagship Mall API Integration — *Target: 10%*
+     - Social Commerce (Facebook / WhatsApp Assisted Checkout) — *Target: 5%*
+
+---
+
+### Category 2: Operational "Run-the-Store" Health (Odoo Operations Style)
+1. **Orders to Fulfill Queue (`orders_to_fulfill`)**:
+   - Live count of orders requiring warehouse physical action.
+   - Sub-statuses:
+     - `Awaiting Picking`: Order confirmed & payment verified; picking list generated for warehouse staff.
+     - `In Packing`: Picked items at the packing bench receiving ZPL barcode labels and security tamper tape.
+     - `Ready for Dispatch`: Packed cartons awaiting daily courier 3PL pickup truck.
+2. **Overdue / SLA Breach Counter (`orders_sla_late`)**:
+   - Highlighted in high-contrast red warning badge.
+   - Trigger condition: Orders placed > 12 hours ago for Express Dhaka or > 24 hours for Standard Delivery that have not reached `Dispatched` status.
+3. **Payments to Capture & Verify (`payments_to_capture`)**:
+   - Credit card authorizations held in SSLCommerz awaiting staff risk clearance.
+   - Manual bank transfer or bKash offline transactions awaiting UTR / TrxID confirmation against bank statements.
+4. **Inventory Stockout & Safety Risk (`stockout_risk_count`)**:
+   - Count of product variants whose `available_physical_stock <= safety_buffer_threshold`.
+   - Generates 1-click PO draft in Odoo Purchase module when reorder point is triggered.
+
+---
+
+### Category 3: Bangladesh Courier & COD Remittance Intelligence
+In Bangladesh, 60-70% of e-commerce orders are Cash on Delivery (COD). The dashboard tracks the physical cash pipeline:
+
+| Courier Metric | Field Name | Calculation / Source | Operational Significance |
+|---|---|---|---|
+| **Cash with Couriers (In-Transit COD)** | `cod_in_transit_bdt` | Sum of COD collection values for all parcels currently with Pathao, Steadfast, and RedX couriers. | Real-time visibility into company money floating in courier networks. |
+| **Overdue COD Remittance** | `cod_remittance_overdue` | Parcels marked `Delivered` by courier API > 72 hours ago where courier payment settlement has not reached VoltMart bank account. | Triggers automated courier finance escalation email and audit hold. |
+| **Delivery Success Rate (SLA)** | `courier_delivery_success_rate` | `(Delivered Parcels / Total Dispatched Parcels) * 100` calculated rolling 30 days per courier partner. | Identifies failing delivery zones (e.g. rural upazilas) and compares courier performance. |
+| **Return to Merchant (RTM) Rate** | `rtm_parcel_rate` | Percentage of parcels rejected at customer doorstep and in transit back to VoltMart hub. | Triggers customer blacklist check and SMS follow-up to recover delivery costs. |
+
+---
+
+### Category 4: Regulatory & NBR Tax Compliance (Bangladesh VAT Form 9.1)
+1. **Current Month Net VAT Liability (`vat_liability_mtd`)**:
+   - Live accumulator calculating estimated VAT payable on the 15th of next month to NBR.
+   - Formula: `Output VAT Collected (15% on retail sales) - Input VAT Rebate Claimed (from Challan 6.3 on supplier purchases)`.
+2. **Pending Mushak 6.3 Invoice Queue (`mushak_63_pending`)**:
+   - Orders fulfilled where legal Mushak 6.3 tax invoice PDF has not yet been stamped and archived.
+
+---
+
+### Category 5: Customer Lifecycle & Conversion Telemetry
+1. **Active Cart Sessions (`active_cart_sessions`)**:
+   - Real-time Redis session count of shoppers currently browsing or adding electronics to cart.
+2. **Cart Abandonment Rate (`cart_abandonment_rate`)**:
+   - Percentage of users who initiated checkout but failed to complete payment within 60 minutes.
+   - Triggers automated WhatsApp/SMS recovery sequence with unique 2-hour discount voucher.
+3. **New vs. Returning Customer Ratio (`customer_mix_ratio`)**:
+   - Benchmark for customer retention in high-ticket electronics (e.g. repeat accessory purchases after laptop purchase).
+
+---
+
+### Category 6: Attention & Anomaly Alerting Engine
+Surfaces high-priority operational blocks requiring human intervention:
+- 🚨 **High-Risk Order Alert**: 3 consecutive failed credit card attempts followed by high-value COD order (fraud detection score > 80).
+- 🚨 **Courier Pickup Failure**: Pathao API reported rider assigned 4 hours ago but no barcode scan at warehouse dock.
+- 🚨 **MFS Webhook Drop**: bKash IPN callback failure rate exceeded 2% in the last 15 minutes; system auto-switched to polling verification fallback.
+- 🚨 **Serial / IMEI Mismatch**: Warehouse packer scanned an IMEI during boxing that does not match the assigned stock lot.
+
+---
+
+## 5.6 SPATIAL LAYOUT, PANORAMICS & COMPONENT ARCHITECTURE (ZERO `MAX-W-*`)
+
+VoltMart enforces a strict panoramic design standard across all monitors, from standard laptops to 49-inch ultrawide displays.
+
+### Layout Rules Summary (`AGENTS.md` & `GEMINI.md` Strict Enforcement)
+- **Zero `max-w-*` Containers**: The page container is `w-full` edge-to-edge. No artificial margins or constrained boxed wrappers.
+- **Global Panoramic Spacing**: Content container uses `px-2 md:px-4 lg:px-4 py-5 md:py-6 w-full space-y-4`.
+- **Root Scale**: Scaled to 18px base (`html { font-size: 18px; }`).
+- **Hairline Borders**: Soft `border border-border/80` or `border-border/60` dividers.
+- **Card Padding**: Standardized `p-6` or `p-5 md:p-6`.
+- **Tactile Feedback**: Every interactive card, tab, and button has `cursor-pointer active:scale-[0.98] transition-all duration-200`.
+
+### Reusable Component Blueprint
+
+```tsx
+// VoltMart Central Dashboard Component Structure
+export default function AdminDashboardPage() {
+  const [activeChannel, setActiveChannel] = useState("all");
+  const [dateRange, setDateRange] = useState("today");
+  const [activeTab, setActiveTab] = useState<"warehouse" | "financials" | "orders">("warehouse");
+
+  return (
+    <div className="w-full space-y-5">
+      {/* 1. Panoramic Top Action & Filter Bar */}
+      <DashboardTopBar
+        activeChannel={activeChannel}
+        onChannelChange={setActiveChannel}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+      />
+
+      {/* 2. Standardized KPI Grid (Strict Anti-Clutter Rule: No Large Progress Bars) */}
+      <KpiGrid columns={4}>
+        <KpiCard
+          title="Net Revenue Today"
+          value="৳54,27,827"
+          icon={Banknote}
+          tone="emerald"
+          change="+14.2%"
+          trend="up"
+          tooltip="Real net revenue after discounts, refunds, and gateway fees"
+        />
+        <KpiCard
+          title="Orders to Fulfill"
+          value="42 Orders"
+          icon={ShoppingCart}
+          tone="blue"
+          change="8 Overdue"
+          trend="down"
+          tooltip="Active warehouse queue. 8 orders past scheduled fulfillment SLA"
+        />
+        <KpiCard
+          title="Payments to Settle"
+          value="৳14,82,400"
+          icon={CreditCard}
+          tone="violet"
+          change="MFS + COD"
+          tooltip="Cash awaiting settlement across bKash, Nagad, and courier COD"
+        />
+        <KpiCard
+          title="Stock Risk Alerts"
+          value="14 SKUs"
+          icon={AlertTriangle}
+          tone="amber"
+          change="3 Out of Stock"
+          trend="down"
+          tooltip="Items below safety threshold requiring immediate purchase PO"
+        />
+      </KpiGrid>
+
+      {/* 3. Secondary Navigation View Switcher */}
+      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="w-full space-y-4">
+        <TabsList className="h-11 p-1">
+          <TabsTrigger value="warehouse" className="text-sm font-medium px-5 cursor-pointer">
+            Warehouse Pipeline (Odoo Tiles)
+          </TabsTrigger>
+          <TabsTrigger value="financials" className="text-sm font-medium px-5 cursor-pointer">
+            Financials & MFS Reconciliations
+          </TabsTrigger>
+          <TabsTrigger value="orders" className="text-sm font-medium px-5 cursor-pointer">
+            Live Orders Feed
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: Operational Kanban Tiles */}
+        <TabsContent value="warehouse" className="w-full">
+          <WarehouseOperationalKanban onDrillDown={(filter) => handleTriageFilter(filter)} />
+        </TabsContent>
+
+        {/* Tab 2: Financial & MFS Reconciliation */}
+        <TabsContent value="financials" className="w-full">
+          <FinancialReconciliationPanel />
+        </TabsContent>
+
+        {/* Tab 3: Central Orders Table */}
+        <TabsContent value="orders" className="w-full">
+          <LiveOrdersCentralTable filter={activeTableFilter} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+```
+
+---
+
+## 5.7 OPERATIONAL ACTION WORKFLOWS & 1-CLICK DRILL-DOWN SPECIFICATIONS
+
+The hallmark of Odoo's high-efficiency dashboard is that operators never get lost in menus. The VoltMart dashboard implements this exact 1-click drilldown paradigm:
+
+```mermaid
+graph TD
+    A[Dashboard KPI / Kanban Tile] -->|Click Badge: '8 Orders Late'| B[Apply Query Filter: status='unfulfilled' & isLate=true]
+    B --> C[CentralTable Filters Tray Auto-Populates]
+    C --> D[Table Renders 8 Prioritized Rows with Red Badges]
+    D -->|Click 'Batch Process'| E[Open Multi-Order Fulfillment Modal]
+    E --> F[Generate Batch Picking List & Print ZPL Labels]
+    F --> G[Dispatch to Courier & Send SMS to Customers]
+    G --> H[Dashboard Real-Time KPI Counter Drops to 0]
+```
+
+### Exact Click Targets & Filter Mappings
+
+| UI Click Target | Origin Component | Resulting Filter Applied to CentralTable | Target View URL |
+|---|---|---|---|
+| **"8 Overdue"** Badge | KPI Card: *Orders to Fulfill* | `status IN ('Confirmed', 'Quotation') AND sla_breach=true` | `/orders?sla=breached` |
+| **"3 Out of Stock"** Badge | KPI Card: *Stock Risk Alerts* | `stock_quantity = 0 AND is_active = true` | `/inventory?filter=out_of_stock` |
+| **"4 Custom Clearance"** | Tile: *Inbound Receipts* | `picking_type = 'incoming' AND stage = 'customs'` | `/inventory/transfers?type=incoming&stage=customs` |
+| **"8 Late Dispatch"** | Tile: *Courier Dispatch* | `stage = 'packed' AND courier_handover_pending = true AND hours_since_pack > 4` | `/orders?stage=packed_uncollected` |
+| **"৳1,26,500 Overdue"** | Tile: *COD Cash Remittance* | `payment_status = 'cod_pending' AND parcel_status = 'delivered' AND delivered_days_ago >= 3` | `/finance/cod-reconciliation?status=overdue` |
+| **"3 Technical Inspection"** | Tile: *Returns & RMA* | `rma_stage = 'lab_inspection'` | `/rma?status=inspecting` |
+
+---
+
+## 5.8 BANGLADESH-SPECIFIC DASHBOARD MODULES
+
+International e-commerce platforms fail in Bangladesh because they do not model local payment mechanics, courier cash handling, and NBR tax compliance. The VoltMart dashboard includes 4 dedicated local modules:
+
+### Module 1: MFS Live Payment Health (bKash, Nagad, Rocket)
+- **bKash Merchant Account Balance**: Shows live settled funds vs held dispute escrow.
+- **bKash Webhook Liveness Monitor**: Displays ping response time of bKash PGW API. If bKash gateway latency exceeds 2,500ms, a warning chip alerts customer support to anticipate customer transaction queries.
+- **Nagad Disbursement Pool**: Balance available for instant customer refunds via Nagad Payout API.
+
+### Module 2: Courier COD Remittance & Dispute Monitor
+- **Courier Remittance Reconciliation Table**:
+  - Compares Pathao API settlement reports against bank deposits.
+  - Automatically identifies **Courier Deductions**: Return charges, weight discrepancy penalties, and COD commission (1%).
+  - One-click export of dispute sheets for courier relationship managers.
+
+### Module 3: NBR Mushak 6.3 & VAT Form 9.1 Live Audit
+- **Daily VAT Register**: Auto-aggregates sales into taxable supply, exempt supply, and standard 15% VAT.
+- **VDS (VAT Deducted at Source)**: Tracks certificates issued to corporate/B2B clients purchasing electronics.
+
+### Module 4: BTRC Wireless Compliance Audit Badge
+- For electronics with radio frequency (Bluetooth headphones, Wi-Fi routers, Smart TVs):
+  - Dashboard flags any live product catalog item lacking a verified **BTRC Type Approval Certificate number** before marketing campaigns are launched.
+
+---
+
+## 5.9 API & GRAPHQL DATA QUERY LAYER
+
+To ensure the dashboard loads in under 200ms with zero stutter, data is aggregated via dedicated GraphQL and REST queries with Next.js stale-while-revalidate caching.
+
+### GraphQL Dashboard Aggregation Query (`DashboardOverview.graphql`)
+```graphql
+query GetDashboardOverview($channel: String!, $dateRange: DateRangeInput!) {
+  dashboardCommercial(channel: $channel, dateRange: $dateRange) {
+    netRevenue {
+      amount
+      currency
+      trendPercentage
+      trendDirection
+    }
+    grossRevenue {
+      amount
+      currency
+    }
+    averageOrderValue {
+      amount
+      currency
+      sparklinePoints
+    }
+    channelBreakdown {
+      channelName
+      revenueAmount
+      orderCount
+      percentageShare
+    }
+  }
+
+  dashboardOperations(channel: $channel) {
+    ordersToFulfill {
+      totalCount
+      overdueSlaCount
+      waitingStockCount
+      readyToPackCount
+    }
+    courierDispatch {
+      readyForPickupCount
+      inTransitCount
+      outForDeliveryCount
+      latePickupCount
+    }
+    paymentsToCapture {
+      totalAmount
+      count
+      mfsPendingAmount
+      codInTransitAmount
+    }
+    stockAlerts {
+      outOfStockCount
+      lowStockThresholdCount
+      criticalSkus {
+        id
+        name
+        sku
+        availableStock
+        reorderPoint
+      }
+    }
+    returnsRma {
+      pendingInspectionCount
+      approvedRefundCount
+      rejectedCount
+    }
+  }
+
+  recentOrders(first: 10, channel: $channel) {
+    edges {
+      node {
+        id
+        number
+        created
+        customerName
+        customerEmail
+        channelName
+        itemCount
+        status
+        paymentStatus
+        totalGrossAmount
+        isSlaBreached
+      }
+    }
+  }
+}
+```
+
+### Real-Time Webhook Subscriptions (Instant UI Invalidation)
+The dashboard subscribes to real-time events via Pusher / WebSockets / Server-Sent Events (SSE):
+1. `order.created`: Increments active orders count, sounds optional subtle notification chime.
+2. `payment.captured`: Moves funds from "Payments to Settle" to "Net Revenue Today".
+3. `courier.status_updated`: When Pathao courier marks an order "Delivered", COD in-transit drops, bank receivable increments, and delivery SLA success rate recalculates.
+4. `inventory.level_low`: Adds product SKU to the Amber alert tray.
+
+---
+
+## 5.10 IMPLEMENTATION CHECKLIST & VALIDATION CRITERIA
+
+| Milestone | Component / File | Acceptance Criteria |
+|---|---|---|
+| **Phase 1: Panoramic Layout** | `admin/app/page.tsx`, `AdminShell` | 100% full-width (`w-full`), zero `max-w-*`, 18px base typography, dark/light theme tokens. |
+| **Phase 2: Glanceable KPI Strip** | `components/ui/kpi-card.tsx` | Clean 4-card grid: Net Revenue, Orders to Fulfill, Payments to Settle, Stock Alerts. Zero bloated progress bars in KPI grid. |
+| **Phase 3: Operational Kanban Tiles** | `admin/components/warehouse-tiles.tsx` | 6 operation tiles with live counters: To Process, Waiting, Late (red alert), Backorders. |
+| **Phase 4: 1-Click Drill-Down** | `admin/components/ui/central-table.tsx` | Clicking any tile counter immediately applies filtered state to table without page reload. |
+| **Phase 5: Bangladesh MFS & COD** | `admin/components/finance-reconciliation.tsx` | Accurate tracking of bKash/Nagad settlement queues and Courier COD remittance float. |
+| **Phase 6: Real-Time Webhook Engine** | `lib/webhooks/dashboard-socket.ts` | Instant cache revalidation upon bKash IPN or Pathao delivery confirmation. |
+
+---
+
+
+
+---
+---
+
+# SECTION 6 — NEXT.JS & REACT WORLD-CLASS ENGINEERING & PERFORMANCE OPTIMIZATION BLUEPRINT
+### Vercel Engineering Guidelines · 70 Performance Rules · App Router Architecture · Waterfall Elimination · Zero-CLS Assets · Sub-100ms INP
+
+> **Authority & Foundation:**
+> Grounded in official **Vercel Engineering Performance Guidelines**, Next.js 15+ App Router architectural standards, React 19 Core concurrency models, and Chrome Core Web Vitals (CWV) benchmarks.
+> Every line of code written across the VoltMart Storefront and Admin Dashboard MUST comply with these mandatory rules.
+
+---
+
+## 6.1 THE 8 PERFORMANCE PILLARS & PRIORITY MATRIX
+
+| Priority | Category | Impact Level | Primary Focus | Prefix |
+|---|---|---|---|---|
+| **P1** | **Eliminating Async Waterfalls** | **CRITICAL** | Parallel execution, non-blocking streams, Suspense boundaries | `async-` |
+| **P2** | **Bundle Size & Tree-Shaking** | **CRITICAL** | Barrel elimination, dynamic imports, script deferrals | `bundle-` |
+| **P3** | **Server-Side Performance (RSC)** | **HIGH** | `React.cache()`, Server Actions security, props serialization | `server-` |
+| **P4** | **Client-Side Data Fetching** | **MEDIUM-HIGH** | SWR deduplication, local storage schemas, passive listeners | `client-` |
+| **P5** | **Re-render Optimization** | **MEDIUM** | Render-derived state, functional setters, `useTransition` | `rerender-` |
+| **P6** | **DOM & Rendering Performance** | **MEDIUM** | `content-visibility`, explicit ternaries, SVG div wrappers | `rendering-` |
+| **P7** | **JavaScript & Micro-Optimizations** | **LOW-MEDIUM** | Map/Set indexing, combined iterations, RegExp hoisting | `js-` |
+| **P8** | **Advanced React 19 Patterns** | **LOW-MEDIUM** | Stable callback refs, `useLatest`, single-run initializers | `advanced-` |
+
+---
+
+## 6.2 ELIMINATING ASYNC WATERFALLS (CRITICAL — P1)
+
+Waterfalls are the single largest cause of slow page loads in modern Next.js applications. A waterfall occurs when request B waits for request A even though B could have run at the same time.
+
+### Rule 1: Parallelize Independent I/O Operations (`async-parallel`)
+Never await independent async calls sequentially. Always group them with `Promise.all()` or `Promise.allSettled()`.
+
+```typescript
+// ❌ WRONG (Waterfall: Total time = Product (150ms) + Reviews (120ms) + Related (180ms) = 450ms)
+export async function getProductPageData(handle: string) {
+  const product = await fetchProductByHandle(handle);
+  const reviews = await fetchProductReviews(product.id);
+  const related = await fetchRelatedProducts(product.categoryId);
+  return { product, reviews, related };
+}
+
+// ✅ CORRECT (Parallel: Total time = MAX(150ms, 120ms, 180ms) = 180ms — 60% faster!)
+export async function getProductPageData(handle: string) {
+  const product = await fetchProductByHandle(handle);
+  // Fetch reviews and related products concurrently once product ID/category are known
+  const [reviews, related] = await Promise.all([
+    fetchProductReviews(product.id),
+    fetchRelatedProducts(product.categoryId),
+  ]);
+  return { product, reviews, related };
+}
+```
+
+### Rule 2: Move Await into Branches Where Actually Used (`async-defer-await`)
+Do not await promises at the top of a function if a conditional check might exit early or bypass that data.
+
+```typescript
+// ❌ WRONG (Awaits expensive stock audit even if user is not authorized)
+export async function processOrderFulfillment(orderId: string, user: SessionUser) {
+  const stockAudit = await runHeavyWarehouseStockAudit(orderId);
+  if (!user.permissions.includes("MANAGE_ORDERS")) {
+    throw new ForbiddenError();
+  }
+  return executeFulfillment(orderId, stockAudit);
+}
+
+// ✅ CORRECT (Fails fast in 0ms before triggering warehouse audit)
+export async function processOrderFulfillment(orderId: string, user: SessionUser) {
+  if (!user.permissions.includes("MANAGE_ORDERS")) {
+    throw new ForbiddenError();
+  }
+  const stockAudit = await runHeavyWarehouseStockAudit(orderId);
+  return executeFulfillment(orderId, stockAudit);
+}
+```
+
+### Rule 3: Check Cheap Synchronous Conditions Before Awaiting (`async-cheap-condition-before-await`)
+Check in-memory permissions, local feature flags, or cached tokens before awaiting remote flags.
+
+### Rule 4: Non-Blocking Side Effects with Next.js 15 `after()` (`server-after-nonblocking`)
+Never make customer checkouts wait for analytics tracking, Slack alerts, or email dispatch. Use the official `after()` API to run background tasks after the response has flushed to the browser.
+
+```typescript
+import { after } from "next/server";
+
+export async function POST(req: Request) {
+  const order = await createOrderInDatabase(await req.json());
+
+  // Respond to user immediately!
+  after(async () => {
+    // These run in the background without blocking the customer checkout response
+    await Promise.all([
+      sendCustomerConfirmationSms(order.customerPhone),
+      dispatchWarehousePickingSlackAlert(order.id),
+      sendAnalyticsEventToBigQuery("order_completed", order),
+    ]);
+  });
+
+  return Response.json({ success: true, orderId: order.id });
+}
+```
+
+### Rule 5: Streaming with Granular `<Suspense>` Boundaries (`async-suspense-boundaries`)
+Never block the entire page on slow secondary widgets. Wrap slow components in `<Suspense>` so the critical product layout renders immediately.
+
+```tsx
+// app/products/[slug]/page.tsx
+export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const product = await getProductCore(slug); // Fast: 40ms
+
+  return (
+    <div className="w-full space-y-8">
+      {/* 1. Critical Above-the-Fold UI (Instant Server Render) */}
+      <ProductHeroSection product={product} />
+
+      {/* 2. Streaming Secondary Tabs (Non-Blocking) */}
+      <Suspense fallback={<ReviewsSkeleton />}>
+        <ProductCustomerReviews productId={product.id} />
+      </Suspense>
+
+      <Suspense fallback={<RelatedProductsSkeleton />}>
+        <RelatedProductsCarousel categoryId={product.categoryId} />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+---
+
+## 6.3 BUNDLE SIZE & TREE-SHAKING HYGIENE (CRITICAL — P2)
+
+### Rule 6: Strictly Ban Barrel Imports (`bundle-barrel-imports`)
+Barrel files (`index.ts` re-exporting everything from a folder) break bundler tree-shaking and pull thousands of unused lines into client bundles.
+
+```typescript
+// ❌ WRONG (Imports entire icon library and component suite: +180KB bundle bloat)
+import { Button, Input, Table } from "@/components";
+import { ChevronRight, ShoppingCart, User, AlertCircle, Check } from "lucide-react";
+
+// ✅ CORRECT (Imports only the exact modules needed: Tree-shaken down to < 4KB)
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
+import ShoppingCart from "lucide-react/dist/esm/icons/shopping-cart";
+```
+
+### Rule 7: Dynamic Imports for Heavy Interactive Modules (`bundle-dynamic-imports`)
+Heavy client components that are not needed during the initial paint must be lazy-loaded using `next/dynamic`.
+
+```tsx
+// ❌ WRONG (Bundles full Chart.js and Barcode Scanner into initial page payload)
+import { WarehouseAnalyticsChart } from "@/components/charts/warehouse-chart";
+import { ZplBarcodeScanner } from "@/components/scanner/barcode-scanner";
+
+// ✅ CORRECT (Loaded on-demand only when rendered on screen)
+import dynamic from "next/dynamic";
+
+const WarehouseAnalyticsChart = dynamic(
+  () => import("@/components/charts/warehouse-chart").then((m) => m.WarehouseAnalyticsChart),
+  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-lg bg-muted/40" /> }
+);
+
+const ZplBarcodeScanner = dynamic(
+  () => import("@/components/scanner/barcode-scanner").then((m) => m.ZplBarcodeScanner),
+  { ssr: false }
+);
+```
+
+### Rule 8: Defer Third-Party Tracking & SDK Scripts (`bundle-defer-third-party`)
+Load third-party scripts (Facebook Pixel, Google Tag Manager, bKash Checkout) with `strategy="afterInteractive"` or `strategy="lazyOnload"` to protect the Largest Contentful Paint (LCP).
+
+```tsx
+// app/layout.tsx
+import Script from "next/script";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        {/* Defer non-critical scripts until after main thread is completely idle */}
+        <Script
+          src="https://scripts.bkash.com/payment/v1.2.0-beta/client/checkout-iframe.js"
+          strategy="lazyOnload"
+        />
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
+## 6.4 SERVER COMPONENTS & DATA ARCHITECTURE (HIGH — P3)
+
+### Rule 9: The RSC Boundary Rule — Push Client Components to the Leaves
+Keep page components and layout components as **React Server Components (RSC)**. Never add `"use client"` at the top of a page file unless 100% required.
+
+```
++-------------------------------------------------------------------------+
+| SERVER COMPONENT (app/products/page.tsx)                                 |
+| - Fetches catalog directly from PostgreSQL / Saleor GraphQL (0ms network)|
+| - Zero JavaScript sent to client for data fetching logic                |
+|                                                                         |
+|   +-----------------------------------------------------------------+   |
+|   | CLIENT COMPONENT LEAF (<ProductFilterDrawer />)                 |   |
+|   | - "use client"                                                  |   |
+|   | - Handles open/close modal state and slider drag events         |   |
+|   +-----------------------------------------------------------------+   |
+|                                                                         |
+|   +-----------------------------------------------------------------+   |
+|   | SERVER COMPONENT (<ProductCardList products={products} />)      |   |
+|   | - Renders static HTML & fast CSS                                |   |
+|   |                                                                 |   |
+|   |   +---------------------------------------------------------+   |   |
+|   |   | CLIENT COMPONENT LEAF (<AddToCartButton id={id} />)     |   |   |
+|   |   | - "use client"                                          |   |   |
+|   |   | - Only the button itself is hydrated! (500 bytes JS)    |   |   |
+|   |   +---------------------------------------------------------+   |   |
+|   +-----------------------------------------------------------------+   |
++-------------------------------------------------------------------------+
+```
+
+### Rule 10: Minimize RSC Props Serialization (`server-serialization`)
+When passing data from a Server Component to a Client Component, pass only the exact fields required. Passing large unneeded database models bloats the hidden HTML `__NEXT_DATA__` or flight payload.
+
+```typescript
+// ❌ WRONG (Passes 60 internal database columns including cost_price, audit_logs)
+export default async function OrderRowWrapper({ id }: { id: string }) {
+  const fullOrder = await db.orders.findUnique({ where: { id } });
+  return <ClientOrderCard order={fullOrder} />;
+}
+
+// ✅ CORRECT (Passes strict lightweight DTO containing only displayed fields)
+export default async function OrderRowWrapper({ id }: { id: string }) {
+  const order = await db.orders.findUnique({
+    where: { id },
+    select: { id: true, total: true, status: true, customerName: true },
+  });
+  return <ClientOrderCard order={order} />;
+}
+```
+
+### Rule 11: Request Memoization with `React.cache()` (`server-cache-react`)
+Wrap data fetchers in `React.cache()` so that multiple components in the same render pass (e.g. Navigation Header, Breadcrumbs, and Main View) that request the same user or product profile execute the query **only once**.
+
+```typescript
+import { cache } from "react";
+import db from "@/lib/db";
+
+// Automatically deduplicated per incoming HTTP request!
+export const getActiveUserSession = cache(async (sessionId: string) => {
+  return await db.sessions.findUnique({
+    where: { id: sessionId },
+    include: { user: { select: { id: true, email: true, role: true } } },
+  });
+});
+```
+
+---
+
+## 6.5 RE-RENDER OPTIMIZATION & REACT 19 CONCURRENCY (MEDIUM — P5)
+
+### Rule 12: Derive State During Render — Banish Unnecessary `useEffect` (`rerender-derived-state-no-effect`)
+Never use `useEffect` to sync or compute state that can be derived directly from existing props or state.
+
+```tsx
+// ❌ WRONG (Causes double-render: Renders empty, triggers effect, re-renders with filtered)
+function ProductCatalog({ items }: { items: Product[] }) {
+  const [filter, setFilter] = useState("all");
+  const [filteredItems, setFilteredItems] = useState<Product[]>([]);
+
+  useEffect(() => {
+    setFilteredItems(filter === "all" ? items : items.filter((i) => i.category === filter));
+  }, [filter, items]);
+
+  return <div>{filteredItems.map(...)}</div>;
+}
+
+// ✅ CORRECT (Zero effect, zero lag: Computed synchronously during render pass)
+function ProductCatalog({ items }: { items: Product[] }) {
+  const [filter, setFilter] = useState("all");
+
+  const filteredItems = useMemo(() => {
+    return filter === "all" ? items : items.filter((i) => i.category === filter);
+  }, [filter, items]);
+
+  return <div>{filteredItems.map(...)}</div>;
+}
+```
+
+### Rule 13: Non-Urgent Updates with `useTransition` (`rerender-transitions`)
+Use `startTransition` to mark heavy UI state updates (filtering tables, switching tabs, recalculating charts) as non-blocking, keeping input typing and cursor interactions fluid at 60 FPS.
+
+```tsx
+function AdminOrdersTable() {
+  const [query, setQuery] = useState("");
+  const [filterQuery, setFilterQuery] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 1. Update text input immediately (Urgent priority)
+    setQuery(e.target.value);
+
+    // 2. Filter 5,000 orders in background transition (Non-urgent priority)
+    startTransition(() => {
+      setFilterQuery(e.target.value);
+    });
+  };
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="relative">
+        <Input value={query} onChange={handleSearch} placeholder="Search orders..." />
+        {isPending && <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />}
+      </div>
+      <OrderList filter={filterQuery} />
+    </div>
+  );
+}
+```
+
+### Rule 14: Functional State Updates for Stable Callbacks (`rerender-functional-setstate`)
+Always pass an updater function `setState(prev => ...)` when updating state based on its previous value. This prevents hooks and handlers from needing the state variable in their dependency arrays.
+
+---
+
+## 6.6 RENDERING & DOM PERFORMANCE (MEDIUM — P6)
+
+### Rule 15: Content-Visibility for Long Lists (`rendering-content-visibility`)
+For inventory product tables, category grids, or activity logs containing hundreds of rows, apply `content-visibility: auto`. The browser skips layout and paint work for off-screen items until they scroll into view.
+
+```css
+/* globals.css */
+.virtual-item-render {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 72px; /* Tells browser estimated height to prevent scroll jumps */
+}
+```
+
+### Rule 16: Never Use `&&` for Conditional Rendering with Numbers (`rendering-conditional-render`)
+In JavaScript, `0 && <Component />` evaluates and renders the literal number `0` onto the page. Always use explicit ternaries.
+
+```tsx
+// ❌ WRONG (If unfulfilledCount is 0, renders a stray "0" on the screen)
+{unfulfilledCount && <Badge>{unfulfilledCount} Pending</Badge>}
+
+// ✅ CORRECT (Explicitly checks condition and returns null)
+{unfulfilledCount > 0 ? <Badge>{unfulfilledCount} Pending</Badge> : null}
+```
+
+### Rule 17: Next.js Image Optimization Standards (`next/image`)
+Images account for 70%+ of e-commerce bandwidth. Every product image on VoltMart must strictly comply with image optimization rules:
+
+```tsx
+// components/ui/product-thumbnail.tsx
+import Image from "next/image";
+
+interface ProductImageProps {
+  src: string;
+  alt: string;
+  isPriority?: boolean; // Set true ONLY for LCP Hero image above the fold
+}
+
+export function ProductImage({ src, alt, isPriority = false }: ProductImageProps) {
+  return (
+    <div className="relative aspect-square w-full overflow-hidden rounded-md bg-muted/20">
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        priority={isPriority}
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+        quality={80} // 80 quality gives 40% file size reduction with zero visible artifacting
+        className="object-cover transition-transform duration-300 hover:scale-105"
+      />
+    </div>
+  );
+}
+```
+
+---
+
+## 6.7 JAVASCRIPT & MICRO-PERFORMANCE RULES (P7)
+
+### Rule 18: Build Index Maps for Repeated Lookups (`js-index-maps`)
+Never perform `array.find()` inside loops or frequent render cycles (`O(N * M)` quadratic complexity). Build a `Map` or indexed object (`O(1)` constant lookup).
+
+```typescript
+// ❌ WRONG (O(N * M) - Scans entire price catalog for each cart item)
+const enrichedCart = cartItems.map((cartItem) => {
+  const priceObj = priceList.find((p) => p.sku === cartItem.sku);
+  return { ...cartItem, unitPrice: priceObj?.price ?? 0 };
+});
+
+// ✅ CORRECT (O(N + M) - Creates Map once, instant O(1) hash lookup)
+const priceMap = new Map(priceList.map((p) => [p.sku, p.price]));
+const enrichedCart = cartItems.map((cartItem) => ({
+  ...cartItem,
+  unitPrice: priceMap.get(cartItem.sku) ?? 0,
+}));
+```
+
+### Rule 19: Combine Multiple Iterations into One Pass (`js-combine-iterations`)
+Avoid chaining `.filter().map().filter()`. Combine them using a single `reduce()` or `for...of` loop.
+
+---
+
+## 6.8 AUTOMATED CI/CD PERFORMANCE BUDGET & LIGHTHOUSE TARGETS
+
+VoltMart enforces automated GitHub Actions performance gating before any pull request or deployment is approved:
+
+| Metric | Target SLA | Tool / Measurement | Action If Breached |
+|---|---|---|---|
+| **Largest Contentful Paint (LCP)** | **< 1.2s** | Lighthouse / Vercel Analytics | Fail Build: Check hero image priority & server TTFB |
+| **Interaction to Next Paint (INP)** | **< 80ms** | Chrome Web Vitals | Fail Build: Split long tasks with `startTransition` |
+| **Cumulative Layout Shift (CLS)** | **< 0.02** | Lighthouse CI | Fail Build: Verify fixed aspect ratios & `next/font` |
+| **First Contentful Paint (FCP)** | **< 0.8s** | Edge CDN Cache | Verify Edge caching and SSR route warming |
+| **Initial JS Bundle Size** | **< 85 KB (gzipped)** | `@next/bundle-analyzer` | Flag PR: Audit barrel imports & dynamic components |
+
+---
+
+## 6.9 COMPLIANCE WITH VOLTMART UI GOVERNANCE (`AGENTS.md` / `GEMINI.md`)
+
+All Next.js code must seamlessly integrate with the established VoltMart repository rules:
+1. **Zero `max-w-*` Wrappers**: Full panoramic width `w-full` edge-to-edge.
+2. **Central Components Mandatory**: Always import `<CentralTable>`, `<CentralForm>`, `<KpiCard>`, `<SearchableDropbox>`, and `<ThemeToggle>`.
+3. **No Hardcoded Hex Colors**: Always use semantic tokens (`bg-background`, `bg-card`, `text-foreground`, `border-border/80`).
+4. **Touch & Cursor Feedback**: Clickable elements must have `cursor-pointer active:scale-[0.98] transition-all`.
+
+---
+
 # END OF VOLTMART COMPLETE BUSINESS PLAN
 
-*Total document: ~9,000 lines*
+*Total document: ~10,000 lines*
 *Research basis: GS1 International 2026, Google Merchant Center, Saleor API,*
 *Odoo product.template, Schema.org, Bangladesh NBR, BTRC Guidelines 2024,*
 *Digital Commerce Operational Guidelines 2021, Consumer Rights Act 2009,*

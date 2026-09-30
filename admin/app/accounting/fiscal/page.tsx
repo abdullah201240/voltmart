@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -30,7 +30,7 @@ import {
   ShieldAlert,
   CalendarClock,
 } from "lucide-react";
-import { useOps, patchFields, addHistory, clearRecord } from "@/lib/data/ops";
+import { useOps, patchFields, addHistory, addRecord, clearRecord } from "@/lib/data/ops";
 import {
   getFiscalPositions,
   getTaxLockBase,
@@ -39,6 +39,8 @@ import {
   type FiscalPositionRow,
   type TaxLockRow,
 } from "@/lib/data/settings";
+import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
+import { useConfirm, useToast } from "@/components/app-feedback";
 
 /** Pretty-print an ISO lock date (or an "unlocked" hint). */
 function fmtDate(iso: string): string {
@@ -50,11 +52,13 @@ function fmtDate(iso: string): string {
 
 export default function FiscalPositionsPage() {
   useOps(); // re-render when the ops overlay changes
+  const appToast = useToast();
+  const confirm = useConfirm();
 
   const [fps, setFps] = useState<FiscalPositionRow[]>([]);
   const [locks, setLocks] = useState<TaxLockRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -71,11 +75,52 @@ export default function FiscalPositionsPage() {
   }, []);
 
   // Toggle a fiscal position on/off — persists through the overlay.
-  const toggleFp = (fp: FiscalPositionRow) => {
+  const toggleFp = async (fp: FiscalPositionRow) => {
     const next = !fp.active;
+    if (!next) {
+      const allowed = await confirm({
+        title: `Deactivate ${fp.name}?`,
+        description: "Invoices using this position will fall back to the default tax mapping.",
+        tone: "destructive",
+        confirmLabel: "Deactivate",
+      });
+      if (!allowed) return;
+    }
     patchFields(FISCAL_POSITION, fp.id, { active: next });
     addHistory(FISCAL_POSITION, fp.id, `Active: ${fp.active} → ${next}`);
     setFps((prev) => prev.map((x) => (x.id === fp.id ? { ...x, active: next } : x)));
+    appToast.success(next ? "Fiscal position activated" : "Fiscal position deactivated", fp.name);
+  };
+
+  const CREATE_FIELDS: CreateFieldDef[] = [
+    { key: "name", label: "Position Name", required: true, placeholder: "e.g. Export (0% VAT)" },
+    { key: "appliesTo", label: "Applies To", required: true, placeholder: "Country or partner group" },
+    { key: "note", label: "Internal Note", colSpan: 2, placeholder: "When this position is used…" },
+    {
+      key: "reverseCharge",
+      label: "Reverse Charge",
+      type: "switch",
+      helper: "Buyer self-assesses the tax instead of the seller.",
+    },
+  ];
+
+  const createFp = (v: Record<string, string>) => {
+    if (fps.some((f) => f.name.toLowerCase() === v.name.trim().toLowerCase())) {
+      return "A fiscal position with that name already exists.";
+    }
+    const row: FiscalPositionRow = {
+      id: `FP-${Date.now().toString(36)}`,
+      name: v.name,
+      appliesTo: v.appliesTo,
+      note: v.note?.trim() || "Created from the admin — add tax mappings to activate substitutions.",
+      reverseCharge: v.reverseCharge === "true",
+      active: true,
+      taxMaps: [],
+    };
+    addRecord(FISCAL_POSITION, row as unknown as Record<string, unknown>);
+    setFps((prev) => [row, ...prev]);
+    appToast.success("Fiscal position created", `“${row.name}” is ready to map taxes.`);
+    return null;
   };
 
   // Columns are built inline so the Active switch can call the toggle handler.
@@ -160,14 +205,21 @@ export default function FiscalPositionsPage() {
       patchFields(ACCOUNT_LOCK, r.id, { date: r.date });
       addHistory(ACCOUNT_LOCK, r.id, `${r.label} → ${fmtDate(r.date)}`);
     }
-    setFeedback({ ok: true, message: "Tax lock dates saved." });
+    appToast.success("Tax lock dates saved", "All periods are locked at the new dates.");
   };
 
-  const resetLocks = () => {
+  const resetLocks = async () => {
+    const allowed = await confirm({
+      title: "Reset tax lock dates?",
+      description: "This discards your custom lock dates and restores the base configuration.",
+      tone: "destructive",
+      confirmLabel: "Reset Locks",
+    });
+    if (!allowed) return;
     for (const r of locks) clearRecord(ACCOUNT_LOCK, r.id);
     const base = getTaxLockBase();
     setLocks(base);
-    setFeedback({ ok: true, message: "Lock dates reset to base config." });
+    appToast.success("Lock dates reset", "Base configuration restored.");
   };
 
   const journalLock = locks.find((r) => r.id === "lock");
@@ -185,7 +237,7 @@ export default function FiscalPositionsPage() {
         </div>
         <Button
           className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all"
-          onClick={() => setFeedback({ ok: false, message: "Creator is stubbed — positions ship with seeded rules." })}
+          onClick={() => setCreateOpen(true)}
         >
           <Plus className="mr-2 h-4 w-4" /> New Fiscal Position
         </Button>
@@ -263,20 +315,17 @@ export default function FiscalPositionsPage() {
         pagination={false}
       />
 
+      <RecordCreateDrawer
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="New Fiscal Position"
+        description="Group partners and swap taxes for them."
+        submitLabel="Create Position"
+        fields={CREATE_FIELDS}
+        onSubmit={createFp}
+      />
+
       {/* Action toast */}
-      {feedback && (
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium shadow-lg",
-            feedback.ok
-              ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "text-rose-600 dark:text-rose-400 border-rose-500/30",
-          )}
-        >
-          {feedback.ok ? <Check className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
-          {feedback.message}
-        </div>
-      )}
     </>
   );
 }

@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
-import { ArrowLeft, Factory, Gauge, Timer, Users2, Plus } from "lucide-react";
+import { ArrowLeft, Factory, Gauge, Timer, Users2 } from "lucide-react";
 import { getWorkCenters, type WorkCenterRow } from "@/lib/data/manufacturing";
+import { CreateFlow } from "@/components/ui/create-flow";
 
 const WC_COLUMNS: CentralTableColumn<WorkCenterRow>[] = [
   {
@@ -90,9 +91,33 @@ export default function WorkCentersPage() {
           <h1 className="text-3xl font-bold tracking-tight">Work Centres</h1>
           <p className="text-sm text-muted-foreground">Machines and stations — capacity, efficiency and cycle times.</p>
         </div>
-        <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
-          <Plus className="mr-2 h-4 w-4" /> Create Work Centre
-        </Button>
+        <CreateFlow<WorkCenterRow>
+          model="mrp.workcenter"
+          buttonLabel="Create Work Centre"
+          drawerTitle="New Work Centre"
+          drawerDescription="Register a machine or station used by bills of material."
+          submitLabel="Create Work Centre"
+          fields={[
+            { key: "name", label: "Work Centre Name", required: true, placeholder: "e.g. SMT Line 1" },
+            { key: "code", label: "Code", required: true, placeholder: "e.g. SMT1" },
+            { key: "capacity", label: "Capacity (parallel MOs)", type: "number", defaultValue: "1" },
+            { key: "efficiency", label: "Efficiency (%)", type: "number", defaultValue: "100" },
+            { key: "cycleTime", label: "Cycle Time (min)", type: "number", defaultValue: "30" },
+            { key: "targetMove", label: "Target Move (min)", type: "number", defaultValue: "1" },
+          ]}
+          validate={(v) => (rows.some((w) => w.code.toLowerCase() === v.code.trim().toLowerCase()) ? "That work centre code already exists." : null)}
+          build={(v) => ({
+            id: `WC-${Date.now().toString(36)}`,
+            name: v.name.trim(),
+            code: v.code.trim().toUpperCase(),
+            capacity: Math.max(1, Number(v.capacity) || 1),
+            efficiency: Math.max(0, Number(v.efficiency) || 100),
+            cycleTime: Math.max(0, Number(v.cycleTime) || 0),
+            targetMove: Math.max(0, Number(v.targetMove) || 0),
+          })}
+          onCreated={(row) => setRows((prev) => [row, ...prev])}
+          successMessage="Work centre created"
+        />
       </div>
 
       <KpiGrid columns={3}>

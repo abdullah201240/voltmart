@@ -7,7 +7,23 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
 import { UserPlus, RotateCcw } from "lucide-react";
-import { getStaff, type StaffRow } from "@/lib/data/settings";
+import { getStaff, USER, type StaffRow } from "@/lib/data/settings";
+import { addRecord } from "@/lib/data/ops";
+import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
+import { useToast } from "@/components/app-feedback";
+
+const CREATE_FIELDS: CreateFieldDef[] = [
+  { key: "name", label: "Full Name", required: true, placeholder: "e.g. Nadia Islam" },
+  { key: "email", label: "Email", required: true, placeholder: "name@voltmart.example", helper: "An invite email is simulated; no real mail is sent." },
+  {
+    key: "role",
+    label: "Role",
+    type: "select",
+    required: true,
+    defaultValue: "Staff",
+    options: ["Owner", "Admin", "Manager", "Staff", "Merchant"].map((r) => ({ value: r, label: r })),
+  },
+];
 
 const ROLE_CLASS: Record<StaffRow["role"], "default" | "secondary" | "outline"> = {
   Owner: "default",
@@ -70,10 +86,12 @@ const STAFF_COLUMNS: CentralTableColumn<StaffRow>[] = [
 ];
 
 export default function SettingsStaffPage() {
+  const appToast = useToast();
   const { searchQuery } = useAdminLayout();
   const [rows, setRows] = useState<StaffRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTableQuery, setSearchTableQuery] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -87,6 +105,25 @@ export default function SettingsStaffPage() {
       alive = false;
     };
   }, []);
+
+  const createStaff = (v: Record<string, string>) => {
+    const email = v.email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email address.";
+    if (rows.some((s) => s.email.toLowerCase() === email)) return "That email is already on the team.";
+    const row: StaffRow = {
+      id: `U-${Date.now().toString(36)}`,
+      name: v.name,
+      email,
+      role: v.role as StaffRow["role"],
+      channels: 0,
+      active: true,
+      lastActive: "Just now",
+    };
+    addRecord(USER, row as unknown as Record<string, unknown>);
+    setRows((prev) => [row, ...prev]);
+    appToast.success("Team member created", `\u201C${row.name}\u201D is now available for admin console.`);
+    return null;
+  };
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
   const filteredRows = useMemo(() => {
@@ -103,7 +140,10 @@ export default function SettingsStaffPage() {
           <h1 className="text-3xl font-bold tracking-tight">Staff &amp; Roles</h1>
           <p className="text-sm text-muted-foreground">Team members, their roles and channel access.</p>
         </div>
-        <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
+        <Button
+          className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all"
+          onClick={() => setCreateOpen(true)}
+        >
           <UserPlus className="mr-2 h-4 w-4" /> Invite Member
         </Button>
       </div>
@@ -125,6 +165,16 @@ export default function SettingsStaffPage() {
             </Button>
           )
         }
+      />
+
+      <RecordCreateDrawer
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="Invite Team Member"
+        description="Add a user and assign their role."
+        submitLabel="Send Invite"
+        fields={CREATE_FIELDS}
+        onSubmit={createStaff}
       />
     </>
   );

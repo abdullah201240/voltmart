@@ -129,3 +129,44 @@ Do NOT reinvent custom tables, stat blocks, or dropdowns. Always import and use 
   - Standardized action bars with loading states, dirty indicators, and discard handlers
   - Slide-over drawer wrapper (`CentralFormDrawer`) for seamless creation flows from any view
 
+---
+
+## 8. Mandatory Create Flow (NO DEAD "ADD / CREATE" BUTTONS)
+Every table, list, kanban, or settings view that supports record creation MUST have a working create affordance — never a `<Button>Add X</Button>` with no `onClick` handler.
+- **Central wrapper** (preferred):
+  ```tsx
+  import { CreateFlow } from "@/components/ui/create-flow";
+  ```
+  `<CreateFlow<RowType>>` renders the Plus button, opens `RecordCreateDrawer`, validates the form, persists via `addRecord(model, row)`, prepends the new row through `onCreated(row)`, and fires a success toast. Zero per-page boilerplate.
+- **Legacy `RecordCreateDrawer`** usage in settings pages MUST add `useToast().success(...)` immediately before `return null;` in the submit handler.
+
+---
+
+## 9. Mandatory Confirmation Prompt On Destructive / Important Actions
+Every irreversible or operationally-significant mutation MUST ask the user for permission via `useConfirm()` before running:
+- **Import**: `import { useConfirm, useToast } from "@/components/app-feedback";`
+- **Setup**: `const confirm = useConfirm(); const appToast = useToast();`
+- **Handler pattern**:
+  ```tsx
+  const allowed = await confirm({
+    title: `Cancel ${row.id}?`,
+    description: "Optional context line explaining the impact.",
+    tone: "destructive",           // "destructive" for delete / cancel / archive / reset / sign-out / password change
+    confirmLabel: "Cancel Order",   // verb-first, explicit — never a generic "OK"
+  });
+  if (!allowed) return;
+  // ... actual mutation ...
+  ```
+- **Mandatory on**: delete, archive, cancel, void, unpost, reset-to-base, bulk state transitions, sign-out, deactivating a live record, clearing all notifications, password changes, drag-to-cancel on kanban.
+- **NOT required on**: drawer close, form discard when untouched, purely navigational clicks, opening a filter menu.
+
+---
+
+## 10. Mandatory Toast On Every Successful Task
+Any handler that changes persisted state MUST fire a toast so the user knows the action landed:
+- `appToast.success(title, description?)` on success.
+- `appToast.error(title, description)` on validation / workflow failure.
+- `appToast.info(title, description)` on non-mutating helpful actions.
+- **BANNED across the whole admin**: local `{feedback, setFeedback}` state at the bottom of a page, ad-hoc auto-dismiss `setTimeout` effects, hardcoded inline toast `<div>`s, `window.alert(...)`, `console.log(...)` as user feedback, silent no-message mutations.
+- All feedback flows through `AppFeedbackProvider` (mounted once in `components/admin-shell.tsx`) — pages never create their own toast portal.
+

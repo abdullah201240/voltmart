@@ -29,6 +29,7 @@ import {
   type NotificationType,
   type NotificationPriority,
 } from "@/lib/notifications-context";
+import { useConfirm, useToast } from "@/components/app-feedback";
 
 export default function NotificationsPage() {
   const {
@@ -41,6 +42,8 @@ export default function NotificationsPage() {
     clearAll,
     addNotification,
   } = useNotifications();
+  const appToast = useToast();
+  const confirm = useConfirm();
 
   const [activeTab, setActiveTab] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -134,6 +137,29 @@ export default function NotificationsPage() {
       actionUrl: "/discounts",
       actionLabel: "View Promotion",
     });
+    appToast.success("Test alert dispatched", "A sample notification was added to the center.");
+  };
+
+  const handleMarkAllRead = () => {
+    markAllAsRead();
+    appToast.success("All notifications marked read", `${unreadCount} alert(s) acknowledged.`);
+  };
+
+  const handleClearAll = async () => {
+    const allowed = await confirm({
+      title: "Clear all notifications?",
+      description: `This permanently removes ${notifications.length} alert(s) from the center.`,
+      tone: "destructive",
+      confirmLabel: "Clear All",
+    });
+    if (!allowed) return;
+    clearAll();
+    appToast.success("Notifications cleared", "The center is now empty.");
+  };
+
+  const handleDelete = (id: string) => {
+    deleteNotification(id);
+    appToast.success("Alert dismissed", `Notification ${id} was removed.`);
   };
 
   return (
@@ -182,7 +208,7 @@ export default function NotificationsPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllRead}
               className="h-10 px-4 text-xs font-semibold cursor-pointer"
             >
               <CheckCheck className="mr-1.5 h-4 w-4 text-emerald-500" />
@@ -194,7 +220,7 @@ export default function NotificationsPage() {
             <Button
               type="button"
               variant="ghost"
-              onClick={clearAll}
+              onClick={handleClearAll}
               className="h-10 px-3.5 text-xs font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
             >
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
@@ -430,7 +456,7 @@ export default function NotificationsPage() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteNotification(item.id)}
+                    onClick={() => handleDelete(item.id)}
                     className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                     title="Dismiss alert"
                   >

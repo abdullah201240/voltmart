@@ -8,6 +8,7 @@ import { Percent, Plus } from "lucide-react";
 import { getTaxes, TAX, type TaxRow } from "@/lib/data/settings";
 import { addRecord } from "@/lib/data/ops";
 import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
+import { useToast } from "@/components/app-feedback";
 
 const CREATE_FIELDS: CreateFieldDef[] = [
   { key: "name", label: "Tax Name", required: true, placeholder: "e.g. VAT 15%" },
@@ -68,6 +69,7 @@ const TAX_COLUMNS: CentralTableColumn<TaxRow>[] = [
 ];
 
 export default function SettingsTaxesPage() {
+  const appToast = useToast();
   const [rows, setRows] = useState<TaxRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -98,6 +100,7 @@ export default function SettingsTaxesPage() {
     };
     addRecord(TAX, row as unknown as Record<string, unknown>);
     setRows((prev) => [row, ...prev]);
+    appToast.success("Tax created", `“${row.name}” is now available on invoices and bills.`);
     return null;
   };
 

@@ -43,6 +43,7 @@ import { useOps } from "@/lib/data/ops";
 import { MOVE_STATE_OPTIONS } from "@/lib/data/finance";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useConfirm, useToast } from "@/components/app-feedback";
 
 function money(v: number) {
   return "৳" + v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -81,6 +82,8 @@ const emptyLine = (): MoveLine => ({ account: "", accountName: "", label: "", de
 export default function JournalEntriesPage() {
   const { searchQuery } = useAdminLayout();
   const version = useOps();
+  const appToast = useToast();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<MoveRow[]>([]);
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,7 +91,6 @@ export default function JournalEntriesPage() {
   const [selectedJournal, setSelectedJournal] = useState("all");
   const [selectedState, setSelectedState] = useState("all");
   const [openMove, setOpenMove] = useState<MoveRow | null>(null);
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const [newJournal, setNewJournal] = useState("MISC");
   const [newPartner, setNewPartner] = useState("");
@@ -108,12 +110,6 @@ export default function JournalEntriesPage() {
       alive = false;
     };
   }, [version]);
-
-  useEffect(() => {
-    if (!feedback) return;
-    const t = setTimeout(() => setFeedback(null), 3200);
-    return () => clearTimeout(t);
-  }, [feedback]);
 
   // Keep the open drawer in sync with the latest overlay state.
   const drawerMove = openMove ? rows.find((r) => r.id === openMove.id) ?? null : null;
@@ -147,12 +143,34 @@ export default function JournalEntriesPage() {
   const activeFiltersCount = (selectedJournal !== "all" ? 1 : 0) + (selectedState !== "all" ? 1 : 0);
   const hasActiveFilters = activeFiltersCount > 0 || effectiveQuery.length > 0;
 
-  const act = (m: MoveRow, action: "post" | "cancel" | "undo") => {
+  const act = async (m: MoveRow, action: "post" | "cancel" | "undo") => {
+    if (action === "cancel") {
+      const allowed = await confirm({
+        title: `Cancel ${m.number}?`,
+        description: "This voids the journal entry. Cancelled moves cannot be re-posted.",
+        tone: "destructive",
+        confirmLabel: "Cancel Entry",
+      });
+      if (!allowed) return;
+    }
     const res = applyMoveAction(m.id, action, { state: m.state }, isBalanced(m));
-    setFeedback(res);
+    if (res.ok) {
+      appToast.success(
+        action === "post" ? "Entry posted" : action === "undo" ? "Entry reset to draft" : "Entry cancelled",
+        m.number,
+      );
+    } else {
+      appToast.error("Action failed", res.message);
+    }
   };
 
-  const bulkPost = (selected: MoveRow[], clear: () => void) => {
+  const bulkPost = async (selected: MoveRow[], clear: () => void) => {
+    const allowed = await confirm({
+      title: `Post ${selected.length} journal entr${selected.length === 1 ? "y" : "ies"}?`,
+      description: "Posted entries become immutable ledger rows.",
+      confirmLabel: "Post Entries",
+    });
+    if (!allowed) return;
     let posted = 0;
     let skipped = 0;
     for (const m of selected) {
@@ -164,10 +182,10 @@ export default function JournalEntriesPage() {
       if (res.ok) posted += 1;
       else skipped += 1;
     }
-    setFeedback({
-      ok: posted > 0,
-      message: `${posted} entr${posted === 1 ? "y" : "ies"} posted${skipped ? ` · ${skipped} skipped (not draft or unbalanced)` : ""}.`,
-    });
+    appToast.success(
+      "Bulk post complete",
+      `${posted} entr${posted === 1 ? "y" : "ies"} posted${skipped ? ` · ${skipped} skipped (not draft or unbalanced)` : ""}.`,
+    );
     clear();
   };
 
@@ -528,7 +546,7 @@ export default function JournalEntriesPage() {
                   onClick={() => {
                     createDraftMove({ journalCode: newJournal, partner: newPartner, narration: newNarration, lines: filled });
                     setCreating(false);
-                    setFeedback({ ok: true, message: "Draft entry created — find it in the list." });
+                    appToast.success("Draft entry created", "Find it in the journals list to post.");
                   }}
                 >
                   <Check className="h-4 w-4" /> Save Draft
@@ -543,19 +561,6 @@ export default function JournalEntriesPage() {
       })()}
 
       {/* Action toast */}
-      {feedback && (
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border flex items-center gap-2",
-            feedback.ok
-              ? "bg-card text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "bg-card text-rose-600 dark:text-rose-400 border-rose-500/30",
-          )}
-        >
-          {feedback.ok ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-          {feedback.message}
-        </div>
-      )}
     </>
   );
 }

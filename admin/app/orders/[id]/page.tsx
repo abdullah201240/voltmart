@@ -35,6 +35,7 @@ import {
   applySaleAction,
   type SaleAction,
 } from "@/lib/data/workflows";
+import { useConfirm, useToast } from "@/components/app-feedback";
 
 const STATUS_META: Record<OrderStatus, string> = {
   Quotation: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
@@ -119,9 +120,10 @@ function SmartButton({
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
   const version = useOps();
+  const appToast = useToast();
+  const confirm = useConfirm();
   const [order, setOrder] = useState<OrderDetail | undefined>();
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
@@ -137,21 +139,37 @@ export default function OrderDetailPage() {
     };
   }, [params.id, version]);
 
-  // Auto-dismiss the action toast.
-  useEffect(() => {
-    if (!feedback) return;
-    const t = setTimeout(() => setFeedback(null), 3200);
-    return () => clearTimeout(t);
-  }, [feedback]);
-
-  const run = (action: SaleAction) => {
+  const run = async (action: SaleAction) => {
     if (!order) return;
+    if (action === "cancel") {
+      const allowed = await confirm({
+        title: `Cancel ${order.id}?`,
+        description: `Cancels the order for ${order.customer}. This cannot be undone from the button bar.`,
+        tone: "destructive",
+        confirmLabel: "Cancel Order",
+      });
+      if (!allowed) return;
+    }
     const res = applySaleAction(order.id, order.customer, action, {
       status: order.status,
       paymentStatus: order.paymentStatus,
       fulfillmentStatus: order.fulfillmentStatus,
     });
-    setFeedback(res);
+    if (res.ok) appToast.success("Order updated", `${order.id} — ${res.message}`);
+    else appToast.error("Action failed", res.message);
+  };
+
+  const resetToBase = async () => {
+    if (!order) return;
+    const allowed = await confirm({
+      title: "Reset to base record?",
+      description: "Discards all local edits on this order and restores the seed data.",
+      tone: "destructive",
+      confirmLabel: "Reset Order",
+    });
+    if (!allowed) return;
+    clearRecord(SALE_ORDER, order.id);
+    appToast.success("Reset complete", `${order.id} restored to base record.`);
   };
 
   if (loading) {
@@ -244,7 +262,7 @@ export default function OrderDetailPage() {
               variant="ghost"
               className="h-10 px-3 text-sm font-medium cursor-pointer text-muted-foreground"
               title="Reset all demo operations on this order"
-              onClick={() => { clearRecord(SALE_ORDER, order.id); setFeedback({ ok: true, message: "Reset to base record." }); }}
+              onClick={resetToBase}
             >
               <RotateCcw className="mr-1.5 h-4 w-4" /> Reset
             </Button>
@@ -396,19 +414,6 @@ export default function OrderDetailPage() {
       />
 
       {/* Action toast */}
-      {feedback && (
-        <div
-          className={cn(
-            "fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium shadow-lg animate-in fade-in-0 slide-in-from-bottom-2",
-            feedback.ok
-              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-              : "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400",
-          )}
-        >
-          {feedback.ok ? <Check className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-          {feedback.message}
-        </div>
-      )}
     </>
   );
 }

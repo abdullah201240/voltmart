@@ -21,18 +21,18 @@ import {
   Clock,
   Truck,
   Download,
-  Plus,
   RotateCcw,
   Ban,
   List,
   LayoutGrid,
   BarChart3,
   Table2,
-  Check,
 } from "lucide-react";
 import { CHANNEL_OPTIONS } from "@/lib/data/products";
 import { useOps } from "@/lib/data/ops";
 import { setSaleStatus, applySaleAction } from "@/lib/data/workflows";
+import { useConfirm, useToast } from "@/components/app-feedback";
+import { CreateFlow } from "@/components/ui/create-flow";
 import {
   getOrders,
   orderStats,
@@ -144,10 +144,11 @@ const ORDER_COLUMNS: CentralTableColumn<OrderRow>[] = [
 export default function OrdersPage() {
   const { searchQuery } = useAdminLayout();
   const version = useOps();
+  const confirm = useConfirm();
+  const appToast = useToast();
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "kanban" | "graph" | "pivot">("list");
-  const [notice, setNotice] = useState<string | null>(null);
 
   const [selectedChannel, setSelectedChannel] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -166,13 +167,6 @@ export default function OrdersPage() {
       alive = false;
     };
   }, [version]);
-
-  // Auto-dismiss bulk/action notices.
-  useEffect(() => {
-    if (!notice) return;
-    const t = setTimeout(() => setNotice(null), 3000);
-    return () => clearTimeout(t);
-  }, [notice]);
 
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
@@ -217,16 +211,58 @@ export default function OrdersPage() {
   );
 
   // Drag a Kanban card into a new stage column -> workflow stage change.
-  const moveStage = (row: OrderRow, toKey: string) => {
+  // Moving into Cancelled is destructive, so it asks for permission first.
+  const moveStage = async (row: OrderRow, toKey: string) => {
+    if (toKey === "Cancelled") {
+      const allowed = await confirm({
+        title: `Cancel ${row.id}?`,
+        description: `This marks the order for ${row.customer} as cancelled.`,
+        tone: "destructive",
+        confirmLabel: "Cancel Order",
+      });
+      if (!allowed) return;
+    }
     const res = setSaleStatus(row.id, toKey as OrderStatus, {
       status: row.status,
       paymentStatus: row.paymentStatus,
       fulfillmentStatus: row.fulfillmentStatus,
     });
-    if (!res.ok) setNotice(res.message);
+    if (res.ok) appToast.success("Stage updated", `${row.id} moved to ${toKey}.`);
+    else appToast.error("Move failed", res.message);
   };
 
-  const bulkAction = (selectedRows: OrderRow[], kind: "ship" | "cancel") => {
+  const exportOrdersCsv = () => {
+    const header = ["Order", "Customer", "Channel", "Date", "Total", "Items", "Status", "Payment", "Fulfillment"];
+    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const lines = [
+      header.join(","),
+      ...filteredRows.map((r) =>
+        [r.id, r.customer, r.channel, r.date, r.totalValue, r.itemCount, r.status, r.paymentStatus, r.fulfillmentStatus]
+          .map(esc)
+          .join(",")
+      ),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `voltmart-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    appToast.success("Export ready", `${filteredRows.length} order(s) downloaded as CSV.`);
+  };
+
+  const bulkAction = async (selectedRows: OrderRow[], kind: "ship" | "cancel") => {
+    const allowed = await confirm({
+      title: kind === "ship" ? `Fulfill ${selectedRows.length} order(s)?` : `Cancel ${selectedRows.length} order(s)?`,
+      description:
+        kind === "ship"
+          ? "Each selected order is marked shipped and its fulfillment updated."
+          : "This cancels every selected order. Refunds are not processed automatically.",
+      tone: kind === "cancel" ? "destructive" : "default",
+      confirmLabel: kind === "ship" ? "Fulfill Orders" : "Cancel Orders",
+    });
+    if (!allowed) return;
     let moved = 0;
     for (const r of selectedRows) {
       const res = applySaleAction(r.id, r.customer, kind, {
@@ -236,7 +272,10 @@ export default function OrdersPage() {
       });
       if (res.ok) moved += 1;
     }
-    setNotice(`${kind === "ship" ? "Fulfilled" : "Cancelled"} ${moved} of ${selectedRows.length} order(s).`);
+    appToast.success(
+      kind === "ship" ? "Orders fulfilled" : "Orders cancelled",
+      `${moved} of ${selectedRows.length} order(s) updated.`
+    );
   };
 
   return (
@@ -250,14 +289,57 @@ export default function OrdersPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-11 px-5 text-sm font-medium">
+          <Button variant="outline" className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all" onClick={exportOrdersCsv}>
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Order
-          </Button>
+          <CreateFlow<OrderRow>
+            model="sale.order"
+            buttonLabel="Create Order"
+            drawerTitle="New Order"
+            drawerDescription="Create a quotation for a customer; confirm it to start fulfillment."
+            fields={[
+              { key: "customer", label: "Customer", required: true, placeholder: "e.g. Rahim Ahmed" },
+              { key: "email", label: "Customer Email", required: true, placeholder: "rahim@example.com" },
+              {
+                key: "channelKey",
+                label: "Sales Channel",
+                type: "select",
+                required: true,
+                defaultValue: "default-channel",
+                options: CHANNEL_OPTIONS.filter((o) => o.value !== "all").map((o) => ({ value: o.value, label: o.label })),
+              },
+              { key: "itemCount", label: "Line Items", type: "number", defaultValue: "1" },
+              { key: "total", label: "Order Total (৳)", type: "number", required: true, placeholder: "25000" },
+            ]}
+            validate={(v) => {
+              const email = v.email.trim().toLowerCase();
+              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid customer email.";
+              if (!v.total || Number(v.total) <= 0) return "Enter an order total greater than zero.";
+              return null;
+            }}
+            build={(v) => {
+              const totalValue = Number(v.total) || 0;
+              const channelKey = v.channelKey;
+              const channel = CHANNEL_OPTIONS.find((o) => o.value === channelKey)?.label ?? "Default Channel (BDT)";
+              return {
+                id: `ORD-${1000 + Math.floor(Date.now() % 9000)}`,
+                customer: v.customer.trim(),
+                email: v.email.trim().toLowerCase(),
+                channel,
+                channelKey,
+                date: "Today",
+                totalValue,
+                total: fmtMoney(totalValue),
+                itemCount: Math.max(1, Number(v.itemCount) || 1),
+                status: "Quotation",
+                paymentStatus: "Unpaid",
+                fulfillmentStatus: "Unfulfilled",
+              };
+            }}
+            onCreated={(row) => setRows((prev) => [row, ...prev])}
+            successMessage="Order created"
+          />
         </div>
       </div>
 
@@ -478,13 +560,7 @@ export default function OrdersPage() {
         />
       )}
 
-      {/* Action notice */}
-      {notice && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border border-primary/30 bg-card px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in fade-in-0 slide-in-from-bottom-2">
-          <Check className="h-4 w-4 text-primary" />
-          {notice}
-        </div>
-      )}
+      {/* Action notices now handled by the global toast system */}
     </>
   );
 }

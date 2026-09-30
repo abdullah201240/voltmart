@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { ArrowDownLeft, ArrowUpRight, Landmark, Clock, Plus, RotateCcw } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Landmark, Clock, RotateCcw } from "lucide-react";
 import { getPayments, paymentStats, type PaymentRow } from "@/lib/data/finance";
+import { CreateFlow } from "@/components/ui/create-flow";
 
 const STATUS_CLASS: Record<PaymentRow["status"], "default" | "secondary" | "outline"> = {
   Reconciled: "default",
@@ -124,9 +125,56 @@ export default function PaymentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
-            <Plus className="mr-2 h-4 w-4" /> Register Payment
-          </Button>
+          <CreateFlow<PaymentRow>
+            model="account.payment"
+            buttonLabel="Register Payment"
+            drawerTitle="Register Payment"
+            drawerDescription="Record an inbound or outbound payment against a partner."
+            submitLabel="Register Payment"
+            fields={[
+              { key: "partner", label: "Partner", required: true, placeholder: "e.g. Rahim Ahmed", colSpan: 2 },
+              {
+                key: "direction",
+                label: "Direction",
+                type: "select",
+                required: true,
+                defaultValue: "Inbound",
+                options: [
+                  { value: "Inbound", label: "Inbound (customer pays)" },
+                  { value: "Outbound", label: "Outbound (vendor paid)" },
+                ],
+              },
+              {
+                key: "method",
+                label: "Method",
+                type: "select",
+                required: true,
+                defaultValue: "Bank Transfer",
+                options: [
+                  { value: "Bank Transfer", label: "Bank Transfer" },
+                  { value: "bKash", label: "bKash" },
+                  { value: "Nagad", label: "Nagad" },
+                  { value: "Cash", label: "Cash" },
+                  { value: "Card", label: "Card" },
+                ],
+              },
+              { key: "amount", label: "Amount (৳)", type: "number", required: true, placeholder: "5000" },
+              { key: "reference", label: "Linked Invoice/Bill", placeholder: "e.g. INV/2026/0007" },
+            ]}
+            validate={(v) => (!v.amount || Number(v.amount) <= 0 ? "Enter an amount greater than zero." : null)}
+            build={(v) => ({
+              id: `PAY-${Date.now().toString(36)}`,
+              date: "Today",
+              partner: v.partner.trim(),
+              direction: v.direction as PaymentRow["direction"],
+              method: v.method,
+              reference: v.reference.trim() || "—",
+              amount: Number(v.amount) || 0,
+              status: "Pending",
+            })}
+            onCreated={(row) => setRows((prev) => [row, ...prev])}
+            successMessage="Payment registered"
+          />
         </div>
       </div>
 

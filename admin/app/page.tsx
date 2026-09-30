@@ -38,7 +38,11 @@ import {
   TrendingUp,
   Activity,
   Percent,
+  Truck,
+  XCircle,
 } from "lucide-react";
+import { applySaleAction } from "@/lib/data/workflows";
+import { useConfirm, useToast } from "@/components/app-feedback";
 
 /** Order status badge tones — shared vocabulary with the Orders pages. */
 const STATUS_META: Record<OrderStatus, string> = {
@@ -128,6 +132,8 @@ const ORDER_COLUMNS: CentralTableColumn<OrderRow>[] = [
 
 export default function AdminDashboardPage() {
   const { searchQuery } = useAdminLayout();
+  const appToast = useToast();
+  const confirm = useConfirm();
   const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,6 +142,63 @@ export default function AdminDashboardPage() {
   const [selectedPayment, setSelectedPayment] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
   const [kpiTab, setKpiTab] = useState<"overview" | "cart" | "compact">("overview");
+
+  // Re-read orders so overlay workflow changes show up immediately.
+  const reloadRows = () => {
+    getOrders().then((data) => {
+      setRows(data);
+    });
+  };
+
+  const exportCsv = (selected: OrderRow[]) => {
+    const header = ["Order", "Customer", "Email", "Channel", "Date", "Status", "Payment", "Items", "Total"];
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = selected.map((o) =>
+      [o.id, o.customer, o.email, o.channel, o.date, o.status, o.paymentStatus, o.itemCount, o.totalValue]
+        .map(esc)
+        .join(","),
+    );
+    const blob = new Blob([[header.map(esc).join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `voltmart-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    appToast.success("Export ready", `Exported ${selected.length} order(s) to CSV.`);
+  };
+
+  const bulkSaleAction = async (selected: OrderRow[], action: "ship" | "cancel") => {
+    if (action === "cancel") {
+      const allowed = await confirm({
+        title: `Cancel ${selected.length} order(s)?`,
+        description: "This cancels every selected order. Refunds are not processed automatically.",
+        tone: "destructive",
+        confirmLabel: "Cancel Orders",
+      });
+      if (!allowed) return;
+    }
+    let moved = 0;
+    for (const r of selected) {
+      const res = applySaleAction(r.id, r.customer, action, {
+        status: r.status,
+        paymentStatus: r.paymentStatus,
+        fulfillmentStatus: r.fulfillmentStatus,
+      });
+      if (res.ok) moved += 1;
+    }
+    reloadRows();
+    appToast.success(
+      action === "ship" ? "Orders fulfilled" : "Orders cancelled",
+      action === "ship"
+        ? `Fulfilled ${moved} of ${selected.length} order(s).`
+        : `Cancelled ${moved} of ${selected.length} order(s).`
+    );
+  };
+
+  const requestRestock = (productName: string) => {
+    appToast.success("Restock requested", `A replenishment request for “${productName}” was sent to inventory.`);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -192,7 +255,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="h-11 px-5 text-sm font-medium">
+            <Button variant="outline" className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all" onClick={() => exportCsv(rows)}>
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
@@ -422,23 +485,35 @@ export default function AdminDashboardPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 text-xs font-semibold cursor-pointer"
+                    className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
                     onClick={() => {
-                      alert(`Exporting ${selectedRows.length} orders`);
+                      exportCsv(selectedRows);
                       clearSelection();
                     }}
                   >
-                    Export Selected
+                    <Download className="h-3.5 w-3.5" /> Export CSV
                   </Button>
                   <Button
                     size="sm"
-                    className="h-8 text-xs font-semibold cursor-pointer"
+                    variant="outline"
+                    className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
                     onClick={() => {
-                      alert(`Batch updating status for ${selectedRows.length} orders`);
+                      bulkSaleAction(selectedRows, "ship");
                       clearSelection();
                     }}
                   >
-                    Batch Process
+                    <Truck className="h-3.5 w-3.5" /> Fulfill
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-xs font-semibold cursor-pointer gap-1.5 text-muted-foreground hover:text-rose-600"
+                    onClick={() => {
+                      bulkSaleAction(selectedRows, "cancel");
+                      clearSelection();
+                    }}
+                  >
+                    <XCircle className="h-3.5 w-3.5" /> Cancel
                   </Button>
                 </div>
               )}
@@ -502,7 +577,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" className="h-9 px-4 text-xs font-semibold">
+                  <Button size="sm" variant="outline" className="h-9 px-4 text-xs font-semibold cursor-pointer active:scale-[0.98] transition-all" onClick={() => requestRestock("Wireless Active ANC Headphones")}>
                     Restock
                   </Button>
                 </div>
@@ -519,7 +594,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" className="h-9 px-4 text-xs font-semibold">
+                  <Button size="sm" variant="outline" className="h-9 px-4 text-xs font-semibold cursor-pointer active:scale-[0.98] transition-all" onClick={() => requestRestock("USB-C Fast Charging Hub 100W")}>
                     Restock
                   </Button>
                 </div>
@@ -527,6 +602,7 @@ export default function AdminDashboardPage() {
             </div>
           </TabsContent>
         </Tabs>
+
 
         {/* Reusable Central Form Drawer Demonstration */}
         <ProductFormDrawer

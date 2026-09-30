@@ -38,9 +38,9 @@ import {
   Check,
   Archive,
   ArchiveRestore,
-  AlertTriangle,
 } from "lucide-react";
 import { useOps, patchFields, addHistory } from "@/lib/data/ops";
+import { useConfirm, useToast } from "@/components/app-feedback";
 import {
   applyProductAction,
   PRODUCT_TEMPLATE,
@@ -213,6 +213,8 @@ const PRODUCT_COLUMNS: CentralTableColumn<ProductRow>[] = [
 export default function ProductsPage() {
   const { searchQuery } = useAdminLayout();
   const version = useOps();
+  const confirm = useConfirm();
+  const appToast = useToast();
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
@@ -222,7 +224,6 @@ export default function ProductsPage() {
   const [selectedAvailability, setSelectedAvailability] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
   const [view, setView] = useState<"list" | "kanban" | "graph" | "pivot">("list");
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -236,13 +237,6 @@ export default function ProductsPage() {
       alive = false;
     };
   }, [version]);
-
-  // Auto-dismiss workflow notices.
-  useEffect(() => {
-    if (!feedback) return;
-    const t = setTimeout(() => setFeedback(null), 3200);
-    return () => clearTimeout(t);
-  }, [feedback]);
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
 
@@ -277,11 +271,33 @@ export default function ProductsPage() {
   const hasActiveFilters = activeFiltersCount > 0 || effectiveQuery.length > 0;
 
   // --- Workflow actions (persist through the ops overlay) ---------------
-  const act = (p: ProductRow, action: ProductAction) => {
-    setFeedback(applyProductAction(p.id, p.name, action, { status: p.status }));
+  // Archiving is destructive (hides the product from the storefront), so it
+  // always asks for permission first.
+  const act = async (p: ProductRow, action: ProductAction) => {
+    if (action === "archive") {
+      const allowed = await confirm({
+        title: `Archive "${p.name}"?`,
+        description: "Archived products disappear from the storefront and sales. You can restore them anytime.",
+        tone: "destructive",
+        confirmLabel: "Archive",
+      });
+      if (!allowed) return;
+    }
+    const res = applyProductAction(p.id, p.name, action, { status: p.status });
+    if (res.ok) appToast.success("Product updated", res.message);
+    else appToast.error("Action skipped", res.message);
   };
 
-  const bulkAct = (selected: ProductRow[], action: ProductAction, clear: () => void) => {
+  const bulkAct = async (selected: ProductRow[], action: ProductAction, clear: () => void) => {
+    if (action === "archive") {
+      const allowed = await confirm({
+        title: `Archive ${selected.length} product(s)?`,
+        description: "Archived products disappear from the storefront and sales. You can restore them anytime.",
+        tone: "destructive",
+        confirmLabel: "Archive All",
+      });
+      if (!allowed) return;
+    }
     let done = 0;
     let skipped = 0;
     for (const p of selected) {
@@ -289,10 +305,10 @@ export default function ProductsPage() {
       if (res.ok) done += 1;
       else skipped += 1;
     }
-    setFeedback({
-      ok: done > 0,
-      message: `${done} product(s) ${action === "archive" ? "archived" : action === "publish" ? "published" : action === "unarchive" ? "restored" : "unpublished"}${skipped ? ` · ${skipped} skipped` : ""}.`,
-    });
+    appToast.success(
+      "Bulk action complete",
+      `${done} product(s) ${action === "archive" ? "archived" : action === "publish" ? "published" : action === "unarchive" ? "restored" : "unpublished"}${skipped ? ` · ${skipped} skipped` : ""}.`
+    );
     clear();
   };
 
@@ -323,7 +339,7 @@ export default function ProductsPage() {
       }
       n += 1;
     }
-    setFeedback({ ok: n > 0, message: `Updated ${n} product(s).` });
+    appToast.success("Bulk update applied", `Updated ${n} product(s).`);
   };
 
   // Kanban drag between publication states.
@@ -334,10 +350,30 @@ export default function ProductsPage() {
         : toKey === "Archived" ? "archive"
         : null;
     if (!action) {
-      setFeedback({ ok: false, message: `Already in "${toKey}".` });
+      appToast.warning("No change", `Already in "${toKey}".`);
       return;
     }
-    act(row, action);
+    void act(row, action);
+  };
+
+  // Export the currently filtered catalog as a CSV download.
+  const exportProductsCsv = () => {
+    const header = ["ID", "Name", "SKU", "Category", "Channel", "Price", "Stock", "Status"];
+    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const lines = [
+      header.join(","),
+      ...filteredRows.map((p) =>
+        [p.id, p.name, p.sku, p.category, p.channel, p.price, p.stock, p.status].map(esc).join(",")
+      ),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `voltmart-products-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    appToast.success("Export ready", `${filteredRows.length} product(s) downloaded as CSV.`);
   };
 
   const money = (v: number) =>
@@ -402,7 +438,7 @@ export default function ProductsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-11 px-5 text-sm font-medium">
+          <Button variant="outline" className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all" onClick={exportProductsCsv}>
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -643,21 +679,6 @@ export default function ProductsPage() {
             { key: "value", label: "Stock Value", measure: (g) => g.reduce((s, p) => s + p.stock * p.priceValue, 0) },
           ]}
         />
-      )}
-
-      {/* Workflow feedback toast */}
-      {feedback && (
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border flex items-center gap-2",
-            feedback.ok
-              ? "bg-card text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "bg-card text-rose-600 dark:text-rose-400 border-rose-500/30",
-          )}
-        >
-          {feedback.ok ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-          {feedback.message}
-        </div>
       )}
 
       <ProductFormDrawer

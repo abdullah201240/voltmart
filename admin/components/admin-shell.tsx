@@ -14,6 +14,7 @@ import { AdminSidebar } from "@/components/admin-sidebar";
 import { AdminHeader } from "@/components/admin-header";
 import { AdminFooter } from "@/components/admin-footer";
 import { NotificationsProvider } from "@/lib/notifications-context";
+import { AppFeedbackProvider } from "@/components/app-feedback";
 import { CommandPalette } from "@/components/command-palette";
 
 const SIDEBAR_KEY = "voltmart_sidebar_collapsed";
@@ -144,6 +145,7 @@ export function AdminShell({ children, className }: AdminShellProps) {
       }}
     >
       <NotificationsProvider>
+        <AppFeedbackProvider>
         <div
           className={cn(
             "relative h-dvh w-full overflow-hidden bg-background text-foreground flex selection:bg-primary/20",
@@ -187,6 +189,7 @@ export function AdminShell({ children, className }: AdminShellProps) {
           {/* Global ⌘K command bar (search + create + apps) */}
           <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         </div>
+        </AppFeedbackProvider>
       </NotificationsProvider>
     </AdminLayoutContext.Provider>
   );

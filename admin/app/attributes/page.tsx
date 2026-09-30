@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { SlidersHorizontal, Hash, Palette, Plus, RotateCcw } from "lucide-react";
+import { SlidersHorizontal, Hash, Palette, RotateCcw } from "lucide-react";
 import { getAttributes, type AttributeRow } from "@/lib/data/catalog";
+import { CreateFlow } from "@/components/ui/create-flow";
 
 const VARIANT_CREATION_CLASS: Record<AttributeRow["variantCreation"], "default" | "secondary" | "outline"> = {
   Instantly: "default",
@@ -109,9 +110,45 @@ export default function AttributesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
-            <Plus className="mr-2 h-4 w-4" /> Add Attribute
-          </Button>
+          <CreateFlow<AttributeRow>
+            model="product.attribute"
+            buttonLabel="Add Attribute"
+            drawerTitle="New Attribute"
+            drawerDescription="Define an attribute and its values for product variants."
+            fields={[
+              { key: "name", label: "Attribute Name", required: true, placeholder: "e.g. Color" },
+              {
+                key: "variantCreation",
+                label: "Variant Creation",
+                type: "select",
+                required: true,
+                defaultValue: "Instantly",
+                options: [
+                  { value: "Instantly", label: "Instantly" },
+                  { value: "Dynamically", label: "Dynamically" },
+                  { value: "Never", label: "Never" },
+                ],
+              },
+              {
+                key: "values",
+                label: "Attribute Values",
+                required: true,
+                colSpan: 2,
+                placeholder: "Black, White, Blue",
+                helper: "Comma-separated list of values shoppers can pick.",
+              },
+            ]}
+            validate={(v) => (rows.some((a) => a.name.toLowerCase() === v.name.trim().toLowerCase()) ? "That attribute already exists." : null)}
+            build={(v) => ({
+              id: `ATT-${Date.now().toString(36)}`,
+              name: v.name.trim(),
+              variantCreation: v.variantCreation as AttributeRow["variantCreation"],
+              values: v.values.split(",").map((s) => s.trim()).filter(Boolean),
+              productTypes: 0,
+            })}
+            onCreated={(row) => setRows((prev) => [row, ...prev])}
+            successMessage="Attribute created"
+          />
         </div>
       </div>
 

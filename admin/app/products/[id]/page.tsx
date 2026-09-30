@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { getProducts, type ProductRow } from "@/lib/data/products";
 import { getVariantsFor, type VariantRow } from "@/lib/data/catalog";
+import { useToast } from "@/components/app-feedback";
 
 const VARIANT_COLUMNS: CentralTableColumn<VariantRow>[] = [
   {
@@ -65,6 +66,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
+  const appToast = useToast();
   const [product, setProduct] = useState<ProductRow | undefined>();
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,8 +134,8 @@ export default function ProductDetailPage() {
           <p className="text-sm text-muted-foreground font-mono">{product.sku} · {product.category}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-10 px-4 text-sm font-medium"><Pencil className="mr-2 h-4 w-4" /> Edit</Button>
-          <Button className="h-10 px-4 text-sm font-medium"><Plus className="mr-2 h-4 w-4" /> Add Variant</Button>
+          <Button variant="outline" className="h-10 px-4 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all" onClick={() => appToast.info("Edit template", `Opening the editor for ${product.name}.`)}><Pencil className="mr-2 h-4 w-4" /> Edit</Button>
+          <Button className="h-10 px-4 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all" onClick={() => appToast.success("Variant queued", `A new variant for ${product.name} was added to the draft list.`)}><Plus className="mr-2 h-4 w-4" /> Add Variant</Button>
         </div>
       </div>
 

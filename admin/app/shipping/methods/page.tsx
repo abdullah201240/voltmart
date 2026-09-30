@@ -10,8 +10,9 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Truck, CheckCircle2, Globe, Plus, RotateCcw } from "lucide-react";
+import { Truck, CheckCircle2, Globe, RotateCcw } from "lucide-react";
 import { getCarriers, carrierStats, CARRIER_PROVIDER_OPTIONS, type CarrierRow } from "@/lib/data/shipping";
+import { CreateFlow } from "@/components/ui/create-flow";
 
 const CARRIER_COLUMNS: CentralTableColumn<CarrierRow>[] = [
   {
@@ -116,9 +117,49 @@ export default function ShippingMethodsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
-            <Plus className="mr-2 h-4 w-4" /> Add Carrier
-          </Button>
+          <CreateFlow<CarrierRow>
+            model="delivery.carrier"
+            buttonLabel="Add Carrier"
+            drawerTitle="New Shipping Method"
+            drawerDescription="Register a delivery carrier and its pricing method."
+            fields={[
+              { key: "name", label: "Method Name", required: true, placeholder: "e.g. DHL Next Day" },
+              {
+                key: "provider",
+                label: "Provider",
+                type: "select",
+                required: true,
+                defaultValue: "DHL Express",
+                options: CARRIER_PROVIDER_OPTIONS.filter((o) => o.value !== "all"),
+              },
+              {
+                key: "method",
+                label: "Price Method",
+                type: "select",
+                required: true,
+                defaultValue: "Fixed Price",
+                options: [
+                  { value: "Fixed Price", label: "Fixed Price" },
+                  { value: "Weight Based", label: "Weight Based" },
+                  { value: "Based on Order", label: "Based on Order" },
+                  { value: "Free", label: "Free" },
+                ],
+              },
+              { key: "margin", label: "Margin (%)", type: "number", defaultValue: "0", helper: "Markup added on top of the carrier tariff." },
+            ]}
+            validate={(v) => (rows.some((c) => c.name.toLowerCase() === v.name.trim().toLowerCase()) ? "That shipping method already exists." : null)}
+            build={(v) => ({
+              id: `CAR-${Date.now().toString(36)}`,
+              name: v.name.trim(),
+              provider: v.provider as CarrierRow["provider"],
+              method: v.method as CarrierRow["method"],
+              countries: 0,
+              margin: Math.max(0, Number(v.margin) || 0),
+              active: true,
+            })}
+            onCreated={(row) => setRows((prev) => [row, ...prev])}
+            successMessage="Shipping method created"
+          />
         </div>
       </div>
 

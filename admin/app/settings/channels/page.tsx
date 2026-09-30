@@ -6,7 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
 import { Waypoints, Plus, RotateCcw } from "lucide-react";
-import { getChannels, type ChannelRow } from "@/lib/data/settings";
+import { getChannels, getWarehouses, CHANNEL, type ChannelRow } from "@/lib/data/settings";
+import { addRecord } from "@/lib/data/ops";
+import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
+import { useToast } from "@/components/app-feedback";
 
 const CHANNEL_COLUMNS: CentralTableColumn<ChannelRow>[] = [
   {
@@ -54,10 +57,13 @@ const CHANNEL_COLUMNS: CentralTableColumn<ChannelRow>[] = [
 ];
 
 export default function SettingsChannelsPage() {
+  const appToast = useToast();
   const { searchQuery } = useAdminLayout();
   const [rows, setRows] = useState<ChannelRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTableQuery, setSearchTableQuery] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [whOptions, setWhOptions] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -67,10 +73,43 @@ export default function SettingsChannelsPage() {
         setLoading(false);
       }
     });
+    getWarehouses().then((w) => {
+      if (alive) setWhOptions(w.filter((x) => x.active).map((x) => ({ value: x.name, label: x.name })));
+    });
     return () => {
       alive = false;
     };
   }, []);
+
+  const CREATE_FIELDS: CreateFieldDef[] = [
+    { key: "name", label: "Channel Name", required: true, placeholder: "e.g. Sylhet Store", helper: "The slug is generated automatically." },
+    {
+      key: "warehouse",
+      label: "Fulfillment Warehouse",
+      type: "select",
+      required: true,
+      options: whOptions,
+    },
+  ];
+
+  const createChannel = (v: Record<string, string>) => {
+    const slug = v.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    if (!slug) return "Name must contain at least one letter or digit.";
+    if (rows.some((c) => c.slug === slug)) return "A channel with that name already exists.";
+    const row: ChannelRow = {
+      id: `CH-${Date.now().toString(36)}`,
+      name: v.name,
+      slug,
+      currency: "BDT",
+      warehouse: v.warehouse,
+      publishedProducts: 0,
+      active: true,
+    };
+    addRecord(CHANNEL, row as unknown as Record<string, unknown>);
+    setRows((prev) => [row, ...prev]);
+    appToast.success("Channel created", `\u201C${row.name}\u201D is now available for sales channels.`);
+    return null;
+  };
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
   const filteredRows = useMemo(() => {
@@ -85,7 +124,10 @@ export default function SettingsChannelsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Sales Channels</h1>
           <p className="text-sm text-muted-foreground">Storefronts and marketplaces — currency and warehouse per channel.</p>
         </div>
-        <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
+        <Button
+          className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all"
+          onClick={() => setCreateOpen(true)}
+        >
           <Plus className="mr-2 h-4 w-4" /> Add Channel
         </Button>
       </div>
@@ -107,6 +149,16 @@ export default function SettingsChannelsPage() {
             </Button>
           )
         }
+      />
+
+      <RecordCreateDrawer
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="New Sales Channel"
+        description="Open a storefront bound to a warehouse."
+        submitLabel="Create Channel"
+        fields={CREATE_FIELDS}
+        onSubmit={createChannel}
       />
     </>
   );

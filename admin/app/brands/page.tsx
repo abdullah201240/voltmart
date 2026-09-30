@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Award, Layers, Banknote, Building2, Plus, RotateCcw } from "lucide-react";
+import { Award, Layers, Banknote, Building2, RotateCcw } from "lucide-react";
 import { getBrands, type BrandRow } from "@/lib/data/catalog";
+import { CreateFlow } from "@/components/ui/create-flow";
 
 function money(v: number) {
   return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -93,9 +94,26 @@ export default function BrandsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
-            <Plus className="mr-2 h-4 w-4" /> Add Brand
-          </Button>
+          <CreateFlow<BrandRow>
+            model="product.brand"
+            buttonLabel="Add Brand"
+            drawerTitle="New Brand"
+            drawerDescription="Register a manufacturer so products can be attributed and valued."
+            fields={[
+              { key: "name", label: "Brand Name", required: true, placeholder: "e.g. Sony" },
+              { key: "slug", label: "URL Slug", required: true, placeholder: "sony", helper: "Lowercase; used in storefront URLs." },
+            ]}
+            validate={(v) => (rows.some((b) => b.slug === v.slug.trim().toLowerCase()) ? "That slug is already taken." : null)}
+            build={(v) => ({
+              id: `BR-${Date.now().toString(36)}`,
+              name: v.name.trim(),
+              slug: v.slug.trim().toLowerCase(),
+              products: 0,
+              revenue: 0,
+            })}
+            onCreated={(row) => setRows((prev) => [row, ...prev])}
+            successMessage="Brand created"
+          />
         </div>
       </div>
 

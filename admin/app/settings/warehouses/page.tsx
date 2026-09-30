@@ -8,6 +8,7 @@ import { Warehouse, Plus } from "lucide-react";
 import { getWarehouses, WAREHOUSE, type WarehouseRow } from "@/lib/data/settings";
 import { addRecord } from "@/lib/data/ops";
 import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
+import { useToast } from "@/components/app-feedback";
 
 const CREATE_FIELDS: CreateFieldDef[] = [
   { key: "name", label: "Warehouse Name", required: true, placeholder: "e.g. Khulna Depot" },
@@ -67,6 +68,7 @@ const WAREHOUSE_COLUMNS: CentralTableColumn<WarehouseRow>[] = [
 ];
 
 export default function SettingsWarehousesPage() {
+  const appToast = useToast();
   const [rows, setRows] = useState<WarehouseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -97,6 +99,7 @@ export default function SettingsWarehousesPage() {
     };
     addRecord(WAREHOUSE, row as unknown as Record<string, unknown>);
     setRows((prev) => [row, ...prev]);
+    appToast.success("Warehouse created", `\u201C${row.name}\u201D is now available for warehouse routing.`);
     return null;
   };
 

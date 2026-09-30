@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,11 +10,13 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { FileText, Banknote, Wallet, FileClock, Plus, RotateCcw, Check, XCircle, ArrowDownLeft, AlertTriangle } from "lucide-react";
+import { FileText, Banknote, Wallet, FileClock, RotateCcw, Check, XCircle, ArrowDownLeft } from "lucide-react";
 import { getInvoices, invoiceStats, MOVE_STATE_OPTIONS, type InvoiceRow, type MoveState } from "@/lib/data/finance";
 import { useOps } from "@/lib/data/ops";
 import { applyMoveAction } from "@/lib/data/workflows";
 import { createCreditNote } from "@/lib/data/accounting";
+import { CreateFlow } from "@/components/ui/create-flow";
+import { useConfirm, useToast } from "@/components/app-feedback";
 
 const STATE_CLASS: Record<MoveState, "default" | "secondary" | "outline"> = {
   Draft: "secondary",
@@ -31,11 +32,12 @@ function money(v: number) {
 export default function InvoicesPage() {
   const { searchQuery } = useAdminLayout();
   const version = useOps();
+  const appToast = useToast();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTableQuery, setSearchTableQuery] = useState("");
   const [selectedState, setSelectedState] = useState("all");
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -50,35 +52,47 @@ export default function InvoicesPage() {
     };
   }, [version]);
 
-  useEffect(() => {
-    if (!feedback) return;
-    const t = setTimeout(() => setFeedback(null), 3200);
-    return () => clearTimeout(t);
-  }, [feedback]);
-
-  const act = (inv: InvoiceRow, action: "post" | "cancel") => {
-    setFeedback(applyMoveAction(inv.id, action, { state: inv.state }, true));
+  const act = async (inv: InvoiceRow, action: "post" | "cancel") => {
+    if (action === "cancel") {
+      const allowed = await confirm({
+        title: `Cancel ${inv.number}?`,
+        description: `This voids the invoice for ${inv.partner}. Cancelled moves cannot be re-posted.`,
+        tone: "destructive",
+        confirmLabel: "Cancel Invoice",
+      });
+      if (!allowed) return;
+    }
+    const res = applyMoveAction(inv.id, action, { state: inv.state }, true);
+    if (res.ok) appToast.success(action === "post" ? "Invoice posted" : "Invoice cancelled", inv.number);
+    else appToast.error("Action failed", res.message);
   };
 
   const credit = (inv: InvoiceRow) => {
     const note = createCreditNote(inv.number, inv.partner, inv.total);
-    setFeedback(
-      note
-        ? { ok: true, message: `Credit note ${note.number} created — post it in Credit Notes.` }
-        : { ok: false, message: `A credit note already exists for ${inv.number}.` },
-    );
+    if (note) {
+      appToast.success("Credit note created", `${note.number} is ready to post in Credit Notes.`);
+    } else {
+      appToast.error("Already credited", `A credit note already exists for ${inv.number}.`);
+    }
   };
 
-  const bulkPost = (selected: InvoiceRow[], clear: () => void) => {
+  const bulkPost = async (selected: InvoiceRow[], clear: () => void) => {
+    const allowed = await confirm({
+      title: `Post ${selected.length} invoice(s) to the ledger?`,
+      description: "Once posted, drafts become immutable journal entries.",
+      confirmLabel: "Post Invoices",
+    });
+    if (!allowed) return;
     let posted = 0;
     for (const inv of selected) {
       const res = applyMoveAction(inv.id, "post", { state: inv.state }, true);
       if (res.ok) posted += 1;
     }
-    setFeedback({
-      ok: posted > 0,
-      message: posted ? `${posted} invoice${posted === 1 ? "" : "s"} posted to the ledger.` : "Nothing to post — selected invoices are not drafts.",
-    });
+    if (posted > 0) {
+      appToast.success("Invoices posted", `${posted} of ${selected.length} invoice(s) moved to Posted.`);
+    } else {
+      appToast.info("Nothing to post", "Selected invoices are not drafts.");
+    }
     clear();
   };
 
@@ -188,9 +202,38 @@ export default function InvoicesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
-            <Plus className="mr-2 h-4 w-4" /> Create Invoice
-          </Button>
+          <CreateFlow<InvoiceRow>
+            model="account.move"
+            buttonLabel="Create Invoice"
+            drawerTitle="New Customer Invoice"
+            drawerDescription="Raise a customer invoice (posts as a Draft journal entry)."
+            submitLabel="Create Invoice"
+            fields={[
+              { key: "partner", label: "Customer", required: true, placeholder: "e.g. Rahim Ahmed", colSpan: 2 },
+              { key: "reference", label: "Origin SO Ref", placeholder: "e.g. S00099" },
+              { key: "total", label: "Invoice Total (৳)", type: "number", required: true, placeholder: "12000" },
+              { key: "dueDate", label: "Due Date", placeholder: "e.g. Oct 15, 2026" },
+            ]}
+            validate={(v) => (!v.total || Number(v.total) <= 0 ? "Enter an invoice total greater than zero." : null)}
+            build={(v) => {
+              const total = Number(v.total) || 0;
+              const num = `INV/${new Date().getFullYear()}/${Date.now().toString(36).toUpperCase()}`;
+              return {
+                id: num,
+                number: num,
+                reference: v.reference.trim() || "—",
+                partner: v.partner.trim(),
+                date: "Today",
+                dueDate: v.dueDate.trim() || "Net 30",
+                subtotal: total,
+                tax: 0,
+                total,
+                state: "Draft",
+              };
+            }}
+            onCreated={(row) => setRows((prev) => [row, ...prev])}
+            successMessage="Invoice created"
+          />
         </div>
       </div>
 
@@ -248,19 +291,6 @@ export default function InvoicesPage() {
       />
 
       {/* Action toast */}
-      {feedback && (
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border flex items-center gap-2",
-            feedback.ok
-              ? "bg-card text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "bg-card text-rose-600 dark:text-rose-400 border-rose-500/30",
-          )}
-        >
-          {feedback.ok ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-          {feedback.message}
-        </div>
-      )}
     </>
   );
 }

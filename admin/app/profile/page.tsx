@@ -17,7 +17,6 @@ import {
   Settings,
   Eye,
   EyeOff,
-  CheckCircle2,
   AlertTriangle,
   Monitor,
   Smartphone,
@@ -34,6 +33,7 @@ import {
   CentralFormInput,
   CentralFormTextarea,
 } from "@/components/ui/central-form";
+import { useConfirm, useToast } from "@/components/app-feedback";
 
 /* ─── Mock profile data ──────────────────────────────────────────── */
 const PROFILE = {
@@ -69,8 +69,9 @@ const TONE_ICON: Record<string, string> = {
 };
 
 export default function ProfilePage() {
+  const appToast = useToast();
+  const confirm = useConfirm();
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
@@ -90,8 +91,28 @@ export default function ProfilePage() {
     setSaving(true);
     await new Promise((r) => setTimeout(r, 1200));
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    appToast.success("Profile saved", "Your account details and preferences were updated.");
+  };
+
+  const handleSignOut = async () => {
+    const allowed = await confirm({
+      title: "Sign out of the admin console?",
+      description: "You'll need to re-enter your credentials to resume work.",
+      tone: "destructive",
+      confirmLabel: "Sign Out",
+    });
+    if (!allowed) return;
+    appToast.info("Signed out", "Session terminated. (Demo — no auth backend.)");
+  };
+
+  const handleUpdatePassword = async () => {
+    const allowed = await confirm({
+      title: "Update admin password?",
+      description: "All other active sessions will be signed out immediately.",
+      confirmLabel: "Update Password",
+    });
+    if (!allowed) return;
+    appToast.success("Password updated", "Other sessions were signed out for safety.");
   };
 
   const toggle = (key: keyof typeof notifPrefs) =>
@@ -108,14 +129,9 @@ export default function ProfilePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {saved && (
-            <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 animate-in fade-in-0">
-              <CheckCircle2 className="h-4 w-4" />
-              Changes saved
-            </span>
-          )}
           <Button
             variant="outline"
+            onClick={handleSignOut}
             className="h-11 px-5 text-sm font-medium cursor-pointer text-rose-600 border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/30"
           >
             <LogOut className="mr-2 h-4 w-4" />
@@ -406,7 +422,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex justify-end">
-              <Button variant="outline" className="h-10 px-5 text-sm font-medium cursor-pointer">
+              <Button variant="outline" onClick={handleUpdatePassword} className="h-10 px-5 text-sm font-medium cursor-pointer">
                 <Key className="mr-2 h-3.5 w-3.5" />
                 Update Password
               </Button>
