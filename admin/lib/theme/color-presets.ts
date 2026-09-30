@@ -135,3 +135,32 @@ export function generateThemeCss(presetId: string, customHex?: string): string {
 }
 `;
 }
+
+/**
+ * Pre-hydration inline script for <head> to prevent FOUC (flash of default color)
+ */
+export const THEME_INIT_SCRIPT = `(function(){
+  try {
+    var p = localStorage.getItem('vm_theme_color') || '${DEFAULT_THEME_PRESET}';
+    var h = localStorage.getItem('vm_theme_hex') || '#2563eb';
+    var presets = ${JSON.stringify(
+      THEME_PRESETS.reduce((acc, p) => {
+        acc[p.id] = {
+          l: p.lightPrimary,
+          lf: p.lightPrimaryForeground,
+          d: p.darkPrimary,
+          df: p.darkPrimaryForeground,
+        };
+        return acc;
+      }, {} as Record<string, { l: string; lf: string; d: string; df: string }>)
+    )};
+    var cur = presets[p] || (p === 'custom' && h ? { l: h, lf: '#fff', d: h, df: '#000' } : presets['${DEFAULT_THEME_PRESET}']);
+    var css = ':root{--primary:' + cur.l + ' !important;--primary-foreground:' + cur.lf + ' !important;--ring:' + cur.l + ' !important;--sidebar-primary:' + cur.l + ' !important;--sidebar-primary-foreground:' + cur.lf + ' !important;--sidebar-ring:' + cur.l + ' !important;--chart-1:' + cur.l + ' !important;}' +
+              '.dark{--primary:' + cur.d + ' !important;--primary-foreground:' + cur.df + ' !important;--ring:' + cur.d + ' !important;--sidebar-primary:' + cur.d + ' !important;--sidebar-primary-foreground:' + cur.df + ' !important;--sidebar-ring:' + cur.d + ' !important;--chart-1:' + cur.d + ' !important;}';
+    var s = document.createElement('style');
+    s.id = 'vm-theme-color-vars';
+    s.textContent = css;
+    document.head.appendChild(s);
+  } catch(e){}
+})()`;
+

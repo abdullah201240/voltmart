@@ -577,3 +577,60 @@ export function cancelOrderpoint(ref: string, product: string): ActionResult {
   return ok("Procurement cancelled.");
 }
 
+// ------------------------------------------------------------------
+// Returns / RMA (`rma.return`) — after-sales claim lifecycle
+// ------------------------------------------------------------------
+// Mirrors an electronics warranty/return desk: a returned unit is logged,
+// bench-tested, then resolved by refund, replacement, or rejection. State
+// persists through the ops overlay so the dashboard tile and the /returns
+// list stay in sync.
+
+import type { ReturnState } from "@/lib/data/returns";
+
+export const RMA_RETURN = "rma.return";
+
+export type ReturnAction = "inspect" | "approve_refund" | "approve_replace" | "reject";
+
+/** Effective (overlay-merged) state of an RMA claim. */
+export function returnState(ref: string): ReturnState | undefined {
+  return getRecord(RMA_RETURN, ref).fields.state as ReturnState | undefined;
+}
+
+/** Apply an RMA transition with chatter history. */
+export function applyReturnAction(
+  ref: string,
+  customer: string,
+  action: ReturnAction,
+  base: { state: ReturnState },
+): ActionResult {
+  const state = returnState(ref) ?? base.state;
+
+  switch (action) {
+    case "inspect": {
+      if (state !== "Requested") return fail("Only a freshly requested return can move to inspection.");
+      patchFields(RMA_RETURN, ref, { state: "In Inspection" });
+      addHistory(RMA_RETURN, ref, "State: Requested → In Inspection", `${ref} queued at the service lab for ${customer}'s unit.`);
+      return ok("Return moved to inspection.");
+    }
+    case "approve_refund": {
+      if (state !== "In Inspection") return fail("Inspect the unit before approving a refund.");
+      patchFields(RMA_RETURN, ref, { state: "Approved Refund" });
+      addHistory(RMA_RETURN, ref, "State: In Inspection → Approved Refund", `${ref} passed testing — refund approved for ${customer}.`);
+      return ok("Refund approved.");
+    }
+    case "approve_replace": {
+      if (state !== "In Inspection") return fail("Inspect the unit before approving a replacement.");
+      patchFields(RMA_RETURN, ref, { state: "Approved Replacement" });
+      addHistory(RMA_RETURN, ref, "State: In Inspection → Approved Replacement", `${ref} confirmed faulty — replacement dispatch approved.`);
+      return ok("Replacement approved.");
+    }
+    case "reject": {
+      if (state === "Rejected") return fail("This return is already rejected.");
+      if (state === "Approved Refund" || state === "Approved Replacement") return fail("An approved return cannot be rejected — issue a credit note instead.");
+      patchFields(RMA_RETURN, ref, { state: "Rejected" });
+      addHistory(RMA_RETURN, ref, `State: ${state} → Rejected`, `${ref} rejected — outside warranty or customer damage.`);
+      return ok("Return rejected.");
+    }
+  }
+}
+

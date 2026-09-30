@@ -41,7 +41,12 @@ export function ThemeColorPicker() {
     appToast.info("Theme Reset", "Accent color returned to default Volt Electric Blue.");
   };
 
-  const isDark = resolvedTheme === "dark";
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const isDark = mounted && resolvedTheme === "dark";
 
   return (
     <div className="space-y-6 w-full">
@@ -92,7 +97,7 @@ export function ThemeColorPicker() {
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {presets.map((preset) => {
-            const isSelected = themeColor === preset.id;
+            const isSelected = mounted && themeColor === preset.id;
             return (
               <button
                 key={preset.id}
@@ -105,7 +110,7 @@ export function ThemeColorPicker() {
                 }`}
               >
                 {/* Swatch circle with checkmark */}
-                <div
+                <span
                   className="h-9 w-9 rounded-full shadow-inner flex items-center justify-center transition-transform group-hover:scale-105"
                   style={{ backgroundColor: preset.hex }}
                 >
@@ -116,12 +121,12 @@ export function ThemeColorPicker() {
                       }`}
                     />
                   )}
-                </div>
+                </span>
 
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-foreground truncate">{preset.label}</p>
-                  <p className="font-mono text-[10px] text-muted-foreground uppercase">{preset.hex}</p>
-                </div>
+                <span className="block min-w-0">
+                  <span className="block text-xs font-semibold text-foreground truncate">{preset.label}</span>
+                  <span className="block font-mono text-[10px] text-muted-foreground uppercase">{preset.hex}</span>
+                </span>
               </button>
             );
           })}
@@ -176,9 +181,9 @@ export function ThemeColorPicker() {
             Apply Custom Color
           </Button>
 
-          {themeColor === "custom" && (
+          {mounted && themeColor === "custom" && (
             <Badge variant="outline" className="border-primary/50 text-primary font-semibold text-xs py-1">
-              Active: Custom Color ({customHex.toUpperCase()})
+              Active: Custom Color ({(customHex || "#2563eb").toUpperCase()})
             </Badge>
           )}
         </div>

@@ -11,6 +11,7 @@
  */
 
 export type VoucherType = "Fixed" | "Percentage" | "Shipping";
+export type DiscountScope = "order" | "products" | "categories";
 
 export interface VoucherRow {
   id: string;
@@ -25,6 +26,14 @@ export interface VoucherRow {
   startsAt: string;
   expiresAt: string;
   status: "Active" | "Scheduled" | "Expired";
+  /** Scope of application: entire order vs specific items */
+  appliesTo?: DiscountScope;
+  /** Specific product IDs when appliesTo === "products" */
+  selectedProductIds?: string[];
+  /** Cached product names for display */
+  selectedProductNames?: string[];
+  /** Specific categories when appliesTo === "categories" */
+  selectedCategories?: string[];
 }
 
 export type PricelistPolicy = "Fixed Price" | "Percentage" | "Discount" | "Markup" | "Margin";
@@ -64,11 +73,19 @@ export const VOUCHER_TYPE_OPTIONS = [
   { value: "Shipping", label: "Free Shipping" },
 ];
 
+export const VOUCHER_SCOPE_OPTIONS = [
+  { value: "all", label: "All Scopes" },
+  { value: "order", label: "Entire Order" },
+  { value: "products", label: "Specific Products" },
+  { value: "categories", label: "Specific Categories" },
+];
+
 const VOUCHERS: VoucherRow[] = [
-  { id: "V-01", code: "WELCOME10", type: "Percentage", value: 10, discount: "10% off", usageLimit: 0, used: 342, startsAt: "Jan 01, 2026", expiresAt: "Dec 31, 2026", status: "Active" },
-  { id: "V-02", code: "FREESHIP", type: "Shipping", value: 0, discount: "Free shipping", usageLimit: 1000, used: 618, startsAt: "Aug 01, 2026", expiresAt: "Oct 31, 2026", status: "Active" },
-  { id: "V-03", code: "SAVE50", type: "Fixed", value: 6000, discount: "৳6,000 off", usageLimit: 500, used: 500, startsAt: "Jun 01, 2026", expiresAt: "Aug 31, 2026", status: "Expired" },
-  { id: "V-04", code: "BFCM25", type: "Percentage", value: 25, discount: "25% off", usageLimit: 2000, used: 0, startsAt: "Nov 25, 2026", expiresAt: "Dec 01, 2026", status: "Scheduled" },
+  { id: "V-01", code: "WELCOME10", type: "Percentage", value: 10, discount: "10% off", usageLimit: 0, used: 342, startsAt: "Jan 01, 2026", expiresAt: "Dec 31, 2026", status: "Active", appliesTo: "order" },
+  { id: "V-02", code: "FREESHIP", type: "Shipping", value: 0, discount: "Free shipping", usageLimit: 1000, used: 618, startsAt: "Aug 01, 2026", expiresAt: "Oct 31, 2026", status: "Active", appliesTo: "order" },
+  { id: "V-03", code: "SAVE50", type: "Fixed", value: 6000, discount: "৳6,000 off", usageLimit: 500, used: 500, startsAt: "Jun 01, 2026", expiresAt: "Aug 31, 2026", status: "Expired", appliesTo: "order" },
+  { id: "V-04", code: "BFCM25", type: "Percentage", value: 25, discount: "25% off", usageLimit: 2000, used: 0, startsAt: "Nov 25, 2026", expiresAt: "Dec 01, 2026", status: "Scheduled", appliesTo: "products", selectedProductIds: ["P-1001", "P-1003"], selectedProductNames: ["Galaxy S24 Ultra 512GB", "MacBook Pro 14 M3 Pro"] },
+  { id: "V-05", code: "AUDIO15", type: "Percentage", value: 15, discount: "15% off", usageLimit: 500, used: 120, startsAt: "Sep 01, 2026", expiresAt: "Nov 30, 2026", status: "Active", appliesTo: "categories", selectedCategories: ["Audio", "Accessories"] },
 ];
 
 const PRICELISTS: PricelistRow[] = [

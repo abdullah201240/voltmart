@@ -17,27 +17,8 @@ const STORAGE_PRESET_KEY = "vm_theme_color";
 const STORAGE_HEX_KEY = "vm_theme_hex";
 
 export function ThemeColorProvider({ children }: { children: React.ReactNode }) {
-  const [themeColor, setThemeColorState] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        return localStorage.getItem(STORAGE_PRESET_KEY) || DEFAULT_THEME_PRESET;
-      } catch {
-        return DEFAULT_THEME_PRESET;
-      }
-    }
-    return DEFAULT_THEME_PRESET;
-  });
-
-  const [customHex, setCustomHexState] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        return localStorage.getItem(STORAGE_HEX_KEY) || "#2563eb";
-      } catch {
-        return "#2563eb";
-      }
-    }
-    return "#2563eb";
-  });
+  const [themeColor, setThemeColorState] = useState<string>(DEFAULT_THEME_PRESET);
+  const [customHex, setCustomHexState] = useState<string>("#2563eb");
 
   // Apply style tag into document head
   const applyStyles = useCallback((presetId: string, hex: string) => {
@@ -52,10 +33,26 @@ export function ThemeColorProvider({ children }: { children: React.ReactNode }) 
     styleTag.innerHTML = generateThemeCss(presetId, hex);
   }, []);
 
-  // Initialize styles on mount and on changes
+  // Hydrate from localStorage on client mount
   useEffect(() => {
-    applyStyles(themeColor, customHex);
-  }, [themeColor, customHex, applyStyles]);
+    try {
+      const savedPreset = localStorage.getItem(STORAGE_PRESET_KEY);
+      const savedHex = localStorage.getItem(STORAGE_HEX_KEY);
+      const effectivePreset = savedPreset || DEFAULT_THEME_PRESET;
+      const effectiveHex = savedHex || "#2563eb";
+
+      if (savedPreset) {
+        setThemeColorState(savedPreset);
+      }
+      if (savedHex) {
+        setCustomHexState(savedHex);
+      }
+      applyStyles(effectivePreset, effectiveHex);
+    } catch {
+      applyStyles(DEFAULT_THEME_PRESET, "#2563eb");
+    }
+  }, [applyStyles]);
+
 
   const setThemeColor = useCallback(
     (presetId: string, hex?: string) => {

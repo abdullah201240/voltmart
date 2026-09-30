@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -10,11 +10,20 @@ import {
   Calendar,
   Sparkles,
   Users,
+  Package,
+  Layers,
+  Search,
+  Check,
+  X,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/app-feedback";
 import { addRecord } from "@/lib/data/ops";
-import { VoucherRow } from "@/lib/data/discounts";
+import { VoucherRow, DiscountScope } from "@/lib/data/discounts";
+import { getProducts, type ProductRow, CATEGORY_OPTIONS } from "@/lib/data/products";
 
 export default function NewDiscountPage() {
   const router = useRouter();
@@ -32,6 +41,60 @@ export default function NewDiscountPage() {
   );
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Entitlement / Scope State (Entire Order vs Specific Products vs Categories)
+  const [appliesTo, setAppliesTo] = useState<DiscountScope>("order");
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [allProducts, setAllProducts] = useState<ProductRow[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    getProducts().then((prods) => {
+      if (alive) {
+        setAllProducts(prods);
+        setLoadingProducts(false);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Filter products for the interactive picker
+  const filteredProducts = useMemo(() => {
+    if (!productSearchQuery.trim()) return allProducts;
+    const q = productSearchQuery.toLowerCase();
+    return allProducts.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+    );
+  }, [allProducts, productSearchQuery]);
+
+  const toggleProduct = (productId: string) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+  };
+
+  const toggleCategory = (catName: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(catName) ? prev.filter((c) => c !== catName) : [...prev, catName]
+    );
+  };
+
+  const selectAllFiltered = () => {
+    const idsToAdd = filteredProducts.map((p) => p.id);
+    setSelectedProductIds((prev) => Array.from(new Set([...prev, ...idsToAdd])));
+  };
+
+  const clearSelectedProducts = () => {
+    setSelectedProductIds([]);
+  };
 
   const generateRandomCode = () => {
     const prefixes = ["EID", "FLASH", "VOLT", "SAVE", "DEAL"];
@@ -54,6 +117,22 @@ export default function NewDiscountPage() {
       return;
     }
 
+    if (appliesTo === "products" && selectedProductIds.length === 0) {
+      appToast.error(
+        "No Products Selected",
+        "Please select at least one specific product for this discount to apply to."
+      );
+      return;
+    }
+
+    if (appliesTo === "categories" && selectedCategories.length === 0) {
+      appToast.error(
+        "No Categories Selected",
+        "Please select at least one product category for this discount."
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     const voucherId = `VC-${Date.now().toString(36).toUpperCase()}`;
 
@@ -63,6 +142,12 @@ export default function NewDiscountPage() {
         : type === "Shipping"
         ? "Free shipping"
         : `৳${value.toLocaleString("en-IN")} off`;
+
+    // Extract names of selected products for quick display in listings
+    const selectedProductNames =
+      appliesTo === "products"
+        ? allProducts.filter((p) => selectedProductIds.includes(p.id)).map((p) => p.name)
+        : undefined;
 
     const newVoucher: VoucherRow = {
       id: voucherId,
@@ -75,6 +160,10 @@ export default function NewDiscountPage() {
       startsAt: new Date(startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       expiresAt: new Date(expiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       status: "Active",
+      appliesTo,
+      selectedProductIds: appliesTo === "products" ? selectedProductIds : undefined,
+      selectedProductNames,
+      selectedCategories: appliesTo === "categories" ? selectedCategories : undefined,
     };
 
     addRecord("discount.voucher", {
@@ -84,9 +173,16 @@ export default function NewDiscountPage() {
       notes: notes.trim() || undefined,
     });
 
+    const targetDesc =
+      appliesTo === "products"
+        ? `applied to ${selectedProductIds.length} specific product(s)`
+        : appliesTo === "categories"
+        ? `applied to ${selectedCategories.join(", ")}`
+        : "applied to entire order";
+
     appToast.success(
       "Voucher code created",
-      `Coupon ${cleanCode} (${discountLabel}) is now active.`
+      `Coupon ${cleanCode} (${discountLabel}, ${targetDesc}) is now active.`
     );
 
     setTimeout(() => {
@@ -146,7 +242,7 @@ export default function NewDiscountPage() {
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-        {/* Left 2 Cols: Voucher Code, Type & Values */}
+        {/* Left 2 Cols: Voucher Code, Type, Applies To Scope & Values */}
         <div className="lg:col-span-2 space-y-6">
           {/* Coupon Code Card */}
           <div className="rounded-lg border border-border/80 bg-card p-6 shadow-xs space-y-5">
@@ -222,6 +318,231 @@ export default function NewDiscountPage() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* APPLIES TO (ENTITLEMENT SCOPE) CARD — SHOPIFY / SALEOR STYLE */}
+          <div className="rounded-lg border border-border/80 bg-card p-6 shadow-xs space-y-5">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                <h2 className="text-base font-semibold text-foreground">Applies To (Target Scope)</h2>
+              </div>
+              <Badge variant="outline" className="text-xs font-semibold">
+                {appliesTo === "order"
+                  ? "Entire Order"
+                  : appliesTo === "products"
+                  ? `${selectedProductIds.length} Products Selected`
+                  : `${selectedCategories.length} Categories Selected`}
+              </Badge>
+            </div>
+
+            {/* Scope Selection Radios */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <label
+                onClick={() => setAppliesTo("order")}
+                className={`flex flex-col p-4 rounded-lg border cursor-pointer transition-all ${
+                  appliesTo === "order"
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/40 shadow-2xs"
+                    : "border-border/80 hover:border-primary/40 hover:bg-muted/30"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm font-semibold text-foreground">All Products</span>
+                  <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${appliesTo === "order" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                    {appliesTo === "order" && <Check className="h-2.5 w-2.5 text-primary-foreground stroke-[3]" />}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Applies to the entire cart subtotal at checkout.</p>
+              </label>
+
+              <label
+                onClick={() => setAppliesTo("products")}
+                className={`flex flex-col p-4 rounded-lg border cursor-pointer transition-all ${
+                  appliesTo === "products"
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/40 shadow-2xs"
+                    : "border-border/80 hover:border-primary/40 hover:bg-muted/30"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm font-semibold text-foreground">Specific Products</span>
+                  <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${appliesTo === "products" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                    {appliesTo === "products" && <Check className="h-2.5 w-2.5 text-primary-foreground stroke-[3]" />}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Applies only to selected designated items or SKUs.</p>
+              </label>
+
+              <label
+                onClick={() => setAppliesTo("categories")}
+                className={`flex flex-col p-4 rounded-lg border cursor-pointer transition-all ${
+                  appliesTo === "categories"
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/40 shadow-2xs"
+                    : "border-border/80 hover:border-primary/40 hover:bg-muted/30"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm font-semibold text-foreground">Specific Categories</span>
+                  <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${appliesTo === "categories" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                    {appliesTo === "categories" && <Check className="h-2.5 w-2.5 text-primary-foreground stroke-[3]" />}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Applies to any product within selected categories.</p>
+              </label>
+            </div>
+
+            {/* CONDITIONAL SECTION 1: SPECIFIC PRODUCTS PICKER */}
+            {appliesTo === "products" && (
+              <div className="space-y-4 pt-2 border-t border-border/60">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search products by title, SKU, or category..."
+                      value={productSearchQuery}
+                      onChange={(e) => setProductSearchQuery(e.target.value)}
+                      className="w-full h-10 pl-9 pr-3 text-sm rounded-md border border-input bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={selectAllFiltered}
+                      className="h-9 text-xs font-semibold cursor-pointer"
+                    >
+                      <CheckSquare className="mr-1.5 h-3.5 w-3.5" />
+                      Select Filtered ({filteredProducts.length})
+                    </Button>
+                    {selectedProductIds.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearSelectedProducts}
+                        className="h-9 text-xs font-semibold text-rose-500 hover:text-rose-600 cursor-pointer"
+                      >
+                        <X className="mr-1.5 h-3.5 w-3.5" /> Clear All ({selectedProductIds.length})
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Selected Product Chips */}
+                {selectedProductIds.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 p-2.5 rounded-lg bg-muted/30 border border-border/60 max-h-28 overflow-y-auto">
+                    <span className="text-xs font-semibold text-muted-foreground mr-1">
+                      Active Targets ({selectedProductIds.length}):
+                    </span>
+                    {selectedProductIds.map((id) => {
+                      const prod = allProducts.find((p) => p.id === id);
+                      return (
+                        <span
+                          key={id}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-card border border-border/80 text-xs font-medium text-foreground shadow-2xs"
+                        >
+                          <span className="truncate max-w-[200px]">{prod ? prod.name : id}</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleProduct(id)}
+                            className="text-muted-foreground hover:text-rose-500 cursor-pointer ml-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Scrollable Product Table / List */}
+                <div className="border border-border/80 rounded-lg max-h-72 overflow-y-auto divide-y divide-border/60 bg-card">
+                  {loadingProducts ? (
+                    <div className="p-6 text-center text-sm text-muted-foreground">Loading catalog products...</div>
+                  ) : filteredProducts.length === 0 ? (
+                    <div className="p-6 text-center text-sm text-muted-foreground">
+                      No matching products found for &ldquo;{productSearchQuery}&rdquo;
+                    </div>
+                  ) : (
+                    filteredProducts.map((product) => {
+                      const isChecked = selectedProductIds.includes(product.id);
+                      return (
+                        <div
+                          key={product.id}
+                          onClick={() => toggleProduct(product.id)}
+                          className={`flex items-center justify-between p-3.5 text-sm transition-colors cursor-pointer select-none ${
+                            isChecked
+                              ? "bg-primary/5 hover:bg-primary/10"
+                              : "hover:bg-muted/40"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="shrink-0 text-primary">
+                              {isChecked ? (
+                                <CheckSquare className="h-5 w-5 text-primary" />
+                              ) : (
+                                <Square className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-semibold text-foreground truncate">{product.name}</div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                <span className="font-mono">{product.sku}</span>
+                                <span>•</span>
+                                <span>{product.category}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0 ml-4">
+                            <span className="font-mono font-bold text-sm text-foreground">{product.price}</span>
+                            <Badge variant={product.stock > 0 ? "outline" : "secondary"} className="text-[10px]">
+                              {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* CONDITIONAL SECTION 2: SPECIFIC CATEGORIES */}
+            {appliesTo === "categories" && (
+              <div className="space-y-3 pt-2 border-t border-border/60">
+                <label className="text-xs font-semibold text-foreground">
+                  Select Applicable Categories <span className="text-rose-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {CATEGORY_OPTIONS.filter((c) => c.value !== "all").map((cat) => {
+                    const isSelected = selectedCategories.includes(cat.label);
+                    return (
+                      <div
+                        key={cat.value}
+                        onClick={() => toggleCategory(cat.label)}
+                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer select-none transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/40 font-semibold"
+                            : "border-border/80 bg-card hover:border-primary/40 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <div className="shrink-0">
+                          {isSelected ? (
+                            <CheckSquare className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Square className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span className="text-xs truncate">{cat.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Usage & Redemptions Card */}

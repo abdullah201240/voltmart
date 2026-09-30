@@ -11,12 +11,22 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Ticket, CheckCircle2, TicketCheck, CalendarX, RotateCcw, Plus } from "lucide-react";
+import {
+  Ticket,
+  CheckCircle2,
+  TicketCheck,
+  CalendarX,
+  RotateCcw,
+  Plus,
+  Package,
+  Layers,
+} from "lucide-react";
 import {
   getVouchers,
   voucherStats,
   VOUCHER_STATUS_OPTIONS,
   VOUCHER_TYPE_OPTIONS,
+  VOUCHER_SCOPE_OPTIONS,
   type VoucherRow,
 } from "@/lib/data/discounts";
 
@@ -48,12 +58,46 @@ const VOUCHER_COLUMNS: CentralTableColumn<VoucherRow>[] = [
     header: "Type",
     sortable: true,
     align: "center",
-    cell: ({ value }) => <Badge variant={TYPE_CLASS[value as VoucherRow["type"]]} className="text-xs font-semibold">{value}</Badge>,
+    cell: ({ value }) => (
+      <Badge variant={TYPE_CLASS[value as VoucherRow["type"]]} className="text-xs font-semibold">
+        {value}
+      </Badge>
+    ),
   },
   {
     accessorKey: "discount",
     header: "Discount",
     cell: ({ value }) => <span className="font-mono text-sm font-bold text-foreground">{value}</span>,
+  },
+  {
+    accessorKey: "appliesTo",
+    header: "Applies To",
+    sortable: true,
+    cell: ({ row }) => {
+      const scope = row.appliesTo || "order";
+      if (scope === "products") {
+        const count = row.selectedProductIds?.length || row.selectedProductNames?.length || 0;
+        const tooltip = row.selectedProductNames?.join(", ");
+        return (
+          <div className="flex items-center gap-1.5" title={tooltip}>
+            <Badge variant="outline" className="text-xs font-medium border-primary/40 text-primary">
+              <Package className="h-3 w-3 mr-1" />
+              {count > 0 ? `${count} Product${count > 1 ? "s" : ""}` : "Specific Products"}
+            </Badge>
+          </div>
+        );
+      }
+      if (scope === "categories") {
+        const cats = row.selectedCategories?.join(", ") || "Categories";
+        return (
+          <Badge variant="outline" className="text-xs font-medium border-amber-500/40 text-amber-600 dark:text-amber-400">
+            <Layers className="h-3 w-3 mr-1" />
+            {cats}
+          </Badge>
+        );
+      }
+      return <span className="text-xs text-muted-foreground font-medium">Entire Order</span>;
+    },
   },
   {
     accessorKey: "used",
@@ -76,7 +120,11 @@ const VOUCHER_COLUMNS: CentralTableColumn<VoucherRow>[] = [
     accessorKey: "status",
     header: "Status",
     sortable: true,
-    cell: ({ value }) => <Badge variant={STATUS_CLASS[value as VoucherRow["status"]]} className="text-xs font-semibold px-3 py-1">{value}</Badge>,
+    cell: ({ value }) => (
+      <Badge variant={STATUS_CLASS[value as VoucherRow["status"]]} className="text-xs font-semibold px-3 py-1">
+        {value}
+      </Badge>
+    ),
   },
 ];
 
@@ -87,6 +135,7 @@ export default function DiscountsPage() {
   const [searchTableQuery, setSearchTableQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+  const [selectedScope, setSelectedScope] = useState("all");
 
   useEffect(() => {
     let alive = true;
@@ -108,22 +157,29 @@ export default function DiscountsPage() {
     return rows.filter((v) => {
       const matchesStatus = selectedStatus === "all" || v.status === selectedStatus;
       const matchesType = selectedType === "all" || v.type === selectedType;
+      const matchesScope =
+        selectedScope === "all" || (v.appliesTo || "order") === selectedScope;
       const matchesQuery =
         !effectiveQuery ||
         v.code.toLowerCase().includes(effectiveQuery) ||
-        v.discount.toLowerCase().includes(effectiveQuery);
-      return matchesStatus && matchesType && matchesQuery;
+        v.discount.toLowerCase().includes(effectiveQuery) ||
+        (v.selectedProductNames &&
+          v.selectedProductNames.some((name) => name.toLowerCase().includes(effectiveQuery)));
+      return matchesStatus && matchesType && matchesScope && matchesQuery;
     });
-  }, [rows, selectedStatus, selectedType, effectiveQuery]);
+  }, [rows, selectedStatus, selectedType, selectedScope, effectiveQuery]);
 
   const clearFilters = () => {
     setSelectedStatus("all");
     setSelectedType("all");
+    setSelectedScope("all");
     setSearchTableQuery("");
   };
 
   const activeFiltersCount =
-    (selectedStatus !== "all" ? 1 : 0) + (selectedType !== "all" ? 1 : 0);
+    (selectedStatus !== "all" ? 1 : 0) +
+    (selectedType !== "all" ? 1 : 0) +
+    (selectedScope !== "all" ? 1 : 0);
   const hasActiveFilters = activeFiltersCount > 0 || effectiveQuery.length > 0;
 
   return (
@@ -132,7 +188,7 @@ export default function DiscountsPage() {
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">Discounts &amp; Vouchers</h1>
           <p className="text-sm text-muted-foreground">
-            Coupon codes buyers enter at checkout — fixed, percentage or free shipping.
+            Coupon promo codes with item-level targeting: entire orders, specific products, or category lines.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -158,11 +214,11 @@ export default function DiscountsPage() {
         loading={loading}
         loadingRows={6}
         searchable
-        searchPlaceholder="Search code or discount..."
+        searchPlaceholder="Search code, product, or discount..."
         title="Vouchers"
         description={`${filteredRows.length} of ${rows.length} vouchers`}
         filters={
-          <div className="grid gap-5 sm:grid-cols-2 w-full">
+          <div className="grid gap-5 sm:grid-cols-3 w-full">
             <SearchableDropbox
               label="Status"
               options={VOUCHER_STATUS_OPTIONS as DropboxOption[]}
@@ -178,6 +234,14 @@ export default function DiscountsPage() {
               onChange={setSelectedType}
               placeholder="All types..."
               searchPlaceholder="Search type..."
+            />
+            <SearchableDropbox
+              label="Target Scope"
+              options={VOUCHER_SCOPE_OPTIONS as DropboxOption[]}
+              value={selectedScope}
+              onChange={setSelectedScope}
+              placeholder="All scopes..."
+              searchPlaceholder="Search scope..."
             />
           </div>
         }

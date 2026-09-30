@@ -15,12 +15,30 @@ import { CentralTable, type CentralTableColumn } from "@/components/ui/central-t
 import { useAdminLayout } from "@/components/admin-shell";
 import {
   getOrders,
-  orderStats,
   ORDER_STATUS_OPTIONS,
   PAYMENT_STATUS_OPTIONS,
   type OrderRow,
   type OrderStatus,
 } from "@/lib/data/orders";
+import { getStock, getPickings, type StockRow, type PickingRow } from "@/lib/data/inventory";
+import {
+  getPayments,
+  getInvoices,
+  getBills,
+  type PaymentRow,
+  type InvoiceRow,
+  type BillRow,
+} from "@/lib/data/finance";
+import { getReturns, returnStats, type ReturnRow } from "@/lib/data/returns";
+import { getSerials, serialStats, type SerialRow } from "@/lib/data/serials";
+import { getTopProducts, type TopProduct } from "@/lib/data/analytics";
+import {
+  buildDashboardSnapshot,
+  selectScopedOrders,
+  formatBDT,
+  type ChannelKey,
+  type DateRangeKey,
+} from "@/lib/data/dashboard";
 import {
   Banknote,
   ShoppingCart,
@@ -39,22 +57,31 @@ import { WarehouseTiles } from "@/components/warehouse-tiles";
 import { FinanceReconciliationPanel } from "@/components/finance-reconciliation-panel";
 import { CommercialAnalyticsPanel } from "@/components/commercial-analytics-panel";
 
-/** Channel filter options mapped from Saleor Multi-Channel Context */
+/**
+ * Channel context mirrors the real `OrderRow.channelKey` values, so selecting
+ * a channel genuinely recomputes every KPI, panel and the Live Orders table.
+ */
 const DASHBOARD_CHANNELS: DropboxOption[] = [
   { value: "all", label: "All Channels", badge: "GLOBAL" },
-  { value: "web", label: "Online Web Storefront", badge: "WEB" },
-  { value: "pos-dhanmondi", label: "POS Retail (Dhanmondi)", badge: "POS" },
-  { value: "daraz", label: "Daraz Flagship Mall", badge: "API" },
-  { value: "social", label: "Social Commerce (FB / WhatsApp)", badge: "SOCIAL" },
+  { value: "default-channel", label: "Default Channel (BDT)", badge: "WEB" },
+  { value: "channel-dhk", label: "Dhaka Store (BDT)", badge: "DHK" },
+  { value: "channel-ctg", label: "Chattogram Store (BDT)", badge: "CTG" },
+  { value: "b2b-wholesale", label: "B2B Wholesale (BDT)", badge: "B2B" },
 ];
 
-/** Date Range filter options for executive & operational reporting */
 const DATE_RANGE_OPTIONS: DropboxOption[] = [
-  { value: "today", label: "Today (Last 24h)", badge: "LIVE" },
+  { value: "today", label: "Today", badge: "LIVE" },
   { value: "7d", label: "Last 7 Days", badge: "WEEK" },
   { value: "mtd", label: "Month to Date (MTD)", badge: "MONTH" },
   { value: "ytd", label: "Year to Date (YTD)", badge: "YEAR" },
 ];
+
+const RANGE_LABEL: Record<DateRangeKey, string> = {
+  today: "Today",
+  "7d": "Last 7 Days",
+  mtd: "MTD",
+  ytd: "YTD",
+};
 
 /** Order status badge tones — shared vocabulary with the Orders pages */
 const STATUS_META: Record<OrderStatus, string> = {
@@ -146,67 +173,132 @@ export default function AdminDashboardPage() {
   const { searchQuery } = useAdminLayout();
   const appToast = useToast();
   const confirm = useConfirm();
+
+  // Operational source-of-truth records (everything on the cockpit derives here).
   const [rows, setRows] = useState<OrderRow[]>([]);
+  const [stock, setStock] = useState<StockRow[]>([]);
+  const [pickings, setPickings] = useState<PickingRow[]>([]);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
+  const [bills, setBills] = useState<BillRow[]>([]);
+  const [returns, setReturns] = useState<ReturnRow[]>([]);
+  const [serials, setSerials] = useState<SerialRow[]>([]);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Top action bar states (Saleor + Odoo multi-channel & date context)
-  const [selectedChannel, setSelectedChannel] = useState("all");
-  const [selectedDateRange, setSelectedDateRange] = useState("today");
+  // Panorama context — genuinely recomputes KPIs, panels and the table.
+  const [selectedChannel, setSelectedChannel] = useState<ChannelKey>("all");
+  const [selectedDateRange, setSelectedDateRange] = useState<DateRangeKey>("ytd");
 
-  // Secondary Operational View Switcher (Defaults to Warehouse & Fulfillment Pipeline)
   const [activeOperationalTab, setActiveOperationalTab] = useState<"warehouse" | "finance" | "commercial">("warehouse");
 
-  // Live Orders CentralTable filters
-  const [tableChannel, setTableChannel] = useState("all");
+  // Live Orders CentralTable filters (status / payment / search).
   const [tableStatus, setTableStatus] = useState("all");
   const [tablePayment, setTablePayment] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
 
-  // Re-read orders so overlay workflow changes show up immediately
-  const reloadRows = () => {
-    getOrders().then((data) => {
-      setRows(data);
+  const loadAll = () => {
+    Promise.all([
+      getOrders(),
+      getStock(),
+      getPickings("incoming"),
+      getPickings("outgoing"),
+      getPickings("internal"),
+      getPayments(),
+      getInvoices(),
+      getBills(),
+      getReturns(),
+      getSerials(),
+      getTopProducts(),
+    ]).then(([o, s, pi, po, pint, pay, inv, bil, ret, ser, top]) => {
+      setRows(o);
+      setStock(s);
+      setPickings([...pi, ...po, ...pint]);
+      setPayments(pay);
+      setInvoices(inv);
+      setBills(bil);
+      setReturns(ret);
+      setSerials(ser);
+      setTopProducts(top);
     });
   };
 
   useEffect(() => {
     let alive = true;
-    getOrders().then((data) => {
-      if (alive) {
-        setRows(data);
-        setLoading(false);
-      }
+    Promise.all([
+      getOrders(),
+      getStock(),
+      getPickings("incoming"),
+      getPickings("outgoing"),
+      getPickings("internal"),
+      getPayments(),
+      getInvoices(),
+      getBills(),
+      getReturns(),
+      getSerials(),
+      getTopProducts(),
+    ]).then(([o, s, pi, po, pint, pay, inv, bil, ret, ser, top]) => {
+      if (!alive) return;
+      setRows(o);
+      setStock(s);
+      setPickings([...pi, ...po, ...pint]);
+      setPayments(pay);
+      setInvoices(inv);
+      setBills(bil);
+      setReturns(ret);
+      setSerials(ser);
+      setTopProducts(top);
+      setLoading(false);
     });
     return () => {
       alive = false;
     };
   }, []);
 
-  const stats = useMemo(() => orderStats(rows), [rows]);
+  // Single derived snapshot — the cockpit's one source of truth.
+  const snapshot = useMemo(
+    () =>
+      buildDashboardSnapshot({
+        orders: rows,
+        stock,
+        pickings,
+        payments,
+        invoices,
+        bills,
+        channel: selectedChannel,
+        range: selectedDateRange,
+      }),
+    [rows, stock, pickings, payments, invoices, bills, selectedChannel, selectedDateRange],
+  );
 
-  // 1-Click Operational Drill-Down Handler (from KPI cards & Odoo Kanban badges)
-  const handleDrillDown = (filter: { status?: string; query?: string; tab?: string }) => {
+  const returnStatsMemo = useMemo(() => returnStats(returns), [returns]);
+  const serialStatsMemo = useMemo(() => serialStats(serials), [serials]);
+
+  // Orders within the current channel + date-range context (drives the table).
+  const scopedOrders = useMemo(
+    () => selectScopedOrders(rows, selectedChannel, selectedDateRange),
+    [rows, selectedChannel, selectedDateRange],
+  );
+
+  const rangeLabel = RANGE_LABEL[selectedDateRange];
+
+  // 1-Click operational drill-down (KPI cards + warehouse tiles).
+  const handleDrillDown = (filter: { status?: string; payment?: string; tab?: string }) => {
     if (filter.tab === "warehouse" || filter.tab === "finance" || filter.tab === "commercial") {
       setActiveOperationalTab(filter.tab);
     }
-    if (filter.status) {
-      setTableStatus(filter.status);
-    }
-    if (filter.query) {
-      setSearchTableQuery(filter.query);
-    }
+    if (filter.status) setTableStatus(filter.status);
+    if (filter.payment) setTablePayment(filter.payment);
 
     const tableEl = document.getElementById("live-orders-section");
-    if (tableEl) {
-      tableEl.scrollIntoView({ behavior: "smooth" });
-    }
+    if (tableEl) tableEl.scrollIntoView({ behavior: "smooth" });
     appToast.info("Filter applied", "Showing matching operational records in Live Orders table.");
   };
 
-  const exportDailyDossier = () => {
+  const exportDossier = (orders: OrderRow[], name: string) => {
     const header = ["Order ID", "Customer", "Email", "Channel", "Date", "Status", "Payment", "Items", "Total (BDT)"];
     const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const lines = rows.map((o) =>
+    const lines = orders.map((o) =>
       [o.id, o.customer, o.email, o.channel, o.date, o.status, o.paymentStatus, o.itemCount, o.totalValue]
         .map(esc)
         .join(",")
@@ -215,28 +307,10 @@ export default function AdminDashboardPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `voltmart-daily-dossier-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `${name}-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    appToast.success("Daily dossier ready", `Exported full operational report (${rows.length} records) to CSV.`);
-  };
-
-  const exportCsv = (selected: OrderRow[]) => {
-    const header = ["Order", "Customer", "Email", "Channel", "Date", "Status", "Payment", "Items", "Total"];
-    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const lines = selected.map((o) =>
-      [o.id, o.customer, o.email, o.channel, o.date, o.status, o.paymentStatus, o.itemCount, o.totalValue]
-        .map(esc)
-        .join(",")
-    );
-    const blob = new Blob([[header.map(esc).join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `voltmart-orders-selected-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    appToast.success("Export ready", `Exported ${selected.length} order(s) to CSV.`);
+    appToast.success("Export ready", `Exported ${orders.length} order(s) to CSV.`);
   };
 
   const bulkSaleAction = async (selected: OrderRow[], action: "ship" | "cancel") => {
@@ -258,7 +332,7 @@ export default function AdminDashboardPage() {
       });
       if (res.ok) moved += 1;
     }
-    reloadRows();
+    loadAll();
     appToast.success(
       action === "ship" ? "Orders fulfilled" : "Orders cancelled",
       action === "ship"
@@ -268,23 +342,13 @@ export default function AdminDashboardPage() {
   };
 
   const requestRestock = (productName: string) => {
-    appToast.success("Restock requested", `Replenishment PO draft for “${productName}” created in Inventory.`);
+    appToast.success("Restock requested", `Replenishment rule for “${productName}” flagged in Inventory.`);
   };
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
 
   const filteredOrders = useMemo(() => {
-    return rows.filter((o) => {
-      // Channel match combines top-bar channel context and table-specific channel filter
-      const channelToMatch = tableChannel !== "all" ? tableChannel : selectedChannel;
-      const matchesChannel =
-        channelToMatch === "all" ||
-        (channelToMatch === "web" && (o.channelKey === "default-channel" || o.channel.toLowerCase().includes("web"))) ||
-        (channelToMatch === "pos-dhanmondi" && (o.channelKey === "channel-dhk" || o.channel.toLowerCase().includes("dhanmondi"))) ||
-        (channelToMatch === "daraz" && o.channel.toLowerCase().includes("daraz")) ||
-        (channelToMatch === "social" && o.channel.toLowerCase().includes("social")) ||
-        o.channelKey === channelToMatch;
-
+    return scopedOrders.filter((o) => {
       const matchesStatus = tableStatus === "all" || o.status === tableStatus;
       const matchesPayment = tablePayment === "all" || o.paymentStatus === tablePayment;
       const matchesQuery =
@@ -292,56 +356,42 @@ export default function AdminDashboardPage() {
         o.id.toLowerCase().includes(effectiveQuery) ||
         o.customer.toLowerCase().includes(effectiveQuery) ||
         o.email.toLowerCase().includes(effectiveQuery);
-
-      return matchesChannel && matchesStatus && matchesPayment && matchesQuery;
+      return matchesStatus && matchesPayment && matchesQuery;
     });
-  }, [rows, selectedChannel, tableChannel, tableStatus, tablePayment, effectiveQuery]);
+  }, [scopedOrders, tableStatus, tablePayment, effectiveQuery]);
 
   const clearFilters = () => {
-    setTableChannel("all");
     setTableStatus("all");
     setTablePayment("all");
     setSearchTableQuery("");
   };
 
   const activeFiltersCount =
-    (tableChannel !== "all" ? 1 : 0) +
-    (tableStatus !== "all" ? 1 : 0) +
-    (tablePayment !== "all" ? 1 : 0);
+    (tableStatus !== "all" ? 1 : 0) + (tablePayment !== "all" ? 1 : 0);
   const hasActiveFilters = activeFiltersCount > 0 || effectiveQuery.length > 0;
 
   return (
     <div className="w-full space-y-6">
-      {/* TOP ACTION BAR: Panoramic Header (Saleor Channel Switcher + Date Range + Live Sync + Global Actions) */}
+      {/* TOP ACTION BAR — channel + date context that recomputes the whole cockpit */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between p-4 md:p-5 rounded-lg border border-border/80 bg-card shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-                Dashboard Overview
-              </h1>
-              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                Live Sync Active
-              </div>
-            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+              Dashboard Overview
+            </h1>
             <p className="text-xs md:text-sm text-muted-foreground">
-              Dual-Engine Commerce Cockpit · Saleor Multi-Channel Growth & Odoo Warehouse Execution
+              Live operational cockpit — every figure is derived from orders, inventory, finance & after-sales records.
             </p>
           </div>
 
           <div className="h-8 w-px bg-border hidden sm:block" />
 
-          {/* Panoramic Channel & Date Range Controls */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="w-48 sm:w-56">
               <SearchableDropbox
                 options={DASHBOARD_CHANNELS}
                 value={selectedChannel}
-                onChange={setSelectedChannel}
+                onChange={(v) => setSelectedChannel(v as ChannelKey)}
                 placeholder="Channel context..."
                 searchPlaceholder="Search channel..."
               />
@@ -350,7 +400,7 @@ export default function AdminDashboardPage() {
               <SearchableDropbox
                 options={DATE_RANGE_OPTIONS}
                 value={selectedDateRange}
-                onChange={setSelectedDateRange}
+                onChange={(v) => setSelectedDateRange(v as DateRangeKey)}
                 placeholder="Date range..."
                 searchPlaceholder="Search range..."
               />
@@ -358,12 +408,11 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Global Action Buttons */}
         <div className="flex items-center gap-2.5 shrink-0">
           <Button
             variant="outline"
             className="h-10 px-4 text-xs md:text-sm font-semibold cursor-pointer active:scale-[0.98] transition-all gap-1.5"
-            onClick={exportDailyDossier}
+            onClick={() => exportDossier(scopedOrders, "voltmart-dossier")}
           >
             <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
             <span className="hidden sm:inline">Export</span> Dossier
@@ -383,100 +432,101 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* SECTION 1: PRIMARY KPI GRID (Glanceable Executive Strip — Standardized KpiGrid columns={4}) */}
+      {/* SECTION 1: PRIMARY KPI GRID — derived, not decorative */}
       <KpiGrid columns={4}>
         <KpiCard
-          title="Net Revenue Today"
-          value="৳54,27,827"
+          title={`Net Revenue · ${rangeLabel}`}
+          value={formatBDT(snapshot.revenue)}
           icon={Banknote}
           tone="emerald"
-          change="+14.2%"
-          trend="up"
-          tooltip="Real net revenue across all active channels after vouchers, discounts, and returns."
+          change={snapshot.revenueDeltaPct !== 0 ? `${snapshot.revenueDeltaPct > 0 ? "+" : ""}${snapshot.revenueDeltaPct}%` : "—"}
+          trend={snapshot.revenueDeltaPct > 0 ? "up" : snapshot.revenueDeltaPct < 0 ? "down" : "neutral"}
+          period={`${snapshot.orderCount} order(s) · AOV ${formatBDT(snapshot.aov)}`}
+          tooltip="Net revenue for non-cancelled orders within the selected channel and date range."
         />
-        <div
-          onClick={() => handleDrillDown({ status: "Confirmed" })}
-          className="cursor-pointer active:scale-[0.98] transition-all"
-        >
+        <div onClick={() => handleDrillDown({ status: "Confirmed" })} className="cursor-pointer active:scale-[0.98] transition-all">
           <KpiCard
             title="Orders to Fulfill"
-            value="42 Orders"
+            value={String(snapshot.ordersToFulfill)}
+            suffix="orders"
             icon={ShoppingCart}
             tone="blue"
-            change="8 Overdue"
-            trend="down"
-            tooltip="Active warehouse fulfillment queue. 8 orders past SLA. Click to filter live table."
+            change={snapshot.ordersOverdue > 0 ? `${snapshot.ordersOverdue} overdue` : "On track"}
+            trend={snapshot.ordersOverdue > 0 ? "down" : "neutral"}
+            tooltip="Confirmed orders not yet fulfilled. Click to filter the live table to Confirmed orders."
           />
         </div>
-        <div
-          onClick={() => setActiveOperationalTab("finance")}
-          className="cursor-pointer active:scale-[0.98] transition-all"
-        >
+        <div onClick={() => setActiveOperationalTab("finance")} className="cursor-pointer active:scale-[0.98] transition-all">
           <KpiCard
             title="Payments to Settle"
-            value="৳14,82,400"
+            value={formatBDT(snapshot.paymentsToSettle)}
             icon={CreditCard}
             tone="violet"
-            change="MFS + COD"
-            tooltip="Cash float awaiting bank deposit across bKash, Nagad, and courier COD. Click to inspect."
+            change={`${snapshot.paymentsPendingCount} pending · ${snapshot.paymentsFailedCount} failed`}
+            trend="neutral"
+            tooltip="Unreconciled inbound payments (MFS, bank, courier COD). Click to open the financials panel."
           />
         </div>
         <Link href="/inventory" className="block cursor-pointer active:scale-[0.98] transition-all">
           <KpiCard
             title="Stock Risk Alerts"
-            value="14 SKUs"
+            value={String(snapshot.stockRiskSkus)}
+            suffix="SKUs"
             icon={AlertTriangle}
             tone="amber"
-            change="3 Out of Stock"
-            trend="down"
-            tooltip="Items below safety buffer threshold requiring supplier replenishment POs."
+            change={`${snapshot.stockOutSkus} out of stock`}
+            trend={snapshot.stockOutSkus > 0 ? "down" : "neutral"}
+            tooltip="SKUs at/below their reorder point, plus items fully out of stock."
           />
         </Link>
       </KpiGrid>
 
-      {/* SECTION 2: VIEW SWITCHER TABS (Secondary Panoramic Operational Controls) */}
+      {/* SECTION 2: OPERATIONAL VIEW SWITCHER */}
       <Tabs
         value={activeOperationalTab}
-        onValueChange={(v) => setActiveOperationalTab(v as any)}
+        onValueChange={(v) => setActiveOperationalTab(v as "warehouse" | "finance" | "commercial")}
         className="w-full space-y-4"
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/80 pb-3">
           <TabsList className="h-11 p-1">
             <TabsTrigger value="warehouse" className="text-sm font-semibold px-4 sm:px-5 cursor-pointer gap-2">
-              <span>📦</span> Warehouse & Fulfillment Pipeline
+              <span>📦</span> Warehouse & Fulfillment
             </TabsTrigger>
             <TabsTrigger value="finance" className="text-sm font-semibold px-4 sm:px-5 cursor-pointer gap-2">
-              <span>💰</span> Financials & MFS Reconciliation
+              <span>💰</span> Financials & Reconciliation
             </TabsTrigger>
             <TabsTrigger value="commercial" className="text-sm font-semibold px-4 sm:px-5 cursor-pointer gap-2">
-              <span>📊</span> Commercial Analytics (Pulse)
+              <span>📊</span> Commercial Overview
             </TabsTrigger>
           </TabsList>
 
           <span className="text-xs text-muted-foreground">
-            {activeOperationalTab === "warehouse" && "Odoo-Style Operational Kanban Tiles with 1-Click Drill-Downs"}
-            {activeOperationalTab === "finance" && "bKash / Nagad balances, Courier COD float & NBR VAT 9.1"}
-            {activeOperationalTab === "commercial" && "Saleor Pulse AOV, gross vs net revenue & channel contribution"}
+            {activeOperationalTab === "warehouse" && "Operational queues with 1-click drill-downs into the live order table"}
+            {activeOperationalTab === "finance" && "Payment gateways, courier COD float & VAT liability from the ledger"}
+            {activeOperationalTab === "commercial" && "Channel revenue split & top products for the selected context"}
           </span>
         </div>
 
-        {/* Tab 1: Warehouse & Fulfillment Pipeline (Odoo-Style Operational Kanban Tiles) */}
         <TabsContent value="warehouse" className="w-full mt-0">
-          <WarehouseTiles onDrillDown={handleDrillDown} onRequestRestock={requestRestock} />
+          <WarehouseTiles
+            snapshot={snapshot}
+            returnStats={returnStatsMemo}
+            serialStats={serialStatsMemo}
+            onDrillDown={handleDrillDown}
+            onRequestRestock={requestRestock}
+          />
         </TabsContent>
 
-        {/* Tab 2: Financials & MFS Reconciliation */}
         <TabsContent value="finance" className="w-full mt-0">
-          <FinanceReconciliationPanel />
+          <FinanceReconciliationPanel snapshot={snapshot} />
         </TabsContent>
 
-        {/* Tab 3: Commercial Analytics (Saleor Pulse Style) */}
         <TabsContent value="commercial" className="w-full mt-0">
-          <CommercialAnalyticsPanel />
+          <CommercialAnalyticsPanel snapshot={snapshot} topProducts={topProducts} />
         </TabsContent>
       </Tabs>
 
-      {/* SECTION 3: LIVE ORDERS & ANOMALY TRIAGE (Powered by CentralTable with Integrated Filters Tray) */}
+      {/* SECTION 3: LIVE ORDERS (CentralTable) */}
       <div id="live-orders-section" className="pt-2">
         <CentralTable
           data={filteredOrders}
@@ -486,18 +536,10 @@ export default function AdminDashboardPage() {
           selectable
           searchable
           searchPlaceholder="Quick filter live orders by ID, customer, email..."
-          title="Live Orders & Operational Anomaly Triage"
-          description={`${filteredOrders.length} matching orders · ${stats.pending} awaiting physical action · Click any row to view full dossier`}
+          title="Live Orders & Operational Triage"
+          description={`${filteredOrders.length} matching orders · ${snapshot.ordersToFulfill} awaiting fulfilment · Click any row to view the full dossier`}
           filters={
-            <div className="grid gap-5 sm:grid-cols-3 w-full">
-              <SearchableDropbox
-                label="Sales Channel"
-                options={DASHBOARD_CHANNELS}
-                value={tableChannel}
-                onChange={setTableChannel}
-                placeholder="All channels..."
-                searchPlaceholder="Search channel..."
-              />
+            <div className="grid gap-5 sm:grid-cols-2 w-full">
               <SearchableDropbox
                 label="Order Status"
                 options={ORDER_STATUS_OPTIONS as DropboxOption[]}
@@ -529,7 +571,7 @@ export default function AdminDashboardPage() {
                 variant="outline"
                 className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
                 onClick={() => {
-                  exportCsv(selectedRows);
+                  exportDossier(selectedRows, "voltmart-orders-selected");
                   clearSelection();
                 }}
               >

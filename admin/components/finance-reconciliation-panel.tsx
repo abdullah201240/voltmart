@@ -13,8 +13,13 @@ import {
   Download,
   ArrowUpRight,
 } from "lucide-react";
+import { formatBDT, type DashboardSnapshot } from "@/lib/data/dashboard";
 
-export function FinanceReconciliationPanel() {
+export interface FinanceReconciliationPanelProps {
+  snapshot: DashboardSnapshot;
+}
+
+export function FinanceReconciliationPanel({ snapshot }: FinanceReconciliationPanelProps) {
   return (
     <div className="w-full space-y-6">
       {/* Header bar */}
@@ -22,14 +27,14 @@ export function FinanceReconciliationPanel() {
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-              Financials, MFS & Tax Reconciliations
+              Financials & Tax Reconciliation
             </span>
             <Badge variant="outline" className="text-xs font-semibold px-2 py-0.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5">
-              NBR & MFS Ready
+              Ledger-derived
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            Monitor real-time bKash/Nagad wallet balances, Courier COD float, and NBR VAT Form 9.1 liability.
+            Outstanding payments, courier COD float and net VAT liability — all computed from the accounting records.
           </p>
         </div>
 
@@ -43,7 +48,7 @@ export function FinanceReconciliationPanel() {
           <Link href="/accounting/reports">
             <Button variant="outline" size="sm" className="h-9 px-3.5 text-xs font-semibold cursor-pointer active:scale-[0.98] transition-all gap-1.5">
               <Download className="h-3.5 w-3.5 text-muted-foreground" />
-              VAT Form 9.1 Report
+              VAT Report
             </Button>
           </Link>
         </div>
@@ -51,18 +56,18 @@ export function FinanceReconciliationPanel() {
 
       {/* 3 Core Finance Cards */}
       <div className="grid gap-5 lg:grid-cols-3 w-full">
-        {/* CARD 1: MFS Gateways (bKash / Nagad / Cards) */}
+        {/* CARD 1: Payments to settle */}
         <Card className="p-5 md:p-6 shadow-xs border-border/80 space-y-5">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                MFS Payment Gateways
+                Payments to Settle
               </span>
               <div className="text-2xl font-bold tracking-tight text-foreground">
-                ৳24,92,500
+                {formatBDT(snapshot.paymentsToSettle)}
               </div>
               <div className="text-xs text-muted-foreground">
-                Total liquid balance across merchant accounts
+                Unreconciled inbound payments across methods
               </div>
             </div>
             <div className="h-10 w-10 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center shrink-0">
@@ -71,46 +76,31 @@ export function FinanceReconciliationPanel() {
           </div>
 
           <div className="space-y-3 pt-3 border-t border-border/60">
-            {/* bKash */}
             <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-foreground">bKash Merchant Pool</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
-                  API: 180ms
-                </span>
-              </div>
-              <span className="font-mono font-bold text-foreground">৳18,42,500</span>
+              <span className="font-semibold text-foreground">Pending payments</span>
+              <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{snapshot.paymentsPendingCount}</span>
             </div>
-
-            {/* Nagad */}
             <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-foreground">Nagad Disbursement</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
-                  Active
-                </span>
-              </div>
-              <span className="font-mono font-bold text-foreground">৳6,50,000</span>
+              <span className="font-semibold text-foreground">Failed payments</span>
+              <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{snapshot.paymentsFailedCount}</span>
             </div>
-
-            {/* SSLCommerz Card Escrow */}
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">SSLCommerz Scheduled Deposit</span>
-              <span className="font-mono text-muted-foreground">Oct 2, 2026</span>
+              <span className="text-muted-foreground">Of which COD float</span>
+              <span className="font-mono text-muted-foreground">{formatBDT(snapshot.codFloat)}</span>
             </div>
           </div>
 
           <div className="pt-3 border-t border-border/60 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">TrxID verification active</span>
+            <span className="text-xs text-muted-foreground">Match payments to invoices</span>
             <Link href="/payments">
               <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs font-semibold text-primary hover:text-primary gap-1">
-                View Gateways <ArrowUpRight className="h-3 w-3" />
+                View Payments <ArrowUpRight className="h-3 w-3" />
               </Button>
             </Link>
           </div>
         </Card>
 
-        {/* CARD 2: Courier COD Remittance Float */}
+        {/* CARD 2: Courier COD cash float */}
         <Card className="p-5 md:p-6 shadow-xs border-border/80 space-y-5">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
@@ -118,10 +108,10 @@ export function FinanceReconciliationPanel() {
                 Courier COD Cash Float
               </span>
               <div className="text-2xl font-bold tracking-tight text-foreground">
-                ৳4,38,500
+                {formatBDT(snapshot.codFloat)}
               </div>
               <div className="text-xs text-muted-foreground">
-                Customer cash collected by 3PL delivery riders
+                Customer cash collected via COD, awaiting bank deposit
               </div>
             </div>
             <div className="h-10 w-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
@@ -130,27 +120,17 @@ export function FinanceReconciliationPanel() {
           </div>
 
           <div className="space-y-3 pt-3 border-t border-border/60">
-            {/* Settled Today */}
             <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-muted-foreground">Reconciled to Bank Today</span>
-              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">৳3,12,000</span>
+              <span className="font-medium text-muted-foreground">Total inbound outstanding</span>
+              <span className="font-mono font-bold text-foreground">{formatBDT(snapshot.paymentsToSettle)}</span>
             </div>
-
-            {/* Overdue Remittance */}
             <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-foreground">Overdue (&gt; 72h)</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 font-medium">
-                  Follow-up
-                </span>
-              </div>
-              <span className="font-mono font-bold text-rose-600 dark:text-rose-400">৳1,26,500</span>
+              <span className="font-medium text-muted-foreground">Pending payment records</span>
+              <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{snapshot.paymentsPendingCount}</span>
             </div>
-
-            {/* Pathao & Steadfast Breakdown */}
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Pathao: ৳84,000 · Steadfast: ৳42,500</span>
-              <span className="font-medium text-emerald-600 dark:text-emerald-400">98.4% SLA</span>
+              <span className="font-medium text-muted-foreground">Failed payment records</span>
+              <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{snapshot.paymentsFailedCount}</span>
             </div>
           </div>
 
@@ -164,18 +144,18 @@ export function FinanceReconciliationPanel() {
           </div>
         </Card>
 
-        {/* CARD 3: NBR VAT Form 9.1 Live Tax Ledger */}
+        {/* CARD 3: Net VAT liability */}
         <Card className="p-5 md:p-6 shadow-xs border-border/80 space-y-5">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                NBR VAT Form 9.1 (Monthly)
+                Net VAT Liability
               </span>
               <div className="text-2xl font-bold tracking-tight text-foreground">
-                ৳2,72,074
+                {formatBDT(snapshot.vatNet, { decimals: true })}
               </div>
               <div className="text-xs text-muted-foreground">
-                Estimated Net Tax payable on 15th of next month
+                Output VAT less input VAT rebate from posted documents
               </div>
             </div>
             <div className="h-10 w-10 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
@@ -184,30 +164,25 @@ export function FinanceReconciliationPanel() {
           </div>
 
           <div className="space-y-3 pt-3 border-t border-border/60">
-            {/* Output VAT */}
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Output VAT Collected (15%)</span>
-              <span className="font-mono font-bold text-foreground">৳8,14,174</span>
+              <span className="text-muted-foreground">Output VAT (invoiced sales)</span>
+              <span className="font-mono font-bold text-foreground">{formatBDT(snapshot.vatOutput, { decimals: true })}</span>
             </div>
-
-            {/* Input VAT Rebate */}
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Input VAT Rebate Claimed (Challan 6.3)</span>
-              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">- ৳5,42,100</span>
+              <span className="text-muted-foreground">Input VAT rebate (bills)</span>
+              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">- {formatBDT(snapshot.vatInput, { decimals: true })}</span>
             </div>
-
-            {/* Pending Mushak 6.3 */}
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Pending Mushak 6.3 Tax Invoices</span>
-              <span className="font-medium text-amber-600 dark:text-amber-400">14 Orders</span>
+              <span className="text-muted-foreground">Draft tax invoices pending</span>
+              <span className="font-medium text-amber-600 dark:text-amber-400">{snapshot.pendingMushak} order(s)</span>
             </div>
           </div>
 
           <div className="pt-3 border-t border-border/60 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">BIN: 004819284-0101</span>
+            <span className="text-xs text-muted-foreground">Filing-ready from the ledger</span>
             <Link href="/accounting/reports">
               <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs font-semibold text-primary hover:text-primary gap-1">
-                View Tax Ledger <ArrowUpRight className="h-3 w-3" />
+                View Tax Report <ArrowUpRight className="h-3 w-3" />
               </Button>
             </Link>
           </div>
