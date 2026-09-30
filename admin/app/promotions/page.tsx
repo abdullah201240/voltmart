@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Sparkles, CheckCircle2, CalendarClock, RotateCcw } from "lucide-react";
+import { Sparkles, CheckCircle2, CalendarClock, RotateCcw, Plus } from "lucide-react";
 import { getPromotions, promotionStats, type PromotionRow } from "@/lib/data/discounts";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 const STATUS_CLASS: Record<PromotionRow["status"], "default" | "secondary" | "outline"> = {
   Active: "default",
@@ -95,41 +95,12 @@ export default function PromotionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CreateFlow<PromotionRow>
-            model="promotion.program"
-            buttonLabel="Create Promotion"
-            drawerTitle="New Promotion"
-            drawerDescription="Define an automatic checkout discount rule."
-            submitLabel="Create Promotion"
-            fields={[
-              { key: "name", label: "Promotion Name", required: true, placeholder: "e.g. Weekend Flash Sale" },
-              { key: "rule", label: "Trigger Rule", required: true, colSpan: 2, placeholder: "e.g. Min. order ৳5,000 on Electronics" },
-              {
-                key: "channel",
-                label: "Channel",
-                type: "select",
-                required: true,
-                defaultValue: "Default Channel",
-                options: [
-                  { value: "Default Channel", label: "Default Channel" },
-                  { value: "Dhaka Store", label: "Dhaka Store" },
-                  { value: "Online Marketplace", label: "Online Marketplace" },
-                ],
-              },
-              { key: "discount", label: "Reward", required: true, placeholder: "e.g. 10% off" },
-            ]}
-            validate={(v) => (rows.some((p) => p.name.toLowerCase() === v.name.trim().toLowerCase()) ? "That promotion already exists." : null)}
-            build={(v) => ({
-              id: `PRO-${Date.now().toString(36)}`,
-              name: v.name.trim(),
-              rule: v.rule.trim(),
-              channel: v.channel,
-              discount: v.discount.trim(),
-              status: "Active",
-            })}
-            onCreated={(row) => setRows((prev) => [row, ...prev])}
-            successMessage="Promotion created"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/promotions/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Promotion
+            </Link>
+          </Button>
         </div>
       </div>
 

@@ -38,6 +38,47 @@ export interface NavGroup {
   items: NavItem[];
 }
 
+/**
+ * Boundary-aware route matching: "/orders" matches "/orders" and "/orders/S-1"
+ * but never "/orders-archive". "/" only matches the exact root.
+ */
+export function isActiveRoute(pathname: string, href: string): boolean {
+  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * Collect every navigable href and resolve the single href that best matches
+ * the current pathname (longest prefix wins). Only that exact href is allowed
+ * to render as active, which prevents sibling/parent items like "/customers"
+ * and "/customers/tags" from lighting up together.
+ */
+function computeActiveHrefs(groups: NavGroup[], pathname: string): { active: string | null; parents: Set<string> } {
+  const hrefs: string[] = [];
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (item.href) hrefs.push(item.href);
+      for (const child of item.children ?? []) hrefs.push(child.href);
+    }
+  }
+  let active: string | null = null;
+  for (const href of hrefs) {
+    if (isActiveRoute(pathname, href) && (active === null || href.length > active.length)) {
+      active = href;
+    }
+  }
+  const parents = new Set<string>();
+  if (active !== null) {
+    for (const group of groups) {
+      for (const item of group.items) {
+        for (const child of item.children ?? []) {
+          if (child.href === active) parents.add(item.title);
+        }
+      }
+    }
+  }
+  return { active, parents };
+}
+
 export const NAV_GROUPS: NavGroup[] = [
   {
     items: [
@@ -183,23 +224,25 @@ export function AdminSidebar({
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
 
+  // Single source of truth: exactly one href is active (longest, boundary-aware
+  // match) and the parent dropdown titles that contain it.
+  const { active: activeHref, parents: activeParentTitles } = useMemo(
+    () => computeActiveHrefs(NAV_GROUPS, pathname),
+    [pathname],
+  );
+
   // Auto-derived active dropdown based on current route
   const activeDropdown = useMemo(() => {
     if (collapsed) return null;
     for (const group of NAV_GROUPS) {
       for (const item of group.items) {
-        if (item.children) {
-          const hasActiveChild = item.children.some((child) =>
-            child.href === "/" ? pathname === "/" : pathname.startsWith(child.href)
-          );
-          if (hasActiveChild) {
-            return item.title;
-          }
+        if (item.children && activeParentTitles.has(item.title)) {
+          return item.title;
         }
       }
     }
     return null;
-  }, [collapsed, pathname]);
+  }, [collapsed, activeParentTitles]);
 
   // Track explicit user toggle overrides
   const [userDropdownOverride, setUserDropdownOverride] = useState<{
@@ -304,17 +347,11 @@ export function AdminSidebar({
 
                 // Check if any child is active
                 const isChildActive = hasChildren
-                  ? item.children!.some((child) =>
-                      child.href === "/" ? pathname === "/" : pathname.startsWith(child.href)
-                    )
+                  ? item.children!.some((child) => child.href === activeHref)
                   : false;
 
                 // Check if direct link is active
-                const isDirectActive = item.href
-                  ? item.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(item.href)
-                  : false;
+                const isDirectActive = item.href ? item.href === activeHref : false;
 
                 const isItemActive = isDirectActive || isChildActive;
 
@@ -349,10 +386,7 @@ export function AdminSidebar({
                               </div>
                               <div className="space-y-0.5">
                                 {item.children!.map((child) => {
-                                  const isSubActive =
-                                    child.href === "/"
-                                      ? pathname === "/"
-                                      : pathname.startsWith(child.href);
+                                  const isSubActive = child.href === activeHref;
 
                                   return (
                                     <Link
@@ -423,10 +457,7 @@ export function AdminSidebar({
                           {isOpen && (
                             <div className="mt-1 space-y-0.5 border-l border-border/70 ml-5 pl-2.5 animate-in slide-in-from-top-1 fade-in-0 duration-150">
                               {item.children!.map((child) => {
-                                const isSubActive =
-                                  child.href === "/"
-                                    ? pathname === "/"
-                                    : pathname.startsWith(child.href);
+                                const isSubActive = child.href === activeHref;
 
                                 return (
                                   <Link

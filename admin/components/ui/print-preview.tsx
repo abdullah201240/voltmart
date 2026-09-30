@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Printer, FileText, ReceiptText, Truck } from "lucide-react";
+import { Printer, FileText, ReceiptText, Truck, Barcode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { OrderDetail } from "@/lib/data/orders";
 
-export type PrintKind = "quotation" | "invoice" | "delivery";
+export type PrintKind = "quotation" | "invoice" | "delivery" | "shipping_label";
 
 const KIND_META: Record<
   PrintKind,
@@ -36,6 +36,12 @@ const KIND_META: Record<
     docTitle: "Delivery Order",
     icon: Truck,
     note: "Please verify all products at handover and sign to confirm receipt of the delivery.",
+  },
+  shipping_label: {
+    label: "Shipping Label (4x6)",
+    docTitle: "Thermal Shipping Label",
+    icon: Barcode,
+    note: "Official courier consignment label. Handle with care: contains precision electronics.",
   },
 };
 
@@ -99,97 +105,173 @@ export function PrintPreviewDialog({ open, onOpenChange, order, initialKind = "q
             className="print-area mx-auto bg-white text-slate-900 shadow-lg ring-1 ring-black/5"
             style={{ width: "100%", maxWidth: 720, padding: "40px 44px" }}
           >
-            {/* Letterhead */}
-            <header className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
-              <div>
-                <div className="text-2xl font-extrabold tracking-tight">VoltMart</div>
-                <div className="text-[11px] leading-relaxed text-slate-500">
-                  House 42, Road 11, Banani<br />Dhaka 1213, Bangladesh<br />
-                  BIN 0012·334·9911 · hello@voltmart.example
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-lg font-bold uppercase tracking-tight">{meta.docTitle}</div>
-                <div className="font-mono text-[12px] text-slate-600">{order.id}</div>
-                <div className="text-[11px] text-slate-500">{order.date}</div>
-                {kind === "invoice" && order.status === "Invoiced" && (
-                  <div className="mt-1 inline-block rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                    Payment status: {order.paymentStatus}
+            {kind === "shipping_label" ? (
+              <div className="space-y-4">
+                {/* Courier Header */}
+                <div className="border-b-2 border-dashed border-slate-900 pb-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-xl font-black uppercase tracking-tight">PATHAO 3PL EXPRESS</div>
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-slate-600">
+                      Standard Next-Day Metro Dhaka
+                    </div>
                   </div>
+                  <div className="text-right">
+                    <div className="text-xs font-mono font-bold bg-slate-900 text-white px-2 py-0.5 rounded">
+                      ZONE: DHA-NORTH
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">HUB: BANANI</div>
+                  </div>
+                </div>
+
+                {/* Tracking Barcode */}
+                <div className="py-2 text-center border-b-2 border-dashed border-slate-900 space-y-1">
+                  <div className="inline-block py-2 px-6 bg-slate-100 rounded border border-slate-300">
+                    <div className="font-mono text-xl font-black tracking-widest uppercase">
+                      ||| | ||||| || |||| ||| |||||
+                    </div>
+                    <div className="font-mono text-xs font-bold tracking-wider text-slate-700">
+                      {order.id.replace("SO", "PTH-BD-")}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-500">Consignment ID · Scan to confirm pickup & delivery</div>
+                </div>
+
+                {/* Recipient & COD Box */}
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div className="border-r border-slate-300 pr-3 space-y-1">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">SHIP TO / RECIPIENT</div>
+                    <div className="font-bold text-sm text-slate-900">{order.customer}</div>
+                    <div className="font-mono font-semibold text-slate-800">Phone: +880 1711-XXXXXX</div>
+                    <div className="text-slate-600 text-[11px] leading-relaxed mt-1">
+                      {order.shippingAddress || "House 42, Road 11, Banani, Dhaka"}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">COLLECTION STATUS</div>
+                    {order.paymentStatus === "Paid" ? (
+                      <div className="p-3 rounded bg-emerald-50 border-2 border-emerald-600 text-center">
+                        <div className="text-xs font-black text-emerald-800 uppercase tracking-wider">PREPAID ONLINE</div>
+                        <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">DO NOT COLLECT CASH</div>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded bg-amber-50 border-2 border-slate-900 text-center">
+                        <div className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">CASH ON DELIVERY (COD)</div>
+                        <div className="text-lg font-black text-slate-900 font-mono mt-0.5">{money(total)}</div>
+                        <div className="text-[10px] text-slate-600">Exact cash to collect from customer</div>
+                      </div>
+                    )}
+
+                    <div className="text-[10px] text-slate-500 space-y-0.5">
+                      <div>Items in parcel: <span className="font-bold text-slate-800">{order.lines.length} units</span></div>
+                      <div>Weight estimate: <span className="font-bold text-slate-800">0.85 kg</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Return Sender Footer */}
+                <div className="border-t-2 border-dashed border-slate-900 pt-3 text-[10px] flex items-center justify-between text-slate-500">
+                  <div>
+                    <span className="font-bold text-slate-700">Sender / Return:</span> VoltMart Electronics, House 42, Road 11, Banani, Dhaka.
+                  </div>
+                  <div className="font-semibold text-slate-800">Helpline: 09612-865865</div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Letterhead */}
+                <header className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
+                  <div>
+                    <div className="text-2xl font-extrabold tracking-tight">VoltMart</div>
+                    <div className="text-[11px] leading-relaxed text-slate-500">
+                      House 42, Road 11, Banani<br />Dhaka 1213, Bangladesh<br />
+                      BIN 0012·334·9911 · hello@voltmart.example
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold uppercase tracking-tight">{meta.docTitle}</div>
+                    <div className="font-mono text-[12px] text-slate-600">{order.id}</div>
+                    <div className="text-[11px] text-slate-500">{order.date}</div>
+                    {kind === "invoice" && order.status === "Invoiced" && (
+                      <div className="mt-1 inline-block rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                        Payment status: {order.paymentStatus}
+                      </div>
+                    )}
+                  </div>
+                </header>
+
+                {/* Parties */}
+                <section className="mt-5 grid grid-cols-2 gap-6 text-[12px]">
+                  <div>
+                    <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Customer</div>
+                    <div className="font-semibold">{order.customer}</div>
+                    <div className="text-slate-600">{order.email}</div>
+                  </div>
+                  <div>
+                    <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {kind === "delivery" ? "Ship to" : "Invoice address"}
+                    </div>
+                    <div className="text-slate-700">
+                      {kind === "delivery" ? order.shippingAddress : order.billingAddress}
+                    </div>
+                  </div>
+                </section>
+
+                {kind === "delivery" && (
+                  <section className="mt-3 text-[12px]">
+                    <div className="inline-block rounded bg-slate-100 px-2 py-1 text-slate-700">
+                      <span className="font-semibold">Carrier:</span> {order.carrier}
+                      {order.trackingUrl ? ` · Tracking: ${order.trackingUrl}` : ""}
+                    </div>
+                  </section>
                 )}
-              </div>
-            </header>
 
-            {/* Parties */}
-            <section className="mt-5 grid grid-cols-2 gap-6 text-[12px]">
-              <div>
-                <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Customer</div>
-                <div className="font-semibold">{order.customer}</div>
-                <div className="text-slate-600">{order.email}</div>
-              </div>
-              <div>
-                <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  {kind === "delivery" ? "Ship to" : "Invoice address"}
-                </div>
-                <div className="text-slate-700">
-                  {kind === "delivery" ? order.shippingAddress : order.billingAddress}
-                </div>
-              </div>
-            </section>
+                {/* Line table */}
+                <table className="mt-6 w-full border-collapse text-[12px]">
+                  <thead>
+                    <tr className="border-y-2 border-slate-900 text-left uppercase tracking-wider text-slate-500">
+                      <th className="py-2 font-bold">Description</th>
+                      <th className="py-2 text-center font-bold">Qty</th>
+                      <th className="py-2 text-right font-bold">Unit Price</th>
+                      <th className="py-2 text-right font-bold">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.lines.map((l) => (
+                      <tr key={l.id} className="border-b border-slate-200">
+                        <td className="py-2.5">
+                          <div className="font-semibold text-slate-900">{l.productName}</div>
+                          <div className="text-[10px] text-slate-500">{l.sku} · {l.variant}</div>
+                        </td>
+                        <td className="py-2.5 text-center tabular-nums">{l.quantity}</td>
+                        <td className="py-2.5 text-right tabular-nums font-mono">{money(l.unitPrice)}</td>
+                        <td className="py-2.5 text-right tabular-nums font-mono">{money(l.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
-            {kind === "delivery" && (
-              <section className="mt-3 text-[12px]">
-                <div className="inline-block rounded bg-slate-100 px-2 py-1 text-slate-700">
-                  <span className="font-semibold">Carrier:</span> {order.carrier}
-                  {order.trackingUrl ? ` · Tracking: ${order.trackingUrl}` : ""}
+                {/* Totals */}
+                <div className="mt-4 flex justify-end">
+                  <div className="w-64 space-y-1 text-[12px]">
+                    <div className="flex justify-between"><span className="text-slate-500">Subtotal</span><span className="font-mono tabular-nums">{money(order.subtotal)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Shipping</span><span className="font-mono tabular-nums">{order.shipping === 0 ? "Free" : money(order.shipping)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">VAT (15%)</span><span className="font-mono tabular-nums">{money(order.tax)}</span></div>
+                    <div className="mt-1 flex justify-between border-t-2 border-slate-900 pt-2 text-sm font-bold"><span>Total</span><span className="font-mono tabular-nums">{money(total)}</span></div>
+                  </div>
                 </div>
-              </section>
+
+                {/* Note + signature */}
+                <footer className="mt-8 flex items-end justify-between gap-8">
+                  <p className="max-w-[60%] text-[10px] leading-relaxed text-slate-500">{meta.note}</p>
+                  <div className="w-44 text-center">
+                    <div className="border-t border-slate-400 pt-1 text-[10px] text-slate-500">
+                      {kind === "delivery" ? "Recipient signature" : "Authorized signature"}
+                    </div>
+                  </div>
+                </footer>
+              </>
             )}
-
-            {/* Line table */}
-            <table className="mt-6 w-full border-collapse text-[12px]">
-              <thead>
-                <tr className="border-y-2 border-slate-900 text-left uppercase tracking-wider text-slate-500">
-                  <th className="py-2 font-bold">Description</th>
-                  <th className="py-2 text-center font-bold">Qty</th>
-                  <th className="py-2 text-right font-bold">Unit Price</th>
-                  <th className="py-2 text-right font-bold">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.lines.map((l) => (
-                  <tr key={l.id} className="border-b border-slate-200">
-                    <td className="py-2.5">
-                      <div className="font-semibold text-slate-900">{l.productName}</div>
-                      <div className="text-[10px] text-slate-500">{l.sku} · {l.variant}</div>
-                    </td>
-                    <td className="py-2.5 text-center tabular-nums">{l.quantity}</td>
-                    <td className="py-2.5 text-right tabular-nums font-mono">{money(l.unitPrice)}</td>
-                    <td className="py-2.5 text-right tabular-nums font-mono">{money(l.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Totals */}
-            <div className="mt-4 flex justify-end">
-              <div className="w-64 space-y-1 text-[12px]">
-                <div className="flex justify-between"><span className="text-slate-500">Subtotal</span><span className="font-mono tabular-nums">{money(order.subtotal)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Shipping</span><span className="font-mono tabular-nums">{order.shipping === 0 ? "Free" : money(order.shipping)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">VAT (15%)</span><span className="font-mono tabular-nums">{money(order.tax)}</span></div>
-                <div className="mt-1 flex justify-between border-t-2 border-slate-900 pt-2 text-sm font-bold"><span>Total</span><span className="font-mono tabular-nums">{money(total)}</span></div>
-              </div>
-            </div>
-
-            {/* Note + signature */}
-            <footer className="mt-8 flex items-end justify-between gap-8">
-              <p className="max-w-[60%] text-[10px] leading-relaxed text-slate-500">{meta.note}</p>
-              <div className="w-44 text-center">
-                <div className="border-t border-slate-400 pt-1 text-[10px] text-slate-500">
-                  {kind === "delivery" ? "Recipient signature" : "Authorized signature"}
-                </div>
-              </div>
-            </footer>
           </article>
         </div>
 

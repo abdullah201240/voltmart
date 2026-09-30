@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -279,8 +280,10 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="h-11 px-5 text-sm font-medium cursor-pointer">
-            <Plus className="mr-2 h-4 w-4" /> New Quotation
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/purchases/orders/new">
+              <Plus className="mr-2 h-4 w-4" /> New Quotation
+            </Link>
           </Button>
         </div>
       </div>

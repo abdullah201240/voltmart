@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -9,21 +10,9 @@ import { useAdminLayout } from "@/components/admin-shell";
 import { UserPlus, RotateCcw } from "lucide-react";
 import { getStaff, USER, type StaffRow } from "@/lib/data/settings";
 import { addRecord } from "@/lib/data/ops";
-import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
 import { useToast } from "@/components/app-feedback";
 
-const CREATE_FIELDS: CreateFieldDef[] = [
-  { key: "name", label: "Full Name", required: true, placeholder: "e.g. Nadia Islam" },
-  { key: "email", label: "Email", required: true, placeholder: "name@voltmart.example", helper: "An invite email is simulated; no real mail is sent." },
-  {
-    key: "role",
-    label: "Role",
-    type: "select",
-    required: true,
-    defaultValue: "Staff",
-    options: ["Owner", "Admin", "Manager", "Staff", "Merchant"].map((r) => ({ value: r, label: r })),
-  },
-];
+
 
 const ROLE_CLASS: Record<StaffRow["role"], "default" | "secondary" | "outline"> = {
   Owner: "default",
@@ -106,24 +95,7 @@ export default function SettingsStaffPage() {
     };
   }, []);
 
-  const createStaff = (v: Record<string, string>) => {
-    const email = v.email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email address.";
-    if (rows.some((s) => s.email.toLowerCase() === email)) return "That email is already on the team.";
-    const row: StaffRow = {
-      id: `U-${Date.now().toString(36)}`,
-      name: v.name,
-      email,
-      role: v.role as StaffRow["role"],
-      channels: 0,
-      active: true,
-      lastActive: "Just now",
-    };
-    addRecord(USER, row as unknown as Record<string, unknown>);
-    setRows((prev) => [row, ...prev]);
-    appToast.success("Team member created", `\u201C${row.name}\u201D is now available for admin console.`);
-    return null;
-  };
+
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
   const filteredRows = useMemo(() => {
@@ -140,11 +112,10 @@ export default function SettingsStaffPage() {
           <h1 className="text-3xl font-bold tracking-tight">Staff &amp; Roles</h1>
           <p className="text-sm text-muted-foreground">Team members, their roles and channel access.</p>
         </div>
-        <Button
-          className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all"
-          onClick={() => setCreateOpen(true)}
-        >
-          <UserPlus className="mr-2 h-4 w-4" /> Invite Member
+        <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all">
+          <Link href="/settings/staff/new">
+            <UserPlus className="mr-2 h-4 w-4" /> Invite Member
+          </Link>
         </Button>
       </div>
 
@@ -167,15 +138,6 @@ export default function SettingsStaffPage() {
         }
       />
 
-      <RecordCreateDrawer
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="Invite Team Member"
-        description="Add a user and assign their role."
-        submitLabel="Send Invite"
-        fields={CREATE_FIELDS}
-        onSubmit={createStaff}
-      />
     </>
   );
 }

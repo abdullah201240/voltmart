@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { FolderTree, Layers, Eye, RotateCcw } from "lucide-react";
+import { FolderTree, Layers, Eye, RotateCcw, Plus } from "lucide-react";
 import { getCategories, type CategoryNode } from "@/lib/data/catalog";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 const CATEGORY_COLUMNS: CentralTableColumn<CategoryNode>[] = [
   {
@@ -107,33 +107,12 @@ export default function CategoriesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CreateFlow<CategoryNode>
-            model="product.category"
-            buttonLabel="Add Category"
-            drawerTitle="New Category"
-            drawerDescription="Add a node to the storefront category tree."
-            fields={[
-              { key: "name", label: "Category Name", required: true, placeholder: "e.g. Audio" },
-              {
-                key: "parent",
-                label: "Parent Category",
-                type: "select",
-                options: [{ value: "", label: "— Top level —" }, ...rows.map((c) => ({ value: c.name, label: c.name }))],
-                helper: "Leave empty to create a top-level category.",
-              },
-              { key: "showInMenu", label: "Show in Storefront Menu", type: "switch", defaultChecked: true },
-            ]}
-            validate={(v) => (rows.some((c) => c.name.toLowerCase() === v.name.trim().toLowerCase()) ? "That category name already exists." : null)}
-            build={(v) => ({
-              id: `CAT-${Date.now().toString(36)}`,
-              name: v.name.trim(),
-              parent: v.parent || "—",
-              products: 0,
-              showInMenu: v.showInMenu === "true",
-            })}
-            onCreated={(row) => setRows((prev) => [...prev, row])}
-            successMessage="Category created"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/categories/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Category
+            </Link>
+          </Button>
         </div>
       </div>
 

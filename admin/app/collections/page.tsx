@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,9 +11,8 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Library, Layers, Globe, Eye, RotateCcw } from "lucide-react";
+import { Library, Layers, Globe, Eye, RotateCcw, Plus } from "lucide-react";
 import { getCollections, type CollectionRow } from "@/lib/data/catalog";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 const CHANNEL_FILTER: DropboxOption[] = [
   { value: "all", label: "All channels..." },
@@ -142,50 +142,12 @@ export default function CollectionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CreateFlow<CollectionRow>
-            model="product.collection"
-            buttonLabel="Add Collection"
-            drawerTitle="New Collection"
-            drawerDescription="Group products into a curated storefront collection."
-            fields={[
-              { key: "name", label: "Collection Name", required: true, placeholder: "e.g. Gaming Setup" },
-              {
-                key: "channel",
-                label: "Sales Channel",
-                type: "select",
-                required: true,
-                defaultValue: "Default Channel",
-                options: [
-                  { value: "Default Channel", label: "Default Channel" },
-                  { value: "Dhaka Store", label: "Dhaka Store" },
-                  { value: "Online Marketplace", label: "Online Marketplace" },
-                ],
-              },
-              {
-                key: "type",
-                label: "Curation Type",
-                type: "select",
-                required: true,
-                defaultValue: "Manual",
-                options: [
-                  { value: "Automatic", label: "Automatic (rule-based)" },
-                  { value: "Manual", label: "Manual" },
-                ],
-              },
-              { key: "published", label: "Publish Immediately", type: "switch", defaultChecked: true },
-            ]}
-            validate={(v) => (rows.some((c) => c.name.toLowerCase() === v.name.trim().toLowerCase()) ? "That collection already exists." : null)}
-            build={(v) => ({
-              id: `COL-${Date.now().toString(36)}`,
-              name: v.name.trim(),
-              channel: v.channel,
-              products: 0,
-              published: v.published === "true",
-              type: v.type as CollectionRow["type"],
-            })}
-            onCreated={(row) => setRows((prev) => [row, ...prev])}
-            successMessage="Collection created"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/collections/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Collection
+            </Link>
+          </Button>
         </div>
       </div>
 

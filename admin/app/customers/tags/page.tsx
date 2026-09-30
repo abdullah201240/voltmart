@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { cn } from "@/lib/utils";
 import { getCustomerTags, type CustomerTag } from "@/lib/data/customers";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 const TAG_COLUMNS: CentralTableColumn<CustomerTag>[] = [
   {
@@ -54,39 +56,11 @@ export default function CustomerTagsPage() {
             Segments and labels used to group customers for targeting and reporting.
           </p>
         </div>
-        <CreateFlow<CustomerTag>
-          model="customer.tag"
-          buttonLabel="Add Tag"
-          drawerTitle="New Customer Tag"
-          drawerDescription="Create a segment label for grouping customers."
-          fields={[
-            { key: "name", label: "Tag Name", required: true, placeholder: "e.g. Corporate" },
-            {
-              key: "color",
-              label: "Badge Color",
-              type: "select",
-              required: true,
-              defaultValue: "bg-sky-500",
-              options: [
-                { value: "bg-violet-500", label: "Violet" },
-                { value: "bg-amber-500", label: "Amber" },
-                { value: "bg-emerald-500", label: "Emerald" },
-                { value: "bg-sky-500", label: "Sky" },
-                { value: "bg-rose-500", label: "Rose" },
-                { value: "bg-cyan-500", label: "Cyan" },
-              ],
-            },
-          ]}
-          validate={(v) => (rows.some((t) => t.name.toLowerCase() === v.name.trim().toLowerCase()) ? "That tag already exists." : null)}
-          build={(v) => ({
-            id: `T-${Date.now().toString(36)}`,
-            name: v.name.trim(),
-            color: v.color,
-            customers: 0,
-          })}
-          onCreated={(row) => setRows((prev) => [...prev, row])}
-          successMessage="Tag created"
-        />
+        <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all">
+          <Link href="/customers/tags/new">
+            <Plus className="mr-2 h-4 w-4" /> Add Tag
+          </Link>
+        </Button>
       </div>
 
       <CentralTable

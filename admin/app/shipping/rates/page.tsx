@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Plus } from "lucide-react";
 import { getShippingRates, type ShippingRateRow } from "@/lib/data/shipping";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 const RATE_COLUMNS: CentralTableColumn<ShippingRateRow>[] = [
   {
@@ -87,29 +87,12 @@ export default function ShippingRatesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CreateFlow<ShippingRateRow>
-            model="shipping.rate"
-            buttonLabel="Add Rate"
-            drawerTitle="New Shipping Rate"
-            drawerDescription="Attach a price to a carrier and zone combination."
-            fields={[
-              { key: "carrier", label: "Carrier", required: true, placeholder: "e.g. DHL Express" },
-              { key: "zone", label: "Zone", required: true, placeholder: "e.g. Inside Dhaka" },
-              { key: "basis", label: "Pricing Basis", required: true, placeholder: "e.g. Per Kg" },
-              { key: "price", label: "Price", required: true, placeholder: "e.g. ৳120 / kg" },
-              { key: "freeAbove", label: "Free Above (৳)", type: "number", helper: "Leave empty for no free-shipping threshold." },
-            ]}
-            build={(v) => ({
-              id: `RATE-${Date.now().toString(36)}`,
-              carrier: v.carrier.trim(),
-              zone: v.zone.trim(),
-              basis: v.basis.trim(),
-              price: v.price.trim(),
-              freeAbove: v.freeAbove ? Math.max(0, Number(v.freeAbove)) : null,
-            })}
-            onCreated={(row) => setRows((prev) => [row, ...prev])}
-            successMessage="Shipping rate created"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/shipping/rates/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Rate
+            </Link>
+          </Button>
         </div>
       </div>
 

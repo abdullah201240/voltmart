@@ -13,7 +13,7 @@ import { CentralTable, type CentralTableColumn } from "@/components/ui/central-t
 import { ViewSwitcher } from "@/components/ui/view-switcher";
 import { GraphView, PivotView } from "@/components/ui/graph-view";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Users, UserCheck, Banknote, ShoppingCart, RotateCcw, List, BarChart3, Table2 } from "lucide-react";
+import { Users, UserCheck, Banknote, ShoppingCart, RotateCcw, List, BarChart3, Table2, Plus } from "lucide-react";
 import {
   getCustomers,
   customerStats,
@@ -21,7 +21,6 @@ import {
   COUNTRY_OPTIONS,
   type CustomerRow,
 } from "@/lib/data/customers";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 function money(v: number) {
   return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -166,38 +165,12 @@ export default function CustomersPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CreateFlow<CustomerRow>
-            model="res.partner"
-            buttonLabel="Add Customer"
-            drawerTitle="New Customer"
-            drawerDescription="Register a customer for orders and lifetime value tracking."
-            fields={[
-              { key: "name", label: "Full Name", required: true, placeholder: "e.g. Rahim Ahmed" },
-              { key: "email", label: "Email", required: true, placeholder: "rahim@example.com" },
-              { key: "city", label: "City", defaultValue: "Dhaka" },
-              { key: "country", label: "Country", defaultValue: "Bangladesh" },
-            ]}
-            validate={(v) => {
-              const email = v.email.trim().toLowerCase();
-              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email address.";
-              if (rows.some((c) => c.email.toLowerCase() === email)) return "A customer with this email already exists.";
-              return null;
-            }}
-            build={(v) => ({
-              id: `CUS-${Date.now().toString(36)}`,
-              name: v.name.trim(),
-              email: v.email.trim().toLowerCase(),
-              country: v.country.trim() || "Bangladesh",
-              city: v.city.trim() || "Dhaka",
-              orders: 0,
-              totalSpent: 0,
-              joined: "Just now",
-              tags: [],
-              status: "Active",
-            })}
-            onCreated={(row) => setRows((prev) => [row, ...prev])}
-            successMessage="Customer created"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/customers/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Customer
+            </Link>
+          </Button>
         </div>
       </div>
 

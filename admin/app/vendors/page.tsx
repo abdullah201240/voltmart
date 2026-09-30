@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Store, Banknote, Timer, Target, RotateCcw } from "lucide-react";
+import { Store, Banknote, Timer, Target, RotateCcw, Plus } from "lucide-react";
 import { getVendors, vendorStats, type VendorRow } from "@/lib/data/purchasing";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 function money(v: number) {
   return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -112,36 +112,12 @@ export default function VendorsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CreateFlow<VendorRow>
-            model="res.partner.vendor"
-            buttonLabel="Add Vendor"
-            drawerTitle="New Vendor"
-            drawerDescription="Register a supplier for purchasing and lead-time tracking."
-            fields={[
-              { key: "name", label: "Vendor Name", required: true, placeholder: "e.g. TechImport Ltd" },
-              { key: "email", label: "Contact Email", required: true, placeholder: "sales@vendor.com" },
-              { key: "country", label: "Country", defaultValue: "Bangladesh" },
-              { key: "leadTime", label: "Lead Time (days)", type: "number", defaultValue: "7", helper: "Average days from PO confirmation to delivery." },
-            ]}
-            validate={(v) => {
-              const email = v.email.trim().toLowerCase();
-              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email address.";
-              if (rows.some((r) => r.email.toLowerCase() === email)) return "A vendor with this email already exists.";
-              return null;
-            }}
-            build={(v) => ({
-              id: `VND-${Date.now().toString(36)}`,
-              name: v.name.trim(),
-              email: v.email.trim().toLowerCase(),
-              country: v.country.trim() || "Bangladesh",
-              products: 0,
-              leadTime: Math.max(0, Number(v.leadTime) || 0),
-              onTimeRate: 0,
-              totalPurchased: 0,
-            })}
-            onCreated={(row) => setRows((prev) => [row, ...prev])}
-            successMessage="Vendor created"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/vendors/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Vendor
+            </Link>
+          </Button>
         </div>
       </div>
 

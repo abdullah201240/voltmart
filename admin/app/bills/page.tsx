@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,9 +11,8 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Receipt, Banknote, AlertTriangle, FileClock, RotateCcw } from "lucide-react";
+import { Receipt, Banknote, AlertTriangle, FileClock, RotateCcw, Plus } from "lucide-react";
 import { getBills, billStats, MOVE_STATE_OPTIONS, type BillRow, type MoveState } from "@/lib/data/finance";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 const STATE_CLASS: Record<MoveState, "default" | "secondary" | "outline"> = {
   Draft: "secondary",
@@ -130,37 +130,12 @@ export default function BillsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CreateFlow<BillRow>
-            model="account.move"
-            buttonLabel="Record Bill"
-            drawerTitle="New Vendor Bill"
-            drawerDescription="Log a vendor bill to be paid from purchases."
-            submitLabel="Record Bill"
-            fields={[
-              { key: "vendor", label: "Vendor", required: true, placeholder: "e.g. TechImport Ltd", colSpan: 2 },
-              { key: "reference", label: "PO / Bill Ref", placeholder: "e.g. PO00045" },
-              { key: "amountTotal", label: "Bill Total (৳)", type: "number", required: true, placeholder: "80000" },
-              { key: "dueDate", label: "Due Date", placeholder: "e.g. Nov 01, 2026" },
-            ]}
-            validate={(v) => (!v.amountTotal || Number(v.amountTotal) <= 0 ? "Enter a bill total greater than zero." : null)}
-            build={(v) => {
-              const total = Number(v.amountTotal) || 0;
-              const num = `BILL/${new Date().getFullYear()}/${Date.now().toString(36).toUpperCase()}`;
-              return {
-                id: num,
-                number: num,
-                reference: v.reference.trim() || "—",
-                vendor: v.vendor.trim(),
-                billDate: "Today",
-                dueDate: v.dueDate.trim() || "Net 30",
-                amountTotal: total,
-                amountPaid: 0,
-                state: "Draft",
-              };
-            }}
-            onCreated={(row) => setRows((prev) => [row, ...prev])}
-            successMessage="Bill recorded"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/bills/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Record Bill
+            </Link>
+          </Button>
         </div>
       </div>
 

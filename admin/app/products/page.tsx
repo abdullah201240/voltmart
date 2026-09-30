@@ -11,16 +11,15 @@ import {
 } from "@/components/ui/searchable-dropbox";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
+import {
+  BulkActionBar,
+  type BulkFieldDef,
+  type BulkChoice,
+  type BulkApplyKind,
+} from "@/components/ui/bulk-actions";
 import { ViewSwitcher } from "@/components/ui/view-switcher";
 import { KanbanBoard } from "@/components/ui/kanban-board";
 import { GraphView, PivotView } from "@/components/ui/graph-view";
-import {
-  BulkActionBar,
-  type BulkApplyKind,
-  type BulkFieldDef,
-  type BulkChoice,
-} from "@/components/ui/bulk-actions";
-import { ProductFormDrawer } from "@/components/product-form-drawer";
 import { useAdminLayout } from "@/components/admin-shell";
 import {
   Boxes,
@@ -217,7 +216,6 @@ export default function ProductsPage() {
   const appToast = useToast();
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
 
   const [selectedChannel, setSelectedChannel] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -443,8 +441,8 @@ export default function ProductsPage() {
             Export
           </Button>
           <Button
-            onClick={() => setIsProductDrawerOpen(true)}
             className="h-11 px-5 text-sm font-medium cursor-pointer"
+            render={<Link href="/products/new" />}
           >
             <Plus className="mr-2 h-4 w-4" />
             Add Product
@@ -680,11 +678,6 @@ export default function ProductsPage() {
           ]}
         />
       )}
-
-      <ProductFormDrawer
-        open={isProductDrawerOpen}
-        onOpenChange={setIsProductDrawerOpen}
-      />
     </>
   );
 }

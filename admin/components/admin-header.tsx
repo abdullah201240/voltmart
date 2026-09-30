@@ -2,12 +2,12 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   Search,
   Menu,
-  ChevronRight,
   X,
+  Command as CommandIcon,
+  ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationsPopover } from "@/components/notifications-popover";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Command as CommandIcon } from "lucide-react";
 
 interface AdminHeaderProps {
   onMobileMenuToggle: () => void;
@@ -27,22 +26,6 @@ interface AdminHeaderProps {
   className?: string;
 }
 
-const BREADCRUMB_MAP: Record<string, { section: string; page: string }> = {
-  "/": { section: "Dashboard", page: "Live Overview" },
-  "/orders": { section: "Commerce", page: "Orders Pipeline" },
-  "/fulfillment": { section: "Commerce", page: "Fulfillment" },
-  "/transactions": { section: "Commerce", page: "Transactions" },
-  "/products": { section: "Catalog", page: "Product Management" },
-  "/categories": { section: "Catalog", page: "Categories" },
-  "/inventory": { section: "Catalog", page: "Inventory Stock" },
-  "/customers": { section: "Growth", page: "Customer Directory" },
-  "/discounts": { section: "Growth", page: "Discounts & Vouchers" },
-  "/channels": { section: "System", page: "Sales Channels" },
-  "/settings": { section: "System", page: "Store Settings" },
-  "/notifications": { section: "System", page: "Notifications Center" },
-  "/profile": { section: "Account", page: "My Profile" },
-};
-
 export function AdminHeader({
   onMobileMenuToggle,
   sidebarCollapsed = false,
@@ -51,136 +34,130 @@ export function AdminHeader({
   onSearchChange,
   className,
 }: AdminHeaderProps) {
-  const pathname = usePathname();
   const { openCommand } = useAdminLayout();
-
-  const breadcrumb = BREADCRUMB_MAP[pathname] || {
-    section: "Admin",
-    page: pathname.replace("/", "").replace("-", " ").toUpperCase() || "Overview",
-  };
 
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 flex h-18 w-full items-center justify-between border-b border-border/80 bg-background/95 backdrop-blur px-2 md:px-4 lg:px-4 transition-all font-sans",
+        "sticky top-0 z-30 flex h-18 w-full items-center gap-3 border-b border-border/80 bg-background/85 px-4 backdrop-blur-xl transition-all duration-300 font-sans md:gap-4 md:px-6 lg:px-8",
         className
       )}
     >
-      {/* Left: Sidebar Toggle & Dynamic Breadcrumb Navigation */}
-      <div className="flex items-center gap-3">
-        {/* Mobile Hamburger Button */}
+      {/* ── Left: Navigation toggles ─────────────────── */}
+      <div className="flex shrink-0 items-center gap-2.5 md:gap-3">
+        {/* Mobile hamburger */}
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={onMobileMenuToggle}
-          className="lg:hidden h-9 w-9 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer shrink-0"
+          className="lg:hidden h-9 w-9 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer shrink-0 active:scale-[0.98] transition-all"
           aria-label="Open mobile navigation menu"
         >
-          <Menu size={19} className="size-[19px]" />
+          <Menu className="size-[19px]" />
         </Button>
 
-        {/* Desktop Sidebar Toggle Button */}
+        {/* Desktop sidebar collapse / expand toggle */}
         {onToggleSidebar && (
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={onToggleSidebar}
-            className="hidden lg:flex h-9 w-9 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer transition-colors shrink-0"
+            className="hidden lg:flex h-9 w-9 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer shrink-0 active:scale-[0.98] transition-all"
             title={sidebarCollapsed ? "Expand sidebar (⌘B)" : "Collapse sidebar (⌘B)"}
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {sidebarCollapsed ? (
-              <PanelLeftOpen size={19} className="size-[19px]" />
+              <PanelLeftOpen className="size-[19px]" />
             ) : (
-              <PanelLeftClose size={19} className="size-[19px]" />
+              <PanelLeftClose className="size-[19px]" />
             )}
           </Button>
         )}
-
-        {/* Breadcrumb Trail */}
-        <nav
-          aria-label="Breadcrumb"
-          className="hidden sm:flex items-center gap-2 text-xs font-medium text-muted-foreground ml-1"
-        >
-          <Link
-            href="/"
-            className="hover:text-foreground transition-colors cursor-pointer text-xs font-medium"
-          >
-            Admin
-          </Link>
-          <ChevronRight size={14} className="size-3.5 text-muted-foreground/40 shrink-0" />
-          <span className="text-foreground font-semibold text-xs">{breadcrumb.section}</span>
-          <ChevronRight size={14} className="size-3.5 text-muted-foreground/40 shrink-0" />
-          <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-            {breadcrumb.page}
-          </span>
-        </nav>
       </div>
 
-      {/* Right: Global Search, Theme Toggle, Notification Bell, Admin Profile */}
-      <div className="flex items-center gap-2.5">
-        {/* Global Command Bar (⌘K) Trigger */}
+      {/* ── Center: Hero global search that flexes to fill the header ─ */}
+      <div className="relative flex min-w-0 flex-1 items-center">
+        <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-muted-foreground" />
+        <input
+          id="admin-global-search"
+          type="search"
+          value={searchQuery}
+          onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+          placeholder="Search orders, customers, SKUs, invoices…"
+          className={cn(
+            "h-11 w-full rounded-xl border border-border/80 bg-muted/40 pl-10 pr-24 text-sm text-foreground shadow-xs outline-none transition-all duration-200",
+            "placeholder:text-muted-foreground/80",
+            "focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/25",
+            "hover:border-border"
+          )}
+        />
+        {searchQuery ? (
+          <button
+            type="button"
+            onClick={() => onSearchChange && onSearchChange("")}
+            className="absolute right-3 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.98]"
+            aria-label="Clear search query"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : (
+          <div className="pointer-events-none absolute right-3 hidden items-center gap-1 md:flex">
+            <span className="flex items-center gap-0.5 rounded-md border border-border/80 bg-background px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground shadow-2xs">
+              <CommandIcon className="h-3 w-3" />K
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Right: Command, Theme, Notifications, Profile cluster ────── */}
+      <div className="flex shrink-0 items-center gap-2 md:gap-2.5">
+        {/* Command palette trigger */}
         <Button
           type="button"
           variant="outline"
-          size="sm"
           onClick={openCommand}
-          className="hidden md:inline-flex h-10 items-center gap-2 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer"
+          className="hidden h-11 items-center gap-2 rounded-xl border-border/80 bg-muted/30 px-3.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:border-primary/40 cursor-pointer transition-all active:scale-[0.98] lg:inline-flex"
           title="Command bar (⌘K)"
           aria-label="Open command bar"
         >
           <CommandIcon className="h-4 w-4" />
-          <span>Menu</span>
+          <span>Commands</span>
         </Button>
 
-        {/* Global Quick Search Input with ⌘K Badge */}
-        <div className="relative hidden md:block w-72 lg:w-96">
-          <Search size={16} className="absolute left-3 top-3 size-4 text-muted-foreground pointer-events-none" />
-          <input
-            id="admin-global-search"
-            type="search"
-            value={searchQuery}
-            onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
-            placeholder="Search orders, customers, SKUs..."
-            className="h-10 w-full rounded-md border border-input/80 bg-muted/30 pl-9 pr-12 text-xs placeholder:text-muted-foreground focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
-          />
-          {searchQuery ? (
-            <button
-              type="button"
-              onClick={() => onSearchChange && onSearchChange("")}
-              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer rounded"
-              aria-label="Clear search query"
-            >
-              <X size={15} className="size-3.5" />
-            </button>
-          ) : (
-            <div className="absolute right-2.5 top-2.5 hidden lg:flex items-center gap-0.5 rounded border border-border/80 bg-background px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground pointer-events-none">
-              <span>⌘</span>
-              <span>K</span>
-            </div>
-          )}
-        </div>
-
-        {/* Theme Toggle */}
+        {/* Theme toggle */}
         <ThemeToggle />
 
-        {/* Interactive Notifications Popover */}
+        {/* Notifications */}
         <NotificationsPopover />
 
-        {/* Admin Profile */}
+        {/* Divider between utilities and profile */}
+        <div className="hidden h-8 w-px bg-border/70 md:block" />
+
+        {/* Admin profile chip */}
         <Link
           href="/profile"
-          className="flex items-center gap-2.5 pl-1.5 hover:opacity-85 transition-opacity cursor-pointer"
+          className={cn(
+            "group flex h-11 items-center gap-2.5 rounded-xl border border-transparent px-1.5 pr-1.5 transition-all duration-200 cursor-pointer",
+            "hover:border-border/80 hover:bg-muted/50 active:scale-[0.98]",
+            "md:pr-2.5"
+          )}
           aria-label="Go to profile"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs shadow-xs ring-2 ring-transparent hover:ring-primary/30 transition-all">
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-primary-foreground shadow-xs ring-2 ring-transparent transition-all group-hover:ring-primary/25">
             AS
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-emerald-500" />
           </div>
-          <span className="hidden xl:inline text-xs font-semibold text-foreground">
-            Abdullah Al Sakib
-          </span>
+          <div className="hidden flex-col items-start leading-none xl:flex">
+            <span className="text-[13px] font-semibold text-foreground">
+              Abdullah Al Sakib
+            </span>
+            <span className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+              Super Administrator
+            </span>
+          </div>
+          <ChevronDown className="hidden h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:translate-y-0.5 xl:block" />
         </Link>
       </div>
     </header>

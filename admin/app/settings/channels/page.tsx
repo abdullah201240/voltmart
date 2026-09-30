@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
@@ -8,7 +9,6 @@ import { useAdminLayout } from "@/components/admin-shell";
 import { Waypoints, Plus, RotateCcw } from "lucide-react";
 import { getChannels, getWarehouses, CHANNEL, type ChannelRow } from "@/lib/data/settings";
 import { addRecord } from "@/lib/data/ops";
-import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
 import { useToast } from "@/components/app-feedback";
 
 const CHANNEL_COLUMNS: CentralTableColumn<ChannelRow>[] = [
@@ -81,35 +81,7 @@ export default function SettingsChannelsPage() {
     };
   }, []);
 
-  const CREATE_FIELDS: CreateFieldDef[] = [
-    { key: "name", label: "Channel Name", required: true, placeholder: "e.g. Sylhet Store", helper: "The slug is generated automatically." },
-    {
-      key: "warehouse",
-      label: "Fulfillment Warehouse",
-      type: "select",
-      required: true,
-      options: whOptions,
-    },
-  ];
 
-  const createChannel = (v: Record<string, string>) => {
-    const slug = v.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-    if (!slug) return "Name must contain at least one letter or digit.";
-    if (rows.some((c) => c.slug === slug)) return "A channel with that name already exists.";
-    const row: ChannelRow = {
-      id: `CH-${Date.now().toString(36)}`,
-      name: v.name,
-      slug,
-      currency: "BDT",
-      warehouse: v.warehouse,
-      publishedProducts: 0,
-      active: true,
-    };
-    addRecord(CHANNEL, row as unknown as Record<string, unknown>);
-    setRows((prev) => [row, ...prev]);
-    appToast.success("Channel created", `\u201C${row.name}\u201D is now available for sales channels.`);
-    return null;
-  };
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
   const filteredRows = useMemo(() => {
@@ -124,11 +96,10 @@ export default function SettingsChannelsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Sales Channels</h1>
           <p className="text-sm text-muted-foreground">Storefronts and marketplaces — currency and warehouse per channel.</p>
         </div>
-        <Button
-          className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Channel
+        <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all">
+          <Link href="/settings/channels/new">
+            <Plus className="mr-2 h-4 w-4" /> Add Channel
+          </Link>
         </Button>
       </div>
 
@@ -151,15 +122,6 @@ export default function SettingsChannelsPage() {
         }
       />
 
-      <RecordCreateDrawer
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="New Sales Channel"
-        description="Open a storefront bound to a warehouse."
-        submitLabel="Create Channel"
-        fields={CREATE_FIELDS}
-        onSubmit={createChannel}
-      />
     </>
   );
 }

@@ -27,12 +27,12 @@ import {
   LayoutGrid,
   BarChart3,
   Table2,
+  Plus,
 } from "lucide-react";
 import { CHANNEL_OPTIONS } from "@/lib/data/products";
 import { useOps } from "@/lib/data/ops";
 import { setSaleStatus, applySaleAction } from "@/lib/data/workflows";
 import { useConfirm, useToast } from "@/components/app-feedback";
-import { CreateFlow } from "@/components/ui/create-flow";
 import {
   getOrders,
   orderStats,
@@ -293,53 +293,12 @@ export default function OrdersPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <CreateFlow<OrderRow>
-            model="sale.order"
-            buttonLabel="Create Order"
-            drawerTitle="New Order"
-            drawerDescription="Create a quotation for a customer; confirm it to start fulfillment."
-            fields={[
-              { key: "customer", label: "Customer", required: true, placeholder: "e.g. Rahim Ahmed" },
-              { key: "email", label: "Customer Email", required: true, placeholder: "rahim@example.com" },
-              {
-                key: "channelKey",
-                label: "Sales Channel",
-                type: "select",
-                required: true,
-                defaultValue: "default-channel",
-                options: CHANNEL_OPTIONS.filter((o) => o.value !== "all").map((o) => ({ value: o.value, label: o.label })),
-              },
-              { key: "itemCount", label: "Line Items", type: "number", defaultValue: "1" },
-              { key: "total", label: "Order Total (৳)", type: "number", required: true, placeholder: "25000" },
-            ]}
-            validate={(v) => {
-              const email = v.email.trim().toLowerCase();
-              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid customer email.";
-              if (!v.total || Number(v.total) <= 0) return "Enter an order total greater than zero.";
-              return null;
-            }}
-            build={(v) => {
-              const totalValue = Number(v.total) || 0;
-              const channelKey = v.channelKey;
-              const channel = CHANNEL_OPTIONS.find((o) => o.value === channelKey)?.label ?? "Default Channel (BDT)";
-              return {
-                id: `ORD-${1000 + Math.floor(Date.now() % 9000)}`,
-                customer: v.customer.trim(),
-                email: v.email.trim().toLowerCase(),
-                channel,
-                channelKey,
-                date: "Today",
-                totalValue,
-                total: fmtMoney(totalValue),
-                itemCount: Math.max(1, Number(v.itemCount) || 1),
-                status: "Quotation",
-                paymentStatus: "Unpaid",
-                fulfillmentStatus: "Unfulfilled",
-              };
-            }}
-            onCreated={(row) => setRows((prev) => [row, ...prev])}
-            successMessage="Order created"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/orders/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Order
+            </Link>
+          </Button>
         </div>
       </div>
 

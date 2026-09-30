@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Globe2, Map, Timer, RotateCcw } from "lucide-react";
+import { Globe2, Map, Timer, RotateCcw, Plus } from "lucide-react";
 import { getShippingZones, type ShippingZoneRow } from "@/lib/data/shipping";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 const ZONE_COLUMNS: CentralTableColumn<ShippingZoneRow>[] = [
   {
@@ -99,34 +99,12 @@ export default function ShippingZonesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CreateFlow<ShippingZoneRow>
-            model="stock.location.zone"
-            buttonLabel="Add Zone"
-            drawerTitle="New Shipping Zone"
-            drawerDescription="Group countries that share delivery carriers and rates."
-            fields={[
-              { key: "name", label: "Zone Name", required: true, placeholder: "e.g. Europe" },
-              {
-                key: "countries",
-                label: "Countries",
-                required: true,
-                colSpan: 2,
-                placeholder: "Bangladesh, India, Nepal",
-                helper: "Comma-separated country list.",
-              },
-              { key: "deliveryDays", label: "Delivery Window", required: true, placeholder: "e.g. 3–5 days" },
-            ]}
-            validate={(v) => (rows.some((z) => z.name.toLowerCase() === v.name.trim().toLowerCase()) ? "That zone already exists." : null)}
-            build={(v) => ({
-              id: `ZONE-${Date.now().toString(36)}`,
-              name: v.name.trim(),
-              countries: v.countries.split(",").map((s) => s.trim()).filter(Boolean),
-              carriers: 0,
-              deliveryDays: v.deliveryDays.trim(),
-            })}
-            onCreated={(row) => setRows((prev) => [row, ...prev])}
-            successMessage="Zone created"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/shipping/zones/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Zone
+            </Link>
+          </Button>
         </div>
       </div>
 

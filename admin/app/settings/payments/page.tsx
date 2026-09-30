@@ -1,39 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { CreditCard, Plus } from "lucide-react";
 import { getPaymentProviders, PROVIDER, type PaymentProviderRow } from "@/lib/data/settings";
 import { addRecord } from "@/lib/data/ops";
-import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
 import { useToast } from "@/components/app-feedback";
 
-const CREATE_FIELDS: CreateFieldDef[] = [
-  { key: "name", label: "Provider Name", required: true, placeholder: "e.g. Rocket" },
-  {
-    key: "kind",
-    label: "Method Type",
-    type: "select",
-    required: true,
-    defaultValue: "Wallet",
-    options: [
-      { value: "Card", label: "Card" },
-      { value: "Wallet", label: "Wallet (bKash-style)" },
-      { value: "Bank", label: "Bank Transfer" },
-      { value: "COD", label: "Cash on Delivery" },
-    ],
-  },
-  {
-    key: "channels",
-    label: "Enabled Channels",
-    required: true,
-    colSpan: 2,
-    placeholder: "Default Channel, Dhaka Store",
-    helper: "Comma-separated channel names this provider accepts.",
-  },
-];
+
 
 function money(v: number) {
   return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -100,22 +77,7 @@ export default function SettingsPaymentsPage() {
     };
   }, []);
 
-  const createProvider = (v: Record<string, string>) => {
-    const channels = v.channels.split(",").map((c) => c.trim()).filter(Boolean);
-    if (channels.length === 0) return "Enter at least one channel name.";
-    const row: PaymentProviderRow = {
-      id: `PP-${Date.now().toString(36)}`,
-      name: v.name,
-      kind: v.kind as PaymentProviderRow["kind"],
-      channels,
-      captured: 0,
-      active: true,
-    };
-    addRecord(PROVIDER, row as unknown as Record<string, unknown>);
-    setRows((prev) => [row, ...prev]);
-    appToast.success("Provider created", `\u201C${row.name}\u201D is now available for checkout payment methods.`);
-    return null;
-  };
+
 
   return (
     <>
@@ -124,11 +86,10 @@ export default function SettingsPaymentsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Payment Providers</h1>
           <p className="text-sm text-muted-foreground">Card, wallet, bank and cash providers enabled per channel.</p>
         </div>
-        <Button
-          className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Provider
+        <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all">
+          <Link href="/settings/payments/new">
+            <Plus className="mr-2 h-4 w-4" /> Add Provider
+          </Link>
         </Button>
       </div>
 
@@ -143,15 +104,6 @@ export default function SettingsPaymentsPage() {
         pagination={false}
       />
 
-      <RecordCreateDrawer
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="New Payment Provider"
-        description="Enable an acquirer and the channels it serves."
-        submitLabel="Create Provider"
-        fields={CREATE_FIELDS}
-        onSubmit={createProvider}
-      />
     </>
   );
 }

@@ -3,18 +3,15 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import {
   SearchableDropbox,
   type DropboxOption,
 } from "@/components/ui/searchable-dropbox";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
-import { ProductFormDrawer } from "@/components/product-form-drawer";
 import { useAdminLayout } from "@/components/admin-shell";
 import { CHANNEL_OPTIONS } from "@/lib/data/products";
 import {
@@ -40,9 +37,13 @@ import {
   Percent,
   Truck,
   XCircle,
+  CreditCard,
 } from "lucide-react";
 import { applySaleAction } from "@/lib/data/workflows";
 import { useConfirm, useToast } from "@/components/app-feedback";
+import { WarehouseTiles } from "@/components/warehouse-tiles";
+import { FinanceReconciliationPanel } from "@/components/finance-reconciliation-panel";
+import { CommercialAnalyticsPanel } from "@/components/commercial-analytics-panel";
 
 /** Order status badge tones — shared vocabulary with the Orders pages. */
 const STATUS_META: Record<OrderStatus, string> = {
@@ -134,7 +135,6 @@ export default function AdminDashboardPage() {
   const { searchQuery } = useAdminLayout();
   const appToast = useToast();
   const confirm = useConfirm();
-  const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedChannel, setSelectedChannel] = useState("all");
@@ -142,6 +142,22 @@ export default function AdminDashboardPage() {
   const [selectedPayment, setSelectedPayment] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
   const [kpiTab, setKpiTab] = useState<"overview" | "cart" | "compact">("overview");
+  const [mainTab, setMainTab] = useState<"orders" | "warehouse" | "finance" | "commercial">("orders");
+
+  const handleDrillDown = (filter: { status?: string; query?: string; tab?: string }) => {
+    if (filter.tab) {
+      setMainTab(filter.tab as any);
+    } else {
+      setMainTab("orders");
+    }
+    if (filter.status) {
+      setSelectedStatus(filter.status);
+    }
+    if (filter.query) {
+      setSearchTableQuery(filter.query);
+    }
+    appToast.info("Filter applied", "Showing matching operational records.");
+  };
 
   // Re-read orders so overlay workflow changes show up immediately.
   const reloadRows = () => {
@@ -260,8 +276,8 @@ export default function AdminDashboardPage() {
               Export
             </Button>
             <Button
-              onClick={() => setIsProductDrawerOpen(true)}
               className="h-11 px-5 text-sm font-medium cursor-pointer"
+              render={<Link href="/products/new" />}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Product
@@ -324,32 +340,39 @@ export default function AdminDashboardPage() {
           {kpiTab === "overview" && (
             <KpiGrid columns={4}>
               <KpiCard
-                title="Total Revenue"
+                title="Net Revenue Today"
                 value="৳54,27,827"
                 icon={Banknote}
                 tone="emerald"
-                tooltip="Net gross sales processed across all verified channels"
+                change="+14.2%"
+                trend="up"
+                tooltip="Real net revenue across all active channels after vouchers, discounts, and returns"
               />
               <KpiCard
-                title="Total Orders"
-                value="1,248"
+                title="Orders to Fulfill"
+                value="42 Orders"
                 icon={ShoppingCart}
                 tone="blue"
-                tooltip="Total completed and pending orders recorded"
+                change="8 Overdue"
+                trend="down"
+                tooltip="Active warehouse fulfillment queue awaiting picking or packing"
               />
               <KpiCard
-                title="Active Customers"
-                value="3,842"
-                icon={Users}
+                title="Payments to Settle"
+                value="৳14,82,400"
+                icon={CreditCard}
                 tone="violet"
-                tooltip="Unique customer accounts with activity in the last 30 days"
+                change="MFS + COD"
+                tooltip="Cash float awaiting bank deposit across bKash, Nagad, and courier COD"
               />
               <KpiCard
-                title="Pending Stock Alerts"
-                value="14 Items"
-                icon={Package}
+                title="Stock Risk Alerts"
+                value="14 SKUs"
+                icon={AlertCircle}
                 tone="amber"
-                tooltip="Items whose inventory count is below minimum safety threshold"
+                change="3 Out of Stock"
+                trend="down"
+                tooltip="Items below safety buffer threshold requiring supplier replenishment"
               />
             </KpiGrid>
           )}
@@ -421,15 +444,21 @@ export default function AdminDashboardPage() {
           )}
         </div>
 
-        {/* Tabs: Live Orders & Warehouse Pipeline */}
-        <Tabs defaultValue="orders" className="space-y-5">
+        {/* Secondary View Switcher Tabs: Live Orders, Warehouse Operations, Financials & MFS, Commercial Analytics */}
+        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-5">
           <div className="flex items-center justify-between">
             <TabsList className="h-11 p-1">
-              <TabsTrigger value="orders" className="text-sm font-medium px-5 cursor-pointer">
+              <TabsTrigger value="orders" className="text-sm font-medium px-4 sm:px-5 cursor-pointer">
                 Live Orders ({filteredOrders.length})
               </TabsTrigger>
-              <TabsTrigger value="warehouse" className="text-sm font-medium px-5 cursor-pointer">
-                Warehouse Pipeline
+              <TabsTrigger value="warehouse" className="text-sm font-medium px-4 sm:px-5 cursor-pointer">
+                Warehouse Operations
+              </TabsTrigger>
+              <TabsTrigger value="finance" className="text-sm font-medium px-4 sm:px-5 cursor-pointer">
+                Financials & MFS
+              </TabsTrigger>
+              <TabsTrigger value="commercial" className="text-sm font-medium px-4 sm:px-5 cursor-pointer">
+                Commercial Analytics
               </TabsTrigger>
             </TabsList>
           </div>
@@ -533,82 +562,22 @@ export default function AdminDashboardPage() {
             />
           </TabsContent>
 
-          {/* Warehouse Pipeline Tab with generous padding */}
-          <TabsContent value="warehouse">
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card className="p-7 md:p-8 shadow-xs border-border/80 space-y-6">
-                <h3 className="text-lg font-semibold">Fulfillment Progress</h3>
-                <div className="space-y-5">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Ready to Ship</span>
-                      <span className="text-muted-foreground font-semibold">85%</span>
-                    </div>
-                    <Progress value={85} className="h-3" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Packaging in Progress</span>
-                      <span className="text-muted-foreground font-semibold">52%</span>
-                    </div>
-                    <Progress value={52} className="h-3" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Awaiting Supplier Dispatch</span>
-                      <span className="text-muted-foreground font-semibold">24%</span>
-                    </div>
-                    <Progress value={24} className="h-3" />
-                  </div>
-                </div>
-              </Card>
+          {/* Warehouse Operations Tab with Odoo-Style Kanban Tiles */}
+          <TabsContent value="warehouse" className="w-full">
+            <WarehouseTiles onDrillDown={handleDrillDown} onRequestRestock={requestRestock} />
+          </TabsContent>
 
-              <Card className="p-7 md:p-8 shadow-xs border-border/80 space-y-5">
-                <h3 className="text-lg font-semibold">Low Stock Thresholds</h3>
-                <div className="flex items-center justify-between rounded-lg border border-border/70 p-4.5 bg-muted/20">
-                  <div className="flex items-center gap-3.5">
-                    <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
-                    <div>
-                      <div className="font-semibold text-sm">
-                        Wireless Active ANC Headphones
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        3 units left (Reorder point: 10)
-                      </div>
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" className="h-9 px-4 text-xs font-semibold cursor-pointer active:scale-[0.98] transition-all" onClick={() => requestRestock("Wireless Active ANC Headphones")}>
-                    Restock
-                  </Button>
-                </div>
+          {/* Financials & MFS Tab */}
+          <TabsContent value="finance" className="w-full">
+            <FinanceReconciliationPanel />
+          </TabsContent>
 
-                <div className="flex items-center justify-between rounded-lg border border-border/70 p-4.5 bg-muted/20">
-                  <div className="flex items-center gap-3.5">
-                    <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
-                    <div>
-                      <div className="font-semibold text-sm">
-                        USB-C Fast Charging Hub 100W
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        5 units left (Reorder point: 15)
-                      </div>
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" className="h-9 px-4 text-xs font-semibold cursor-pointer active:scale-[0.98] transition-all" onClick={() => requestRestock("USB-C Fast Charging Hub 100W")}>
-                    Restock
-                  </Button>
-                </div>
-              </Card>
-            </div>
+          {/* Commercial Analytics Tab (Saleor Pulse Style) */}
+          <TabsContent value="commercial" className="w-full">
+            <CommercialAnalyticsPanel />
           </TabsContent>
         </Tabs>
 
-
-        {/* Reusable Central Form Drawer Demonstration */}
-        <ProductFormDrawer
-          open={isProductDrawerOpen}
-          onOpenChange={setIsProductDrawerOpen}
-        />
     </>
   );
 }

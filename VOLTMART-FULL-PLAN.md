@@ -4,7 +4,7 @@
 > **This is a single self-contained file containing the entire VoltMart business plan.**
 > No external links required. Everything is here.
 >
-> Total content: ~10,000 lines covering every part of running a modern
+> Total content: ~10,300 lines covering every part of running a modern
 > e-commerce business in Bangladesh — from company registration to
 > delivering a product and handling a return.
 
@@ -18,6 +18,7 @@
 - [SECTION 4: Odoo ERP — Full Business Journey](#section-4--odoo-erp--full-business-journey)
 - [SECTION 5: Enterprise Admin Dashboard — Deep Research & VoltMart Implementation Blueprint](#section-5--enterprise-admin-dashboard-deep-research--voltmart-implementation-blueprint)
 - [SECTION 6: Next.js & React World-Class Engineering & Performance Optimization Blueprint](#section-6--nextjs--react-world-class-engineering--performance-optimization-blueprint)
+- [SECTION 7: VoltMart Admin UI Architecture & Full Implementation Roadmap](#section-7--voltmart-admin-ui-architecture--full-implementation-roadmap)
 
 ---
 
@@ -9956,9 +9957,343 @@ All Next.js code must seamlessly integrate with the established VoltMart reposit
 
 ---
 
+
+
+---
+---
+
+# SECTION 7 — VOLTMART ADMIN UI ARCHITECTURE & FULL IMPLEMENTATION ROADMAP
+### Existing Codebase Audit · UI vs. Plan Alignment Matrix · API & Backend Migration Layer · 6-Phase Production Implementation Plan
+
+> **Executive Summary:**
+> The `/admin` folder already contains a sophisticated, high-quality design system powered by **Next.js 16.3.7**, **React 19.2.8**, **Tailwind CSS v4**, and **Base UI**. It implements 24 production routes, 73 reusable UI components (including `<CentralTable>`, `<CentralForm>`, `<KpiGrid>`, `<ViewSwitcher>`, and `<RecordChatter>`), and an Odoo-parity client-side state store (`ops.ts` / `workflows.ts`).
+> 
+> This section bridges the current frontend UI assets directly into the master business plan: swapping the client-side `localStorage` overlay with real **Saleor GraphQL** and **Odoo JSON-RPC** backends, adding the Bangladesh e-commerce mechanics (MFS, Couriers, NBR VAT, BTRC compliance), and establishing an airtight 6-phase implementation roadmap.
+
+---
+
+## 7.1 AUDIT OF EXISTING ADMIN CODEBASE
+
+### A. Technology Stack & Framework Inventory
+* **Core Framework**: Next.js 16.3.7 with App Router architecture.
+* **UI Runtime**: React 19.2.8 with React Server Components (RSC) and React 19 Concurrency support.
+* **Styling**: Tailwind CSS v4 (`@tailwindcss/postcss`) with CSS variable semantic tokens (`bg-background`, `bg-card`, `text-foreground`, `border-border/80`).
+* **Component Primitives**: `@base-ui/react` and Radix primitives for fully accessible unstyled headless UI.
+* **Icons & Typography**: `lucide-react` v1.48.0 and enlarged root 18px scale (`html { font-size: 18px; }`).
+* **Theme System**: `next-themes` with seamless dark/light mode toggle and system preference matching.
+* **Visualization**: `recharts` v3.8.0 for interactive analytics charts and pivot views.
+
+### B. Core UI Components Inventory (73 Production Components)
+The admin repository features an enterprise-grade component suite strictly governed by repository rules (`AGENTS.md` & `GEMINI.md`):
+
+```
+admin/components/ui/
+├── Central Design Components (MANDATORY USE ACROSS REPO):
+│   ├── central-table.tsx (40 KB)   <- Generic <TData>, sortable, global search, filter tray, bulk selection, pagination, empty states
+│   ├── central-form.tsx (21 KB)    <- Panoramic form sections, enhanced inputs, prefix/suffix icons, dropzones, dirty state
+│   ├── kpi-card.tsx (14 KB)        <- Glanceable cards with KpiGrid, tone variants, sparkline trend arrows, ZERO progress bar bloat
+│   ├── searchable-dropbox.tsx (8 KB)<- Auto-focused instant search, badge chips, Base UI accessibility, keyboard nav
+│   └── theme-toggle.tsx (2.3 KB)   <- Clean light/dark/system mode switcher with animated icons
+│
+├── Odoo-Parity Workflow & Visualization Components:
+│   ├── kanban-board.tsx (4.7 KB)   <- Multi-column drag-and-drop workflow stages for orders & tasks
+│   ├── view-switcher.tsx (1.9 KB)  <- Toggle between List, Kanban, Graph, and Pivot views
+│   ├── graph-view.tsx (5.2 KB)     <- Bar, Line, and Pie aggregations across pipeline stages
+│   ├── record-chatter.tsx (17 KB)  <- Audit trail timeline, internal staff notes, customer comments, scheduled activities
+│   ├── bulk-actions.tsx (4.9 KB)   <- Floating bottom action bar for mass record updates & batch exports
+│   └── print-preview.tsx (9.7 KB)  <- High-fidelity document preview for Invoices, Picking Lists, and Shipping Labels
+│
+└── Shell & Navigation Architecture:
+    ├── admin-shell.tsx (6.2 KB)    <- Central provider wrapping header, sidebar, command palette, feedback context
+    ├── admin-sidebar.tsx (21 KB)   <- Collapsible w-56 / w-16 navigation with badge counters and role gating
+    ├── admin-header.tsx (7.4 KB)   <- Global search trigger, quick action buttons, active channel switcher, profile menu
+    ├── command-palette.tsx (5.4 KB)<- ⌘K instant search across records, navigation items, and quick creation flows
+    └── notifications-popover.tsx (9.6 KB) <- Real-time alert tray with categorization (orders, stock, system)
+```
+
+### C. State Management & Odoo-Parity Behavioral Layer (`ops.ts` & `workflows.ts`)
+* **`admin/lib/data/ops.ts`**: Implements a client-side reactive store using React's native `useSyncExternalStore` hook. It manages record field patches, chatter messages, scheduled activities, and immutable history events per `model:id`.
+* **`admin/lib/data/workflows.ts`**: Enforces strict state machines for document lifecycles (e.g. `sale.order`: `Quotation -> Confirmed -> Fulfilled -> Invoiced -> Cancelled`).
+* **Architectural Advantage**: The entire admin UI is already programmed against this decoupled operations layer. To connect to real backends (Saleor / Odoo), we only need to swap the underlying mutation resolver in `workflows.ts` from `localStorage` to Next.js Server Actions and GraphQL mutations.
+
+---
+
+## 7.2 ALIGNMENT MATRIX: CURRENT UI VS. VOLTMART MASTER PLAN
+
+| Admin Route | Current UI Implementation | Master Plan Requirement | Missing Production Gaps | Target Backend Integration |
+|---|---|---|---|---|
+| **`/` (Dashboard)** | 4-card KPI strip (Revenue, Orders, Customers, Alerts), CentralTable live orders, Warehouse progress. | Dual-engine cockpit (Saleor Pulse commercial stats + Odoo operational Kanban tiles with "Waiting" & "Late" counters). | Odoo-style operational Kanban tiles with 1-click drill-down; Bangladesh MFS & Courier COD cash float tracker. | Saleor GraphQL (`ordersToday`) + Odoo `stock.picking.type` JSON-RPC. |
+| **`/orders`** | Full `CentralTable`, `ViewSwitcher` (List, Kanban, Graph, Pivot), `CreateFlow`, `useConfirm` destructive prompts. | End-to-end order lifecycle: Payment verification, Picking, Packing, Courier Booking, Dispatch, Delivery, Return. | Courier API dispatch modal (Pathao/Steadfast); ZPL shipping label generator; bKash TrxID verification badge. | Saleor GraphQL `OrderUpdate` + Pathao Merchant API. |
+| **`/products`** | Full `CentralTable` with stock availability badges, `ProductFormDrawer`, bulk archive actions, categories filter. | 50+ GS1 product fields, GTIN/EAN-13 barcode validation, variant matrix, Cloudinary media CDN, BTRC wireless status. | Full GS1 50-field schema integration in drawer; BTRC Type Approval number input; multi-warehouse stock split. | Saleor GraphQL `ProductCreate` / `ProductVariantBulkCreate`. |
+| **`/inventory`** | Stock table by warehouse location, On Hand vs Forecasted stock, reorder point alerts. | Double-entry stock moves (Incoming, Reserved, Packing, Scrap), Serial/IMEI tracking, automated PO generation. | IMEI / Serial number scanning modal; scrap/damaged goods workflow; automated supplier replenishment PO. | Odoo `stock.quant` & `stock.picking` API. |
+| **`/purchasing` & `/vendors`** | Vendor directory, purchase orders list, PO creation modal, receiving status. | International procurement: Foreign LC tracking, Import Duty & C&F clearance costs, HS Code duty calculator. | Commercial Invoice & Bill of Lading document upload; NBR customs clearance status tracking. | Odoo `purchase.order` & `account.move` (Vendor Bills). |
+| **`/invoices` & `/bills`** | Invoice list with paid/unpaid statuses, customer billing history, payment terms. | Bangladesh NBR Mushak 6.3 tax invoice generation, VDS certificates, VAT Form 9.1 live tax ledger. | Mushak 6.3 compliant PDF printing with Bengali text; NBR automated serial number generation. | Odoo Invoicing / Accounting + Custom PDF Generator (`pdf-lib`). |
+| **`/shipping`** | Courier partner selection, delivery zone options (Inside/Outside Dhaka), shipping rate rules. | Deep API integration with Pathao, Steadfast, and RedX; automated parcel tracking webhooks; COD reconciliation. | Real courier API credentials configuration; consignment status polling; COD remittance dispute sheets. | Pathao, Steadfast, RedX Merchant REST APIs. |
+| **`/customers`** | Customer list with total spend, order count, contact information. | Customer 360: RFM segmentation, COD return risk score, automated SMS/WhatsApp marketing consent. | High COD-return risk blacklist flag; customer order history drawer; WhatsApp direct chat link. | Saleor Customer API + Twilio / BulkSMSBD. |
+
+---
+
+## 7.3 TARGET ARCHITECTURE: NEXT.JS 16 + SALEOR + ODOO INTEGRATION
+
+To transform the current mock frontend into an enterprise-scale application, the architecture follows a 3-tier hybrid topology:
+
+```
++---------------------------------------------------------------------------------------------------+
+| CLIENT BROWSER (Admin Staff & Warehouse Operators)                                                |
+| - Ultra-fast responsive UI running React 19 Client Leaves ("use client")                           |
+| - Instant feedback via useOptimistic() and useTransition()                                        |
++---------------------------------------------------------------------------------------------------+
+                                  ▲                                 │
+                 Server Actions   │                                 │ Data Streams (RSC)
+                 (Mutations)      │                                 ▼
++---------------------------------------------------------------------------------------------------+
+| NEXT.JS 16 APPLICATION SERVER (RSC / API Routes / Middleware)                                    |
+| - React Server Components (RSC) fetch data with 0ms network latency to cache                     |
+| - Request deduplication via React.cache() and Next.js unstable_cache(..., { tags: [...] })        |
+| - Next.js 15 after() API executes non-blocking webhooks, audit logging, and email/SMS alerts      |
+| - Edge Middleware validates JWT authentication and role-based permissions                         |
++---------------------------------------------------------------------------------------------------+
+             │                                   │                                    │
+             ▼ GraphQL                           ▼ JSON-RPC / REST                    ▼ REST Webhooks
++--------------------------+       +--------------------------+        +----------------------------+
+| SALEOR COMMERCE CORE     |       | ODOO 19 ERP CORE         |        | BANGLADESH SERVICES        |
+| - Multi-channel Catalog  |       | - Double-Entry Inventory |        | - bKash & Nagad PGW        |
+| - Product Variants & SEO |       | - Accounting & GL Ledger |        | - Pathao / Steadfast 3PL   |
+| - Pricing & Discounts    |       | - Vendor POs & Imports   |        | - NBR Mushak 6.3 Tax Engine|
+| - Customer Accounts      |       | - Warehouse Bin Locations|        | - BTRC Compliance DB       |
++--------------------------+       +--------------------------+        +----------------------------+
+```
+
+---
+
+## 7.4 SIX-PHASE PRODUCTION IMPLEMENTATION ROADMAP
+
+### PHASE 1: Data Access Layer & Backend Integration (Weeks 1–2)
+* **Objective**: Replace mock data arrays with real GraphQL and JSON-RPC clients.
+* **Workstreams**:
+  1. **GraphQL Client Setup**:
+     - Configure `@urql/core` or typed `fetch` wrapper targeting Saleor GraphQL endpoint (`/graphql/`).
+     - Generate strictly typed TypeScript types using GraphQL Code Generator.
+  2. **Odoo API Bridge**:
+     - Implement lightweight JSON-RPC client (`/lib/odoo/client.ts`) for authentication and ORM calls (`execute_kw`).
+  3. **Server Actions Migration**:
+     - Refactor `applySaleAction` in `workflows.ts` to execute real Next.js Server Actions:
+       - `confirmOrderAction(orderId)` -> Mutates Saleor status & reserves stock in Odoo.
+       - `fulfillOrderAction(orderId, carrier, tracking)` -> Calls courier API and updates fulfillment.
+  4. **Authentication & Session**:
+     - Connect `AdminHeader` and `AdminShell` to NextAuth.js / Auth.js with JWT tokens from Saleor staff authentication.
+
+---
+
+### PHASE 2: Product & Catalog Management (Weeks 3–4)
+* **Objective**: Enable full catalog management compliant with international GS1 standards and Bangladesh electronics regulations.
+* **Workstreams**:
+  1. **CentralFormDrawer Upgrade**:
+     - Expand `ProductFormDrawer` (`admin/components/product-form-drawer.tsx`) to support all 50+ GS1 fields outlined in Section 3 of this document.
+     - Add dedicated tab sections: *General*, *Pricing & Taxes (15% VAT)*, *Variants & Attributes*, *Warehouse & Dimensions*, *Compliance (BTRC & Safety)*, and *SEO / Google Merchant*.
+  2. **Variant Matrix Builder**:
+     - Implement dynamic variant generator (e.g. Color: Space Gray, Silver x Storage: 128GB, 256GB).
+     - Auto-generate compliant GS1 GTIN-13 barcodes and SKUs using the VoltMart format (`VM-ELEC-AUDIO-0001-BLK`).
+  3. **Media CDN Dropzone**:
+     - Integrate `CentralFormDropzone` with Cloudinary / AWS S3 for direct multipart uploads.
+     - Enforce WebP/AVIF auto-conversion and 1:1 square aspect ratio verification for e-commerce standards.
+  4. **BTRC Wireless Compliance Gating**:
+     - If category is tagged "Wireless/RF", require BTRC Type Approval number before product can be toggled to "Active".
+
+---
+
+### PHASE 3: Order Management & Bangladesh Logistics Engine (Weeks 5–6)
+* **Objective**: Build an airtight order fulfillment pipeline with automated courier booking and label printing.
+* **Workstreams**:
+  1. **Pathao & Steadfast Courier API Integration**:
+     - Create `/lib/logistics/pathao.ts` and `/lib/logistics/steadfast.ts`:
+       - `createConsignment(order)` -> Automatically posts customer name, address, phone, weight, and COD amount to courier API.
+       - Returns courier tracking code and consignment ID.
+  2. **Thermal Shipping Label Generator (ZPL / PDF)**:
+     - Connect `<PrintPreview>` component to generate 4x6 inch thermal shipping labels containing:
+       - Customer shipping address & phone number.
+       - COD cash collection amount (in bold BDT ৳).
+       - Code 128 barcode of Courier Consignment ID.
+       - VoltMart sender return address and merchant helpline.
+  3. **Courier Tracking Webhook Ingestion**:
+     - Implement API route `/api/webhooks/courier`:
+       - Ingests delivery events (`Picked Up`, `In Transit`, `Delivered`, `Customer Refused / RTM`).
+       - Automatically transitions `order.fulfillmentStatus` and sends customer SMS update.
+  4. **COD Remittance Reconciliation Panel**:
+     - Create `/admin/app/finance/cod/page.tsx` using `CentralTable` to reconcile courier bank payouts against delivered COD orders.
+
+---
+
+### PHASE 4: Warehouse Operations & Double-Entry Stock (Weeks 7–8)
+* **Objective**: Equip warehouse staff with barcode picking, packing verification, and serial/IMEI recording.
+* **Workstreams**:
+  1. **Warehouse Picking Board (`admin/components/picking-board.tsx`)**:
+     - Connect the existing picking board to live `stock.picking` records from Odoo.
+     - Group orders into wave picking lists by warehouse rack/bin location.
+  2. **Serial Number & IMEI Scanning Modal**:
+     - When packing high-value electronics (smartphones, laptops, tablets), require staff to scan the unit's physical IMEI/Serial barcode.
+     - Store serial number against the order line for warranty and RMA validation.
+  3. **Low-Stock Automatic Reordering**:
+     - Wire low-stock alerts on `/admin/app/inventory` to trigger draft Purchase Orders (POs) in Odoo when stock dips below safety thresholds.
+
+---
+
+### PHASE 5: Financials, MFS Reconciliations & NBR Tax Compliance (Weeks 9–10)
+* **Objective**: Automate payment reconciliations and tax reporting under Bangladesh law.
+* **Workstreams**:
+  1. **bKash & Nagad MFS Gateway Reconciliation**:
+     - Display live merchant account balances and pending settlement pools in `/admin/app/payments`.
+     - Implement TrxID instant lookup to resolve customer dispute queries in under 10 seconds.
+  2. **NBR Mushak 6.3 Tax Invoice Generator**:
+     - Build compliant bilingual (English & Bengali) Mushak 6.3 PDF generation.
+     - Auto-calculate 15% VAT on standard electronics and apply statutory exemptions where applicable.
+  3. **VAT Form 9.1 Monthly Accumulator**:
+     - In `/admin/app/accounting`, aggregate Output VAT collected vs Input VAT rebate claimed, generating ready-to-file figures for monthly NBR filing.
+
+---
+
+### PHASE 6: Performance Optimization, Security & Production Hardening (Weeks 11–12)
+* **Objective**: Achieve world-class speed (sub-100ms INP, sub-1.2s LCP) and bulletproof security.
+* **Workstreams**:
+  1. **Vercel Best Practices Compliance Audit**:
+     - Eliminate all barrel imports across components and icon libraries.
+     - Implement dynamic imports (`next/dynamic`) for heavy charting and drawing components.
+     - Convert top-level page containers to React Server Components with `<Suspense>` skeletons.
+  2. **Role-Based Access Control (RBAC)**:
+     - Gated navigation and routes:
+       - `Warehouse Operator`: Access to Inventory, Picking, and Shipping only.
+       - `Customer Support`: Access to Orders, Customers, and RMA only.
+       - `Accountant`: Access to Invoices, Bills, Accounting, and Tax only.
+       - `Super Admin`: Full system access.
+  3. **End-to-End Testing & CI/CD Performance Budgets**:
+     - Setup Playwright E2E tests for the core checkout-to-dispatch workflow.
+     - Enforce Lighthouse CI performance budget in GitHub Actions.
+
+---
+
+## 7.5 PRODUCTION CODE BLUEPRINTS
+
+### Blueprint 1: Order Fulfillment Server Action with Courier Dispatch
+```typescript
+// app/actions/orders.ts
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createPathaoConsignment } from "@/lib/logistics/pathao";
+import { updateSaleorFulfillment } from "@/lib/saleor/orders";
+import { createOdooStockDelivery } from "@/lib/odoo/inventory";
+import { sendCustomerSms } from "@/lib/notifications/sms";
+
+export async function fulfillOrderWithCourierAction(orderId: string, warehouseId: string) {
+  try {
+    // 1. Fetch order details from database
+    const order = await getOrderById(orderId);
+    if (!order || order.status !== "Confirmed") {
+      return { ok: false, error: "Only confirmed orders can be fulfilled." };
+    }
+
+    // 2. Automatically book consignment with Pathao 3PL Courier
+    const consignment = await createPathaoConsignment({
+      storeId: warehouseId,
+      recipientName: order.customer.name,
+      recipientPhone: order.customer.phone,
+      recipientAddress: order.shippingAddress.fullAddress,
+      recipientCity: order.shippingAddress.city,
+      amountToCollect: order.paymentStatus === "Paid" ? 0 : order.totalAmount,
+      itemQuantity: order.items.length,
+      itemWeight: order.totalWeightKg,
+      orderNote: `Order #${order.number} - VoltMart Electronics`,
+    });
+
+    // 3. Update Saleor fulfillment record with tracking URL
+    await updateSaleorFulfillment(order.saleorId, {
+      trackingNumber: consignment.consignmentId,
+      trackingUrl: `https://merchant.pathao.com/tracking?consignment_id=${consignment.consignmentId}`,
+    });
+
+    // 4. Update Odoo stock picking to 'Done'
+    await createOdooStockDelivery(order.odooRef, order.items);
+
+    // 5. Send automated SMS to customer with tracking link
+    await sendCustomerSms(
+      order.customer.phone,
+      `Your VoltMart order #${order.number} has been dispatched! Track your parcel: https://volt.mart/track/${consignment.consignmentId}`
+    );
+
+    // 6. Invalidate Next.js cache for instant UI update
+    revalidatePath("/orders");
+    revalidatePath(`/orders/${orderId}`);
+
+    return { ok: true, consignmentId: consignment.consignmentId };
+  } catch (error: any) {
+    return { ok: false, error: error.message || "Failed to fulfill order." };
+  }
+}
+```
+
+### Blueprint 2: Real-Time Courier Webhook Listener
+```typescript
+// app/api/webhooks/courier/pathao/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import crypto from "crypto";
+
+export async function POST(req: NextRequest) {
+  const secret = process.env.PATHAO_WEBHOOK_SECRET!;
+  const signature = req.headers.get("x-pathao-signature");
+  const rawBody = await req.text();
+
+  // Validate webhook authenticity
+  const expectedSignature = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+  if (signature !== expectedSignature) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  const payload = JSON.parse(rawBody);
+  const { consignment_id, event, updated_at } = payload;
+
+  // Handle courier delivery status transitions
+  switch (event) {
+    case "Delivered":
+      await markOrderAsDelivered(consignment_id, updated_at);
+      revalidateTag("dashboard-metrics");
+      revalidateTag("orders-list");
+      break;
+
+    case "Returned":
+      await markOrderAsReturned(consignment_id, payload.reason);
+      revalidateTag("dashboard-metrics");
+      break;
+
+    case "Payment_Collected":
+      await recordCourierCodRemittance(consignment_id, payload.amount_collected);
+      revalidateTag("finance-cod");
+      break;
+  }
+
+  return NextResponse.json({ success: true });
+}
+```
+
+---
+
+## 7.6 SUMMARY OF ADMIN ARCHITECTURAL MILESTONES
+
+```
+CURRENT STATE: Mock UI Shell               TARGET STATE: Live Production Engine
+├── 24 App Routes (Client-Side)           ├── 24 App Routes (RSC + Suspense Streaming)
+├── CentralTable & CentralForm System     ├── CentralTable with Live GraphQL & Odoo ORM
+├── ops.ts LocalStorage State             ├── Next.js Server Actions + Real-Time Webhooks
+├── Mock Bangladesh Logistics             ├── Live Pathao / Steadfast Courier Integration
+├── Mock Currency Numbers                 ├── bKash / Nagad IPN & NBR Mushak 6.3 Invoices
+└── 100% Zero max-w-* Layout Compliance  └── 100% Zero max-w-* Layout Compliance (Maintained)
+```
+
+---
+
 # END OF VOLTMART COMPLETE BUSINESS PLAN
 
-*Total document: ~10,000 lines*
+*Total document: ~10,300 lines*
 *Research basis: GS1 International 2026, Google Merchant Center, Saleor API,*
 *Odoo product.template, Schema.org, Bangladesh NBR, BTRC Guidelines 2024,*
 *Digital Commerce Operational Guidelines 2021, Consumer Rights Act 2009,*

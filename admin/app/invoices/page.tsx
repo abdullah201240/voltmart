@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,12 +11,11 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { FileText, Banknote, Wallet, FileClock, RotateCcw, Check, XCircle, ArrowDownLeft } from "lucide-react";
+import { FileText, Banknote, Wallet, FileClock, RotateCcw, Check, XCircle, ArrowDownLeft, Plus } from "lucide-react";
 import { getInvoices, invoiceStats, MOVE_STATE_OPTIONS, type InvoiceRow, type MoveState } from "@/lib/data/finance";
 import { useOps } from "@/lib/data/ops";
 import { applyMoveAction } from "@/lib/data/workflows";
 import { createCreditNote } from "@/lib/data/accounting";
-import { CreateFlow } from "@/components/ui/create-flow";
 import { useConfirm, useToast } from "@/components/app-feedback";
 
 const STATE_CLASS: Record<MoveState, "default" | "secondary" | "outline"> = {
@@ -202,38 +202,12 @@ export default function InvoicesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CreateFlow<InvoiceRow>
-            model="account.move"
-            buttonLabel="Create Invoice"
-            drawerTitle="New Customer Invoice"
-            drawerDescription="Raise a customer invoice (posts as a Draft journal entry)."
-            submitLabel="Create Invoice"
-            fields={[
-              { key: "partner", label: "Customer", required: true, placeholder: "e.g. Rahim Ahmed", colSpan: 2 },
-              { key: "reference", label: "Origin SO Ref", placeholder: "e.g. S00099" },
-              { key: "total", label: "Invoice Total (৳)", type: "number", required: true, placeholder: "12000" },
-              { key: "dueDate", label: "Due Date", placeholder: "e.g. Oct 15, 2026" },
-            ]}
-            validate={(v) => (!v.total || Number(v.total) <= 0 ? "Enter an invoice total greater than zero." : null)}
-            build={(v) => {
-              const total = Number(v.total) || 0;
-              const num = `INV/${new Date().getFullYear()}/${Date.now().toString(36).toUpperCase()}`;
-              return {
-                id: num,
-                number: num,
-                reference: v.reference.trim() || "—",
-                partner: v.partner.trim(),
-                date: "Today",
-                dueDate: v.dueDate.trim() || "Net 30",
-                subtotal: total,
-                tax: 0,
-                total,
-                state: "Draft",
-              };
-            }}
-            onCreated={(row) => setRows((prev) => [row, ...prev])}
-            successMessage="Invoice created"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/invoices/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Invoice
+            </Link>
+          </Button>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -39,7 +39,6 @@ import {
   type FiscalPositionRow,
   type TaxLockRow,
 } from "@/lib/data/settings";
-import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
 import { useConfirm, useToast } from "@/components/app-feedback";
 
 /** Pretty-print an ISO lock date (or an "unlocked" hint). */
@@ -92,36 +91,7 @@ export default function FiscalPositionsPage() {
     appToast.success(next ? "Fiscal position activated" : "Fiscal position deactivated", fp.name);
   };
 
-  const CREATE_FIELDS: CreateFieldDef[] = [
-    { key: "name", label: "Position Name", required: true, placeholder: "e.g. Export (0% VAT)" },
-    { key: "appliesTo", label: "Applies To", required: true, placeholder: "Country or partner group" },
-    { key: "note", label: "Internal Note", colSpan: 2, placeholder: "When this position is used…" },
-    {
-      key: "reverseCharge",
-      label: "Reverse Charge",
-      type: "switch",
-      helper: "Buyer self-assesses the tax instead of the seller.",
-    },
-  ];
 
-  const createFp = (v: Record<string, string>) => {
-    if (fps.some((f) => f.name.toLowerCase() === v.name.trim().toLowerCase())) {
-      return "A fiscal position with that name already exists.";
-    }
-    const row: FiscalPositionRow = {
-      id: `FP-${Date.now().toString(36)}`,
-      name: v.name,
-      appliesTo: v.appliesTo,
-      note: v.note?.trim() || "Created from the admin — add tax mappings to activate substitutions.",
-      reverseCharge: v.reverseCharge === "true",
-      active: true,
-      taxMaps: [],
-    };
-    addRecord(FISCAL_POSITION, row as unknown as Record<string, unknown>);
-    setFps((prev) => [row, ...prev]);
-    appToast.success("Fiscal position created", `“${row.name}” is ready to map taxes.`);
-    return null;
-  };
 
   // Columns are built inline so the Active switch can call the toggle handler.
   const COLUMNS: CentralTableColumn<FiscalPositionRow>[] = [
@@ -235,11 +205,10 @@ export default function FiscalPositionsPage() {
             Tax substitution rules per partner, plus period locks that protect closed accounting.
           </p>
         </div>
-        <Button
-          className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> New Fiscal Position
+        <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all">
+          <Link href="/accounting/fiscal/new">
+            <Plus className="mr-2 h-4 w-4" /> New Fiscal Position
+          </Link>
         </Button>
       </div>
 
@@ -315,15 +284,6 @@ export default function FiscalPositionsPage() {
         pagination={false}
       />
 
-      <RecordCreateDrawer
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="New Fiscal Position"
-        description="Group partners and swap taxes for them."
-        submitLabel="Create Position"
-        fields={CREATE_FIELDS}
-        onSubmit={createFp}
-      />
 
       {/* Action toast */}
     </>

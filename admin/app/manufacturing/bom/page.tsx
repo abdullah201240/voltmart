@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
-import { ArrowLeft, ClipboardList, Package, Cog, Cpu } from "lucide-react";
+import { ArrowLeft, ClipboardList, Package, Cog, Cpu, Plus } from "lucide-react";
 import { getBoms, type BomRow, type BomType } from "@/lib/data/manufacturing";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 function fmtMoney(v: number) {
   return "৳" + v.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -119,46 +118,11 @@ export default function BomPage() {
           <h1 className="text-3xl font-bold tracking-tight">Bills of Materials</h1>
           <p className="text-sm text-muted-foreground">Product recipes — components, operations and unit cost.</p>
         </div>
-        <CreateFlow<BomRow>
-          model="mrp.bom"
-          buttonLabel="Create BoM"
-          drawerTitle="New Bill of Materials"
-          drawerDescription="Define a manufacturable product recipe."
-          submitLabel="Create BoM"
-          buttonClassName="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all"
-          fields={[
-            { key: "product", label: "Product", required: true, placeholder: "e.g. Custom Gaming PC", colSpan: 2 },
-            { key: "sku", label: "SKU / Internal Ref", required: true, placeholder: "e.g. PC-GAMING-01" },
-            {
-              key: "type",
-              label: "BoM Type",
-              type: "select",
-              required: true,
-              defaultValue: "normal",
-              options: [
-                { value: "normal", label: "Normal" },
-                { value: "phantom", label: "Phantom (sub-assembly)" },
-                { value: "kit", label: "Kit (shipped as components)" },
-              ],
-            },
-            { key: "qty", label: "Quantity", type: "number", defaultValue: "1" },
-            { key: "uom", label: "Unit of Measure", defaultValue: "Units" },
-          ]}
-          validate={(v) => (rows.some((b) => b.sku.toLowerCase() === v.sku.trim().toLowerCase()) ? "A BoM for this SKU already exists." : null)}
-          build={(v) => ({
-            id: `BOM-${Date.now().toString(36)}`,
-            product: v.product.trim(),
-            sku: v.sku.trim().toUpperCase(),
-            type: v.type as BomType,
-            qty: Math.max(1, Number(v.qty) || 1),
-            uom: v.uom.trim() || "Units",
-            unitCost: 0,
-            components: [],
-            operations: [],
-          })}
-          onCreated={(row) => setRows((prev) => [row, ...prev])}
-          successMessage="Bill of materials created"
-        />
+        <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all">
+          <Link href="/manufacturing/bom/new">
+            <Plus className="mr-2 h-4 w-4" /> Create BoM
+          </Link>
+        </Button>
       </div>
 
       <KpiGrid columns={3}>

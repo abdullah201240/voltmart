@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,7 +11,7 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Ticket, CheckCircle2, TicketCheck, CalendarX, RotateCcw } from "lucide-react";
+import { Ticket, CheckCircle2, TicketCheck, CalendarX, RotateCcw, Plus } from "lucide-react";
 import {
   getVouchers,
   voucherStats,
@@ -18,7 +19,6 @@ import {
   VOUCHER_TYPE_OPTIONS,
   type VoucherRow,
 } from "@/lib/data/discounts";
-import { CreateFlow } from "@/components/ui/create-flow";
 
 const STATUS_CLASS: Record<VoucherRow["status"], "default" | "secondary" | "outline"> = {
   Active: "default",
@@ -136,55 +136,12 @@ export default function DiscountsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <CreateFlow<VoucherRow>
-            model="discount.voucher"
-            buttonLabel="Create Voucher"
-            drawerTitle="New Voucher"
-            drawerDescription="Create a discount code shoppers enter at checkout."
-            submitLabel="Create Voucher"
-            fields={[
-              { key: "code", label: "Voucher Code", required: true, placeholder: "e.g. FLASH20" },
-              {
-                key: "type",
-                label: "Discount Type",
-                type: "select",
-                required: true,
-                defaultValue: "Percentage",
-                options: [
-                  { value: "Fixed", label: "Fixed Amount" },
-                  { value: "Percentage", label: "Percentage" },
-                  { value: "Shipping", label: "Free Shipping" },
-                ],
-              },
-              { key: "value", label: "Value", type: "number", helper: "Amount (৳) or percent — ignored for free shipping." },
-              { key: "usageLimit", label: "Usage Limit", type: "number", defaultValue: "100" },
-              { key: "expiresAt", label: "Expires", placeholder: "e.g. Dec 31, 2026", colSpan: 2 },
-            ]}
-            validate={(v) => {
-              const code = v.code.trim().toUpperCase();
-              if (rows.some((r) => r.code.toUpperCase() === code)) return "That voucher code already exists.";
-              if (v.type !== "Shipping" && (!v.value || Number(v.value) <= 0)) return "Enter a discount value greater than zero.";
-              return null;
-            }}
-            build={(v) => {
-              const val = Number(v.value) || 0;
-              const discount = v.type === "Percentage" ? `${val}% off` : v.type === "Shipping" ? "Free shipping" : `৳${val.toLocaleString("en-IN")} off`;
-              return {
-                id: `VC-${Date.now().toString(36)}`,
-                code: v.code.trim().toUpperCase(),
-                type: v.type as VoucherRow["type"],
-                value: val,
-                discount,
-                usageLimit: Number(v.usageLimit) || 0,
-                used: 0,
-                startsAt: "Now",
-                expiresAt: v.expiresAt.trim() || "No expiry",
-                status: "Active",
-              };
-            }}
-            onCreated={(row) => setRows((prev) => [row, ...prev])}
-            successMessage="Voucher created"
-          />
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
+            <Link href="/discounts/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Voucher
+            </Link>
+          </Button>
         </div>
       </div>
 

@@ -1,31 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { Percent, Plus } from "lucide-react";
 import { getTaxes, TAX, type TaxRow } from "@/lib/data/settings";
 import { addRecord } from "@/lib/data/ops";
-import { RecordCreateDrawer, type CreateFieldDef } from "@/components/ui/record-create-drawer";
 import { useToast } from "@/components/app-feedback";
 
-const CREATE_FIELDS: CreateFieldDef[] = [
-  { key: "name", label: "Tax Name", required: true, placeholder: "e.g. VAT 15%" },
-  { key: "country", label: "Country / Region", required: true, defaultValue: "Bangladesh" },
-  {
-    key: "scope",
-    label: "Applies To",
-    type: "select",
-    required: true,
-    defaultValue: "Sales",
-    options: [
-      { value: "Sales", label: "Sales (customer invoices)" },
-      { value: "Purchases", label: "Purchases (vendor bills)" },
-    ],
-  },
-  { key: "amount", label: "Rate (%)", type: "number", required: true, placeholder: "15", helper: "Use 0 for an exempt tax." },
-];
+
 
 const TAX_COLUMNS: CentralTableColumn<TaxRow>[] = [
   {
@@ -87,22 +72,7 @@ export default function SettingsTaxesPage() {
     };
   }, []);
 
-  const createTax = (v: Record<string, string>) => {
-    const amount = Number(v.amount);
-    if (Number.isNaN(amount) || amount < 0 || amount > 100) return "Rate must be a number between 0 and 100.";
-    const row: TaxRow = {
-      id: `TX-${Date.now().toString(36)}`,
-      name: v.name,
-      country: v.country,
-      amount,
-      scope: v.scope === "Purchases" ? "Purchases" : "Sales",
-      active: true,
-    };
-    addRecord(TAX, row as unknown as Record<string, unknown>);
-    setRows((prev) => [row, ...prev]);
-    appToast.success("Tax created", `“${row.name}” is now available on invoices and bills.`);
-    return null;
-  };
+
 
   return (
     <>
@@ -111,11 +81,10 @@ export default function SettingsTaxesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Taxes</h1>
           <p className="text-sm text-muted-foreground">Tax rates applied to customer invoices and vendor bills.</p>
         </div>
-        <Button
-          className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Tax
+        <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all">
+          <Link href="/settings/taxes/new">
+            <Plus className="mr-2 h-4 w-4" /> Add Tax
+          </Link>
         </Button>
       </div>
 
@@ -130,15 +99,6 @@ export default function SettingsTaxesPage() {
         pagination={false}
       />
 
-      <RecordCreateDrawer
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="New Tax"
-        description="Define a rate and where it applies."
-        submitLabel="Create Tax"
-        fields={CREATE_FIELDS}
-        onSubmit={createTax}
-      />
     </>
   );
 }
