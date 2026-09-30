@@ -37,6 +37,7 @@ import {
 } from "@/lib/data/workflows";
 import { useConfirm, useToast } from "@/components/app-feedback";
 import { fulfillOrderWithCourierAction } from "@/app/actions/orders";
+import { BangladeshFulfillmentStepper } from "@/components/orders/bangladesh-fulfillment-stepper";
 
 const STATUS_META: Record<OrderStatus, string> = {
   Quotation: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
@@ -294,6 +295,16 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Bangladesh E-Commerce End-to-End Fulfillment Pipeline */}
+      <BangladeshFulfillmentStepper
+        order={order}
+        onRefresh={() => {
+          getOrderById(params.id).then((data) => {
+            if (data) setOrder(data);
+          });
+        }}
+      />
 
       {/* Lifecycle stepper */}
       <Card className="p-5 sm:p-6 shadow-xs border-border/80">

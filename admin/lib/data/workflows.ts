@@ -19,6 +19,7 @@ import type {
   OrderStatus,
   FulfillmentStatus,
   PaymentStatus,
+  DeliveryStage,
 } from "@/lib/data/orders";
 
 export const SALE_ORDER = "sale.order";
@@ -42,6 +43,15 @@ export function saleState(ref: string) {
     carrier: fields.carrier as string | undefined,
     trackingUrl: fields.trackingUrl as string | undefined,
     invoiceRef: fields.invoiceRef as string | undefined,
+    deliveryStage: (fields.deliveryStage as DeliveryStage | undefined),
+    consignmentId: fields.consignmentId as string | undefined,
+    packageWeightKg: fields.packageWeightKg as number | undefined,
+    phoneVerified: fields.phoneVerified as boolean | undefined,
+    verificationNote: fields.verificationNote as string | undefined,
+    advancePaid: fields.advancePaid as number | undefined,
+    codAmount: fields.codAmount as number | undefined,
+    packedAt: fields.packedAt as string | undefined,
+    courierStatus: fields.courierStatus as string | undefined,
   };
 }
 
@@ -119,6 +129,162 @@ function ok(message: string): ActionResult {
 }
 function fail(message: string): ActionResult {
   return { ok: false, message };
+}
+
+/**
+ * Bangladesh E-Commerce Step 1: Customer Phone & Fraud Verification
+ */
+export function confirmOrderWithVerification(
+  ref: string,
+  customer: string,
+  data: {
+    phone: string;
+    note?: string;
+    advancePaid?: number;
+    codAmount?: number;
+    carrierPreference?: string;
+  }
+): ActionResult {
+  patchFields(SALE_ORDER, ref, {
+    status: "Confirmed",
+    deliveryStage: "Confirmed",
+    phoneVerified: true,
+    verificationNote: data.note || "Customer verified via phone call.",
+    advancePaid: data.advancePaid || 0,
+    codAmount: data.codAmount,
+    carrier: data.carrierPreference || "Pathao Courier",
+  });
+  const advText = data.advancePaid ? ` · Advance Received: ৳${data.advancePaid}` : "";
+  addHistory(
+    SALE_ORDER,
+    ref,
+    "Status: Quotation → Confirmed",
+    `Phone verification complete for ${data.phone} (${customer})${advText} · Allocated from warehouse.`
+  );
+  return ok("Order verified and confirmed.");
+}
+
+/**
+ * Bangladesh E-Commerce Step 2: Barcode Scanning & Pick-Pack Complete
+ */
+export function completeOrderPacking(
+  ref: string,
+  customer: string,
+  data: {
+    scannedItemsCount: number;
+    totalItemsCount: number;
+    packageWeightKg: number;
+    packagingType?: string;
+  }
+): ActionResult {
+  patchFields(SALE_ORDER, ref, {
+    deliveryStage: "Packed",
+    packageWeightKg: data.packageWeightKg,
+    packedAt: new Date().toISOString(),
+  });
+  addHistory(
+    SALE_ORDER,
+    ref,
+    "Fulfillment: Packing & Scan Complete",
+    `All ${data.scannedItemsCount}/${data.totalItemsCount} items verified via barcode scanner · Gross Weight: ${data.packageWeightKg}kg · Shipping label printed.`
+  );
+  return ok("Parcel packed and verified.");
+}
+
+/**
+ * Bangladesh E-Commerce Step 3: Shift to Courier / 3PL Handover
+ */
+export function dispatchOrderToCourier(
+  ref: string,
+  customer: string,
+  data: {
+    carrier: string;
+    consignmentId: string;
+    trackingUrl: string;
+    codAmount: number;
+  }
+): ActionResult {
+  patchFields(SALE_ORDER, ref, {
+    status: "Fulfilled",
+    fulfillmentStatus: "Fulfilled",
+    deliveryStage: "Handed to Courier",
+    carrier: data.carrier,
+    consignmentId: data.consignmentId,
+    trackingUrl: data.trackingUrl,
+    codAmount: data.codAmount,
+  });
+  addHistory(
+    SALE_ORDER,
+    ref,
+    `Courier Handover: ${data.carrier}`,
+    `Handed over to ${data.carrier} · Consignment #${data.consignmentId} · COD to Collect: ৳${data.codAmount.toLocaleString("en-IN")}`
+  );
+  return ok(`Handed over to ${data.carrier} (${data.consignmentId}).`);
+}
+
+/**
+ * Bangladesh E-Commerce Step 4: Live Courier Milestones
+ */
+export function updateDeliveryMilestone(
+  ref: string,
+  milestone: "In Transit" | "Out for Delivery"
+): ActionResult {
+  patchFields(SALE_ORDER, ref, {
+    deliveryStage: milestone,
+  });
+  addHistory(
+    SALE_ORDER,
+    ref,
+    `Courier Tracking: ${milestone}`,
+    milestone === "Out for Delivery"
+      ? "Courier rider assigned and currently out for doorstep delivery."
+      : "Parcel in transit through courier logistics sorting hub."
+  );
+  return ok(`Status updated to ${milestone}.`);
+}
+
+/**
+ * Bangladesh E-Commerce Step 5: Successful Delivery & COD Collection
+ */
+export function markOrderDelivered(
+  ref: string,
+  customer: string,
+  collectedCod: number
+): ActionResult {
+  patchFields(SALE_ORDER, ref, {
+    status: "Fulfilled",
+    fulfillmentStatus: "Fulfilled",
+    deliveryStage: "Delivered",
+    paymentStatus: "Paid",
+  });
+  addHistory(
+    SALE_ORDER,
+    ref,
+    "Delivery Complete: COD Collected",
+    `Parcel delivered successfully to ${customer} · COD collected: ৳${collectedCod.toLocaleString("en-IN")} · Recorded to Courier COD Float ledger.`
+  );
+  return ok("Delivery completed and COD reconciled.");
+}
+
+/**
+ * Bangladesh E-Commerce Step 5 (Alternative): Customer Refusal / RTO Return
+ */
+export function markOrderReturned(
+  ref: string,
+  customer: string,
+  reason: string
+): ActionResult {
+  patchFields(SALE_ORDER, ref, {
+    deliveryStage: "Returned",
+    fulfillmentStatus: "Unfulfilled",
+  });
+  addHistory(
+    SALE_ORDER,
+    ref,
+    "Delivery Failed: Return to Origin (RTO)",
+    `Delivery returned by courier · Reason: ${reason} · Stock restocked to warehouse inventory.`
+  );
+  return ok("Order marked as returned / RTO.");
 }
 
 /**

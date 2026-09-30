@@ -133,6 +133,23 @@ const ORDER_COLUMNS: CentralTableColumn<OrderRow>[] = [
     ),
   },
   {
+    accessorKey: "fulfillmentStatus",
+    header: "Fulfillment",
+    sortable: true,
+    cell: ({ row, value }) => {
+      const isFulfilled = value === "Fulfilled" || row.status === "Fulfilled";
+      const isConfirmed = row.status === "Confirmed";
+      return (
+        <Badge
+          variant={isFulfilled ? "default" : isConfirmed ? "secondary" : "outline"}
+          className="text-xs font-semibold"
+        >
+          {isFulfilled ? "Dispatched" : isConfirmed ? "Ready to Pack" : "Pending Check"}
+        </Badge>
+      );
+    },
+  },
+  {
     accessorKey: "totalValue",
     header: "Total",
     sortable: true,

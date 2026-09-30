@@ -203,7 +203,7 @@ export const NAV_GROUPS: NavGroup[] = [
           { title: "Units of Measure", href: "/settings/units" },
           { title: "Sales Channels", href: "/settings/channels" },
           { title: "Warehouses", href: "/settings/warehouses" },
-          { title: "Locations", href: "/settings/locations" },
+          { title: "Shelves & Locations", href: "/settings/locations" },
           { title: "Taxes", href: "/settings/taxes" },
           { title: "Payment Providers", href: "/settings/payments" },
           { title: "Notifications", href: "/settings/notifications" },

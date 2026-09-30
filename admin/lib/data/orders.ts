@@ -52,6 +52,17 @@ export interface OrderRow {
   fulfillmentStatus: FulfillmentStatus;
 }
 
+export type DeliveryStage =
+  | "Pending Confirmation"
+  | "Confirmed"
+  | "Packing"
+  | "Packed"
+  | "Handed to Courier"
+  | "In Transit"
+  | "Out for Delivery"
+  | "Delivered"
+  | "Returned";
+
 /** Full order with lines + addresses (order detail). */
 export interface OrderDetail extends OrderRow {
   shippingAddress: string;
@@ -62,6 +73,15 @@ export interface OrderDetail extends OrderRow {
   shipping: number;
   tax: number;
   lines: OrderLine[];
+  deliveryStage?: DeliveryStage;
+  consignmentId?: string;
+  packageWeightKg?: number;
+  phoneVerified?: boolean;
+  verificationNote?: string;
+  advancePaid?: number;
+  codAmount?: number;
+  packedAt?: string;
+  courierStatus?: string;
 }
 
 export const ORDER_STATUS_OPTIONS = [
