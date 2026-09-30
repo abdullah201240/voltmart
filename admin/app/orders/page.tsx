@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/searchable-dropbox";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
+import { KanbanBoard } from "@/components/ui/kanban-board";
+import { GraphView, PivotView } from "@/components/ui/graph-view";
 import { useAdminLayout } from "@/components/admin-shell";
 import {
   ShoppingCart,
@@ -21,8 +23,15 @@ import {
   Plus,
   RotateCcw,
   Ban,
+  List,
+  LayoutGrid,
+  BarChart3,
+  Table2,
+  Check,
 } from "lucide-react";
 import { CHANNEL_OPTIONS } from "@/lib/data/products";
+import { useOps } from "@/lib/data/ops";
+import { setSaleStatus, applySaleAction } from "@/lib/data/workflows";
 import {
   getOrders,
   orderStats,
@@ -43,6 +52,16 @@ const STATUS_META: Record<OrderStatus, string> = {
 function fmtMoney(v: number) {
   return "৳" + v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+/** Kanban / Graph stage columns follow the Odoo sale.order pipeline. */
+const STAGE_KEYS: OrderStatus[] = ["Quotation", "Confirmed", "Fulfilled", "Invoiced", "Cancelled"];
+const STAGE_ACCENT: Record<OrderStatus, string> = {
+  Quotation: "bg-slate-500",
+  Confirmed: "bg-blue-500",
+  Fulfilled: "bg-emerald-500",
+  Invoiced: "bg-violet-500",
+  Cancelled: "bg-rose-500",
+};
 
 const ORDER_COLUMNS: CentralTableColumn<OrderRow>[] = [
   {
@@ -123,8 +142,11 @@ const ORDER_COLUMNS: CentralTableColumn<OrderRow>[] = [
 
 export default function OrdersPage() {
   const { searchQuery } = useAdminLayout();
+  const version = useOps();
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"list" | "kanban" | "graph" | "pivot">("list");
+  const [notice, setNotice] = useState<string | null>(null);
 
   const [selectedChannel, setSelectedChannel] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -142,7 +164,15 @@ export default function OrdersPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [version]);
+
+  // Auto-dismiss bulk/action notices.
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 3000);
+    return () => clearTimeout(t);
+  }, [notice]);
+
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
   const stats = useMemo(() => orderStats(rows), [rows]);
@@ -173,6 +203,40 @@ export default function OrdersPage() {
     (selectedStatus !== "all" ? 1 : 0) +
     (selectedPayment !== "all" ? 1 : 0);
   const hasActiveFilters = activeFiltersCount > 0 || effectiveQuery.length > 0;
+
+  // Revenue by lifecycle stage for the Graph view.
+  const graphData = useMemo(
+    () =>
+      STAGE_KEYS.map((s) => ({
+        label: s,
+        value: filteredRows.filter((o) => o.status === s).reduce((sum, o) => sum + o.totalValue, 0),
+        color: STAGE_ACCENT[s].replace("bg-", "bg-") + "/70",
+      })),
+    [filteredRows],
+  );
+
+  // Drag a Kanban card into a new stage column -> workflow stage change.
+  const moveStage = (row: OrderRow, toKey: string) => {
+    const res = setSaleStatus(row.id, toKey as OrderStatus, {
+      status: row.status,
+      paymentStatus: row.paymentStatus,
+      fulfillmentStatus: row.fulfillmentStatus,
+    });
+    if (!res.ok) setNotice(res.message);
+  };
+
+  const bulkAction = (selectedRows: OrderRow[], kind: "ship" | "cancel") => {
+    let moved = 0;
+    for (const r of selectedRows) {
+      const res = applySaleAction(r.id, r.customer, kind, {
+        status: r.status,
+        paymentStatus: r.paymentStatus,
+        fulfillmentStatus: r.fulfillmentStatus,
+      });
+      if (res.ok) moved += 1;
+    }
+    setNotice(`${kind === "ship" ? "Fulfilled" : "Cancelled"} ${moved} of ${selectedRows.length} order(s).`);
+  };
 
   return (
     <>
@@ -228,92 +292,213 @@ export default function OrdersPage() {
         />
       </KpiGrid>
 
-      {/* Orders table */}
-      <CentralTable
-        data={filteredRows}
-        columns={ORDER_COLUMNS}
-        loading={loading}
-        loadingRows={6}
-        selectable
-        searchable
-        searchPlaceholder="Search order, customer or email..."
-        title="All Orders"
-        description={`${filteredRows.length} of ${rows.length} orders`}
-        filters={
-          <div className="grid gap-5 sm:grid-cols-3 w-full">
-            <SearchableDropbox
-              label="Sales Channel"
-              options={CHANNEL_OPTIONS as DropboxOption[]}
-              value={selectedChannel}
-              onChange={setSelectedChannel}
-              placeholder="All channels..."
-              searchPlaceholder="Search channel..."
-            />
-            <SearchableDropbox
-              label="Order Status"
-              options={ORDER_STATUS_OPTIONS as DropboxOption[]}
-              value={selectedStatus}
-              onChange={setSelectedStatus}
-              placeholder="All statuses..."
-              searchPlaceholder="Search status..."
-            />
-            <SearchableDropbox
-              label="Payment Status"
-              options={PAYMENT_STATUS_OPTIONS as DropboxOption[]}
-              value={selectedPayment}
-              onChange={setSelectedPayment}
-              placeholder="Any payment..."
-              searchPlaceholder="Search payment..."
-            />
-          </div>
-        }
-        activeFiltersCount={activeFiltersCount}
-        defaultFiltersOpen={false}
-        onClearFilters={clearFilters}
-        pagination
-        pageSize={10}
-        pageSizeOptions={[10, 20, 50]}
-        selectedActions={(selectedRows, clearSelection) => (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs font-semibold cursor-pointer"
-              onClick={() => {
-                alert(`Marking ${selectedRows.length} order(s) as fulfilled`);
-                clearSelection();
-              }}
-            >
-              Fulfill
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs font-semibold gap-1.5 cursor-pointer"
-              onClick={() => {
-                alert(`Cancelling ${selectedRows.length} order(s)`);
-                clearSelection();
-              }}
-            >
-              <Ban className="h-3.5 w-3.5" />
-              Cancel
-            </Button>
-          </div>
-        )}
-        emptyAction={
-          hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearFilters}
-              className="cursor-pointer text-xs font-semibold gap-1.5"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Reset All Filters
-            </Button>
-          )
-        }
-      />
+      {/* View switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1 rounded-lg border border-border/80 bg-card p-1 shadow-xs">
+          <ViewTab active={view === "list"} onClick={() => setView("list")} icon={<List className="h-4 w-4" />}>List</ViewTab>
+          <ViewTab active={view === "kanban"} onClick={() => setView("kanban")} icon={<LayoutGrid className="h-4 w-4" />}>Kanban</ViewTab>
+          <ViewTab active={view === "graph"} onClick={() => setView("graph")} icon={<BarChart3 className="h-4 w-4" />}>Graph</ViewTab>
+          <ViewTab active={view === "pivot"} onClick={() => setView("pivot")} icon={<Table2 className="h-4 w-4" />}>Pivot</ViewTab>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {filteredRows.length} of {rows.length} orders
+        </span>
+      </div>
+
+      {/* Filters tray (also drives Kanban / Graph / Pivot) */}
+      {view !== "list" && (
+        <div className="grid gap-5 sm:grid-cols-3 w-full">
+          <SearchableDropbox
+            label="Sales Channel"
+            options={CHANNEL_OPTIONS as DropboxOption[]}
+            value={selectedChannel}
+            onChange={setSelectedChannel}
+            placeholder="All channels..."
+            searchPlaceholder="Search channel..."
+          />
+          <SearchableDropbox
+            label="Order Status"
+            options={ORDER_STATUS_OPTIONS as DropboxOption[]}
+            value={selectedStatus}
+            onChange={setSelectedStatus}
+            placeholder="All statuses..."
+            searchPlaceholder="Search status..."
+          />
+          <SearchableDropbox
+            label="Payment Status"
+            options={PAYMENT_STATUS_OPTIONS as DropboxOption[]}
+            value={selectedPayment}
+            onChange={setSelectedPayment}
+            placeholder="Any payment..."
+            searchPlaceholder="Search payment..."
+          />
+        </div>
+      )}
+
+      {view === "list" && (
+        <CentralTable
+          data={filteredRows}
+          columns={ORDER_COLUMNS}
+          loading={loading}
+          loadingRows={6}
+          selectable
+          searchable
+          searchPlaceholder="Search order, customer or email..."
+          title="All Orders"
+          description={`${filteredRows.length} of ${rows.length} orders`}
+          filters={
+            <div className="grid gap-5 sm:grid-cols-3 w-full">
+              <SearchableDropbox
+                label="Sales Channel"
+                options={CHANNEL_OPTIONS as DropboxOption[]}
+                value={selectedChannel}
+                onChange={setSelectedChannel}
+                placeholder="All channels..."
+                searchPlaceholder="Search channel..."
+              />
+              <SearchableDropbox
+                label="Order Status"
+                options={ORDER_STATUS_OPTIONS as DropboxOption[]}
+                value={selectedStatus}
+                onChange={setSelectedStatus}
+                placeholder="All statuses..."
+                searchPlaceholder="Search status..."
+              />
+              <SearchableDropbox
+                label="Payment Status"
+                options={PAYMENT_STATUS_OPTIONS as DropboxOption[]}
+                value={selectedPayment}
+                onChange={setSelectedPayment}
+                placeholder="Any payment..."
+                searchPlaceholder="Search payment..."
+              />
+            </div>
+          }
+          activeFiltersCount={activeFiltersCount}
+          defaultFiltersOpen={false}
+          onClearFilters={clearFilters}
+          pagination
+          pageSize={10}
+          pageSizeOptions={[10, 20, 50]}
+          selectedActions={(selectedRows, clearSelection) => (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs font-semibold cursor-pointer"
+                onClick={() => {
+                  bulkAction(selectedRows as OrderRow[], "ship");
+                  clearSelection();
+                }}
+              >
+                <Truck className="mr-1.5 h-3.5 w-3.5" /> Fulfill
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs font-semibold gap-1.5 cursor-pointer text-rose-600 hover:bg-rose-500/10 hover:text-rose-600 dark:text-rose-400"
+                onClick={() => {
+                  bulkAction(selectedRows as OrderRow[], "cancel");
+                  clearSelection();
+                }}
+              >
+                <Ban className="h-3.5 w-3.5" />
+                Cancel
+              </Button>
+            </div>
+          )}
+          emptyAction={
+            hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="cursor-pointer text-xs font-semibold gap-1.5"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reset All Filters
+              </Button>
+            )
+          }
+        />
+      )}
+
+      {view === "kanban" && (
+        <KanbanBoard
+          data={filteredRows}
+          loading={loading}
+          idOf={(o) => o.id}
+          stageOf={(o) => o.status}
+          onMove={moveStage}
+          stages={STAGE_KEYS.map((s) => ({ key: s, label: s, accent: STAGE_ACCENT[s] }))}
+          renderCard={(o) => (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <Link href={`/orders/${o.id}`} className="font-mono text-sm font-bold text-foreground hover:text-primary transition-colors">
+                  {o.id}
+                </Link>
+                <span className="text-[10px] text-muted-foreground">{o.date}</span>
+              </div>
+              <p className="truncate text-sm font-semibold text-foreground">{o.customer}</p>
+              <p className="truncate text-xs text-muted-foreground">{o.channel}</p>
+              <div className="flex items-center justify-between pt-1">
+                <Badge variant="outline" className="text-[10px] font-semibold">{o.itemCount} items</Badge>
+                <span className="font-mono text-sm font-bold text-foreground">{o.total}</span>
+              </div>
+            </div>
+          )}
+        />
+      )}
+
+      {view === "graph" && (
+        <GraphView
+          data={graphData}
+          formatValue={fmtMoney}
+          onSelect={(d) => {
+            setSelectedStatus(d.label);
+            setView("list");
+          }}
+        />
+      )}
+
+      {view === "pivot" && (
+        <PivotView
+          rows={filteredRows}
+          groupOf={(o) => o.status}
+          title="Orders by status"
+          formatValue={fmtMoney}
+          columns={[
+            { key: "count", label: "Orders", measure: (g) => g.length, format: (v) => String(v) },
+            { key: "revenue", label: "Revenue", measure: (g) => g.reduce((s, o) => s + o.totalValue, 0) },
+            { key: "avg", label: "Avg. Order", measure: (g) => (g.length ? g.reduce((s, o) => s + o.totalValue, 0) / g.length : 0) },
+          ]}
+        />
+      )}
+
+      {/* Action notice */}
+      {notice && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border border-primary/30 bg-card px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in fade-in-0 slide-in-from-bottom-2">
+          <Check className="h-4 w-4 text-primary" />
+          {notice}
+        </div>
+      )}
     </>
   );
 }
+
+function ViewTab({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 h-9 text-sm font-medium transition-all duration-200 active:scale-[0.98]",
+        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+      )}
+    >
+      {icon}
+      <span className="hidden sm:inline">{children}</span>
+    </button>
+  );
+}
+

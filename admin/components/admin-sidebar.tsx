@@ -17,6 +17,7 @@ import {
   Truck,
   Wallet,
   Ticket,
+  Factory,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,15 @@ const NAV_GROUPS: NavGroup[] = [
           { title: "Deliveries", href: "/inventory/deliveries" },
           { title: "Transfers", href: "/inventory/transfers" },
           { title: "Stock Levels", href: "/inventory" },
+        ],
+      },
+      {
+        title: "Manufacturing",
+        icon: Factory,
+        children: [
+          { title: "Manufacturing Orders", href: "/manufacturing" },
+          { title: "Bills of Materials", href: "/manufacturing/bom" },
+          { title: "Work Centres", href: "/manufacturing/workcenters" },
         ],
       },
       {

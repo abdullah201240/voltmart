@@ -16,6 +16,10 @@ import {
   Check,
   MapPin,
   User,
+  DollarSign,
+  XCircle,
+  RotateCcw,
+  FileText,
 } from "lucide-react";
 import {
   getOrderById,
@@ -23,6 +27,13 @@ import {
   type OrderDetail,
   type OrderStatus,
 } from "@/lib/data/orders";
+import { RecordChatter } from "@/components/ui/record-chatter";
+import { useOps, clearRecord, recordTouched } from "@/lib/data/ops";
+import {
+  SALE_ORDER,
+  applySaleAction,
+  type SaleAction,
+} from "@/lib/data/workflows";
 
 const STATUS_META: Record<OrderStatus, string> = {
   Quotation: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
@@ -71,14 +82,48 @@ function StatusStepper({ status }: { status: OrderStatus }) {
   );
 }
 
+/** Odoo-style header smart button linking to a related document. */
+function SmartButton({
+  href,
+  icon,
+  label,
+  value,
+  active,
+  done,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  active?: boolean;
+  done?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group flex flex-col items-center gap-1 rounded-lg border px-3 py-3 text-center transition-all duration-200 cursor-pointer hover:border-primary/40 hover:bg-muted/40 active:scale-[0.98]",
+        active ? "border-primary/40 bg-primary/5" : "border-border/80 bg-card",
+      )}
+    >
+      <span className={cn("transition-colors", done ? "text-emerald-600 dark:text-emerald-400" : active ? "text-primary" : "text-muted-foreground group-hover:text-foreground")}>
+        {icon}
+      </span>
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={cn("text-sm font-bold", done ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>{value}</span>
+    </Link>
+  );
+}
+
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
+  const version = useOps();
   const [order, setOrder] = useState<OrderDetail | undefined>();
   const [loading, setLoading] = useState(true);
+  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
     getOrderById(params.id).then((data) => {
       if (alive) {
         setOrder(data);
@@ -88,7 +133,24 @@ export default function OrderDetailPage() {
     return () => {
       alive = false;
     };
-  }, [params.id]);
+  }, [params.id, version]);
+
+  // Auto-dismiss the action toast.
+  useEffect(() => {
+    if (!feedback) return;
+    const t = setTimeout(() => setFeedback(null), 3200);
+    return () => clearTimeout(t);
+  }, [feedback]);
+
+  const run = (action: SaleAction) => {
+    if (!order) return;
+    const res = applySaleAction(order.id, order.customer, action, {
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      fulfillmentStatus: order.fulfillmentStatus,
+    });
+    setFeedback(res);
+  };
 
   if (loading) {
     return (
@@ -135,23 +197,54 @@ export default function OrderDetailPage() {
             {order.customer} · {order.channel} · {order.date}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="h-10 px-4 text-sm font-medium">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            className="h-10 px-4 text-sm font-medium cursor-pointer"
+            onClick={() => window.print()}
+          >
             <Printer className="mr-2 h-4 w-4" /> Print
           </Button>
+
           {order.status === "Quotation" && (
-            <Button className="h-10 px-4 text-sm font-medium cursor-pointer">
+            <Button className="h-10 px-4 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all duration-200" onClick={() => run("confirm")}>
               <Check className="mr-2 h-4 w-4" /> Confirm Order
             </Button>
           )}
-          {(order.status === "Confirmed") && (
-            <Button className="h-10 px-4 text-sm font-medium cursor-pointer">
+
+          {order.status === "Confirmed" && (
+            <Button className="h-10 px-4 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all duration-200" onClick={() => run("ship")}>
               <Truck className="mr-2 h-4 w-4" /> Create Delivery
             </Button>
           )}
-          {(order.status === "Fulfilled" || order.status === "Confirmed") && (
-            <Button variant="outline" className="h-10 px-4 text-sm font-medium cursor-pointer">
+
+          {(order.status === "Confirmed" || order.status === "Fulfilled") && (
+            <Button variant="outline" className="h-10 px-4 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all duration-200" onClick={() => run("invoice")}>
               <ReceiptText className="mr-2 h-4 w-4" /> Create Invoice
+            </Button>
+          )}
+
+          {(order.status === "Invoiced" || order.status === "Fulfilled" || order.status === "Confirmed") &&
+            order.paymentStatus !== "Paid" && (
+              <Button variant="outline" className="h-10 px-4 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all duration-200" onClick={() => run("payment")}>
+                <DollarSign className="mr-2 h-4 w-4" /> Register Payment
+              </Button>
+            )}
+
+          {order.status !== "Cancelled" && order.status !== "Invoiced" && (
+            <Button variant="ghost" className="h-10 px-4 text-sm font-medium cursor-pointer text-rose-600 hover:bg-rose-500/10 hover:text-rose-600 dark:text-rose-400" onClick={() => run("cancel")}>
+              <XCircle className="mr-2 h-4 w-4" /> Cancel
+            </Button>
+          )}
+
+          {recordTouched(SALE_ORDER, order.id) && (
+            <Button
+              variant="ghost"
+              className="h-10 px-3 text-sm font-medium cursor-pointer text-muted-foreground"
+              title="Reset all demo operations on this order"
+              onClick={() => { clearRecord(SALE_ORDER, order.id); setFeedback({ ok: true, message: "Reset to base record." }); }}
+            >
+              <RotateCcw className="mr-1.5 h-4 w-4" /> Reset
             </Button>
           )}
         </div>
@@ -161,6 +254,42 @@ export default function OrderDetailPage() {
       <Card className="p-5 sm:p-6 shadow-xs border-border/80">
         <StatusStepper status={order.status} />
       </Card>
+
+      {/* Odoo smart buttons — related documents */}
+      <div className="grid grid-cols-3 gap-3">
+        <SmartButton
+          href="/inventory"
+          icon={<Truck className="h-5 w-5" />}
+          label="Delivery"
+          value={
+            order.status === "Fulfilled" || order.status === "Invoiced"
+              ? "Delivered"
+              : order.status === "Confirmed"
+                ? "To deliver"
+                : order.status === "Cancelled"
+                  ? "—"
+                  : "Not yet"
+          }
+          active={order.status === "Confirmed"}
+          done={order.status === "Fulfilled" || order.status === "Invoiced"}
+        />
+        <SmartButton
+          href="/invoices"
+          icon={<FileText className="h-5 w-5" />}
+          label="Invoices"
+          value={order.status === "Invoiced" ? "1" : "0"}
+          active={order.status === "Invoiced"}
+          done={order.status === "Invoiced"}
+        />
+        <SmartButton
+          href="/payments"
+          icon={<DollarSign className="h-5 w-5" />}
+          label="Payment"
+          value={order.paymentStatus === "Paid" ? "Paid" : order.paymentStatus === "Refunded" ? "Refunded" : "To pay"}
+          active={order.paymentStatus === "Paid"}
+          done={order.paymentStatus === "Paid"}
+        />
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: lines + tracking */}
@@ -250,8 +379,26 @@ export default function OrderDetailPage() {
               <p className="text-foreground leading-relaxed">{order.billingAddress}</p>
             </div>
           </Card>
+
+          {/* Odoo chatter — messages, internal notes, activities, history */}
+          <RecordChatter model={SALE_ORDER} ref={order.id} />
         </div>
       </div>
+
+      {/* Action toast */}
+      {feedback && (
+        <div
+          className={cn(
+            "fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium shadow-lg animate-in fade-in-0 slide-in-from-bottom-2",
+            feedback.ok
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+              : "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400",
+          )}
+        >
+          {feedback.ok ? <Check className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          {feedback.message}
+        </div>
+      )}
     </>
   );
 }

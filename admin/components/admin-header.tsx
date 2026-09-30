@@ -38,6 +38,7 @@ const BREADCRUMB_MAP: Record<string, { section: string; page: string }> = {
   "/channels": { section: "System", page: "Sales Channels" },
   "/settings": { section: "System", page: "Store Settings" },
   "/notifications": { section: "System", page: "Notifications Center" },
+  "/profile": { section: "Account", page: "My Profile" },
 };
 
 export function AdminHeader({
@@ -152,14 +153,18 @@ export function AdminHeader({
         <NotificationsPopover />
 
         {/* Admin Profile */}
-        <div className="flex items-center gap-2.5 pl-1.5 cursor-pointer hover:opacity-85 transition-opacity">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs shadow-xs">
-            AD
+        <Link
+          href="/profile"
+          className="flex items-center gap-2.5 pl-1.5 hover:opacity-85 transition-opacity cursor-pointer"
+          aria-label="Go to profile"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs shadow-xs ring-2 ring-transparent hover:ring-primary/30 transition-all">
+            AS
           </div>
           <span className="hidden xl:inline text-xs font-semibold text-foreground">
-            Administrator
+            Abdullah Al Sakib
           </span>
-        </div>
+        </Link>
       </div>
     </header>
   );
