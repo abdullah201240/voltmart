@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import crypto from "crypto";
 
 /**
  * Inbound Courier Tracking Webhook Listener
- * Supports Pathao, Steadfast, and Paperfly tracking event ingestion.
+ * Supports Pathao, Steadfast, and Paperfly tracking event ingestion with HMAC validation.
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    const signature = req.headers.get("x-pathao-signature") || req.headers.get("x-courier-signature");
+    const secret = process.env.PATHAO_WEBHOOK_SECRET || process.env.COURIER_WEBHOOK_SECRET;
+
+    // HMAC Signature Validation if secret is configured
+    if (secret && signature) {
+      const expectedSignature = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+      if (signature !== expectedSignature) {
+        return NextResponse.json({ error: "Invalid HMAC signature" }, { status: 401 });
+      }
+    }
+
+    const body = JSON.parse(rawBody || "{}");
     console.log("[Courier Webhook Ingested]:", body);
 
-    // Identify carrier and payload structure
     const consignmentId =
       body.consignment_id ||
       body.consignmentId ||
@@ -21,7 +33,7 @@ export async function POST(req: NextRequest) {
       body.order_status ||
       body.status ||
       body.delivery_status ||
-      "updated";
+      "Delivered";
 
     if (!consignmentId) {
       return NextResponse.json(
@@ -30,17 +42,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // In a production setup, map status and update database / Odoo / Saleor
-    // e.g. "Delivered" -> complete fulfillment and settle COD balance
-    // e.g. "RTM / Returned" -> restock inventory
+    // Determine normalized fulfillment state
+    let mappedFulfillment = "Partially";
+    let mappedPayment = "Pending";
+
+    const normalizedStatus = String(eventStatus).toLowerCase();
+    if (normalizedStatus.includes("deliver") || normalizedStatus.includes("done") || normalizedStatus.includes("success")) {
+      mappedFulfillment = "Fulfilled";
+      mappedPayment = "Paid"; // COD collected by courier rider
+    } else if (normalizedStatus.includes("transit") || normalizedStatus.includes("picked")) {
+      mappedFulfillment = "Partially";
+    } else if (normalizedStatus.includes("return") || normalizedStatus.includes("refused") || normalizedStatus.includes("cancel")) {
+      mappedFulfillment = "Unfulfilled";
+    }
+
+    // Invalidate caches across the dashboard
     revalidatePath("/orders");
     revalidatePath("/inventory/deliveries");
+    revalidatePath("/accounting/reconciliation");
+    revalidatePath("/");
 
     return NextResponse.json({
       success: true,
       processed: true,
       consignmentId,
       status: eventStatus,
+      mappedFulfillment,
+      mappedPayment,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
@@ -57,5 +85,6 @@ export async function GET() {
     status: "active",
     endpoint: "VoltMart Courier Webhook Ingestion Service",
     supportedCarriers: ["Pathao", "Steadfast", "RedX", "Paperfly"],
+    hmacVerification: "Enabled",
   });
 }

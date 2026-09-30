@@ -7,15 +7,11 @@ import {
   ArrowLeft,
   Save,
   Ticket,
-  Percent,
   Calendar,
-  Layers,
   Sparkles,
   Users,
-  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/app-feedback";
 import { addRecord } from "@/lib/data/ops";
 import { VoucherRow } from "@/lib/data/discounts";

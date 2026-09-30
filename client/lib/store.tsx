@@ -10,9 +10,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getProduct, type Product } from "./data";
+import { getProduct, type Product, type ProductVariantItem } from "./data";
 
 export type CartItem = { id: string; qty: number; variant?: string };
+export type CartLine = {
+  item: CartItem;
+  product: Product;
+  variantItem?: ProductVariantItem;
+  sku: string;
+  lineTotal: number;
+};
 export type Toast = { id: number; message: string; tone: "success" | "info" };
 
 type StoreValue = {
@@ -23,8 +30,8 @@ type StoreValue = {
   cartCount: number;
   subtotal: number;
   addToCart: (id: string, qty?: number, variant?: string) => void;
-  updateQty: (id: string, qty: number) => void;
-  removeFromCart: (id: string) => void;
+  updateQty: (id: string, qty: number, variant?: string) => void;
+  removeFromCart: (id: string, variant?: string) => void;
   clearCart: () => void;
   toggleWishlist: (id: string) => void;
   toggleCompare: (id: string) => void;
@@ -109,16 +116,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [notify],
   );
 
-  const updateQty = useCallback((id: string, qty: number) => {
-    setCart((prev) =>
-      qty <= 0
-        ? prev.filter((i) => i.id !== id)
-        : prev.map((i) => (i.id === id ? { ...i, qty } : i)),
-    );
+  const updateQty = useCallback((id: string, qty: number, variant?: string) => {
+    setCart((prev) => {
+      if (qty <= 0) {
+        return prev.filter((i) => !(i.id === id && (variant !== undefined ? i.variant === variant : true)));
+      }
+      return prev.map((i) =>
+        i.id === id && (variant !== undefined ? i.variant === variant : true)
+          ? { ...i, qty }
+          : i
+      );
+    });
   }, []);
 
-  const removeFromCart = useCallback((id: string) => {
-    setCart((prev) => prev.filter((i) => i.id !== id));
+  const removeFromCart = useCallback((id: string, variant?: string) => {
+    setCart((prev) =>
+      prev.filter((i) => !(i.id === id && (variant !== undefined ? i.variant === variant : true)))
+    );
   }, []);
 
   const clearCart = useCallback(() => setCart([]), []);
@@ -158,7 +172,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     () =>
       cart.reduce((sum, i) => {
         const p = getProduct(i.id);
-        return sum + (p ? p.price * i.qty : 0);
+        if (!p) return sum;
+        const v = p.variants?.find((varItem) => varItem.title === i.variant);
+        const price = v ? v.price : p.price;
+        return sum + price * i.qty;
       }, 0),
     [cart],
   );
@@ -180,13 +197,31 @@ export function useStore(): StoreValue {
 }
 
 // Convenience: hydrate a cart line into its product + resolved values.
-export function useCartLines() {
+export function useCartLines(): CartLine[] {
   const { cart } = useStore();
-  return cart
-    .map((item) => {
-      const product: Product | undefined = getProduct(item.id);
-      if (!product) return null;
-      return { item, product, lineTotal: product.price * item.qty };
-    })
-    .filter((x): x is { item: CartItem; product: Product; lineTotal: number } => x !== null);
+  const lines: CartLine[] = [];
+  for (const item of cart) {
+    const product = getProduct(item.id);
+    if (!product) continue;
+    const v = product.variants?.find((varItem) => varItem.title === item.variant);
+    const effectivePrice = v ? v.price : product.price;
+    const effectiveImage = v?.image || product.image;
+    const effectiveSku = v?.sku || product.id.toUpperCase();
+    const resolvedProduct: Product = v
+      ? {
+          ...product,
+          price: effectivePrice,
+          oldPrice: v.oldPrice || product.oldPrice,
+          image: effectiveImage,
+        }
+      : product;
+    lines.push({
+      item,
+      product: resolvedProduct,
+      variantItem: v,
+      sku: effectiveSku,
+      lineTotal: effectivePrice * item.qty,
+    });
+  }
+  return lines;
 }

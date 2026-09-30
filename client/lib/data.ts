@@ -9,6 +9,23 @@ export type Category = {
   image: string; // studio photo under public/categories
 };
 
+export type ProductVariantOption = {
+  name: string;
+  values: string[];
+};
+
+export type ProductVariantItem = {
+  id: string;
+  title: string;
+  sku: string;
+  barcode?: string;
+  price: number;
+  oldPrice?: number;
+  stock: number;
+  image?: string;
+  options: Record<string, string>;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -30,6 +47,8 @@ export type Product = {
   tagline: string;
   attrs: Record<string, string>; // quick specs shown on cards / comparisons
   specs: { group: string; rows: [string, string][] }[]; // PDP specification table
+  options?: ProductVariantOption[];
+  variants?: ProductVariantItem[];
 };
 
 export const ANNOUNCEMENT =
@@ -129,6 +148,19 @@ export const PRODUCTS: Product[] = [
     isNew: true, isDeal: true, isBestSeller: true, isTrending: true, tone: "from-slate-200 to-slate-300",
     tagline: "Titanium. So strong. So light. So Pro.",
     attrs: { Display: "6.1\" OLED", Chip: "A17 Pro", Camera: "48MP", RAM: "8GB", Storage: "256GB", Battery: "3,274mAh" },
+    options: [
+      { name: "Color", values: ["Natural Titanium", "Blue Titanium", "Black Titanium", "White Titanium"] },
+      { name: "Storage", values: ["128GB", "256GB", "512GB", "1TB"] },
+    ],
+    variants: [
+      { id: "ip15p-nat-128", title: "Natural Titanium / 128GB", sku: "VM-APL-IP15P-NAT-128", barcode: "194253306714", price: 139999, oldPrice: 149999, stock: 8, image: "/products/iphone-15-pro.jpg", options: { Color: "Natural Titanium", Storage: "128GB" } },
+      { id: "ip15p-nat-256", title: "Natural Titanium / 256GB", sku: "VM-APL-IP15P-NAT-256", barcode: "194253306721", price: 149999, oldPrice: 159999, stock: 6, image: "/products/iphone-15-pro.jpg", options: { Color: "Natural Titanium", Storage: "256GB" } },
+      { id: "ip15p-nat-512", title: "Natural Titanium / 512GB", sku: "VM-APL-IP15P-NAT-512", barcode: "194253306738", price: 169999, oldPrice: 179999, stock: 4, image: "/products/iphone-15-pro.jpg", options: { Color: "Natural Titanium", Storage: "512GB" } },
+      { id: "ip15p-nat-1tb", title: "Natural Titanium / 1TB", sku: "VM-APL-IP15P-NAT-1TB", barcode: "194253306745", price: 189999, oldPrice: 199999, stock: 3, image: "/products/iphone-15-pro.jpg", options: { Color: "Natural Titanium", Storage: "1TB" } },
+      { id: "ip15p-blu-256", title: "Blue Titanium / 256GB", sku: "VM-APL-IP15P-BLU-256", barcode: "194253306752", price: 149999, oldPrice: 159999, stock: 5, image: "/products/iphone-15-pro.jpg", options: { Color: "Blue Titanium", Storage: "256GB" } },
+      { id: "ip15p-blk-256", title: "Black Titanium / 256GB", sku: "VM-APL-IP15P-BLK-256", barcode: "194253306769", price: 149999, oldPrice: 159999, stock: 7, image: "/products/iphone-15-pro.jpg", options: { Color: "Black Titanium", Storage: "256GB" } },
+      { id: "ip15p-wht-256", title: "White Titanium / 256GB", sku: "VM-APL-IP15P-WHT-256", barcode: "194253306776", price: 149999, oldPrice: 159999, stock: 3, image: "/products/iphone-15-pro.jpg", options: { Color: "White Titanium", Storage: "256GB" } },
+    ],
     specs: [
       { group: "Display", rows: [["Size", "6.1 inch Super Retina XDR"], ["Resolution", "2556 × 1179"], ["Refresh Rate", "120Hz ProMotion"]] },
       { group: "Performance", rows: [["Chip", "A17 Pro"], ["RAM", "8GB"], ["Storage", "256GB"]] },
@@ -142,6 +174,18 @@ export const PRODUCTS: Product[] = [
     isDeal: true, isBestSeller: true, isTrending: true, tone: "from-indigo-100 to-violet-200",
     tagline: "Galaxy AI is here. Square off with the ordinary.",
     attrs: { Display: "6.8\" AMOLED", Chip: "Snapdragon 8 Gen 3", Camera: "200MP", RAM: "12GB", Storage: "256GB", Battery: "5,000mAh" },
+    options: [
+      { name: "Color", values: ["Titanium Black", "Titanium Gray", "Titanium Violet", "Titanium Yellow"] },
+      { name: "Storage", values: ["256GB", "512GB", "1TB"] },
+    ],
+    variants: [
+      { id: "s24u-blk-256", title: "Titanium Black / 256GB", sku: "VM-SAM-S24U-BLK-256", barcode: "8806095309407", price: 139999, oldPrice: 149999, stock: 12, image: "/products/galaxy-s24-ultra.jpg", options: { Color: "Titanium Black", Storage: "256GB" } },
+      { id: "s24u-blk-512", title: "Titanium Black / 512GB", sku: "VM-SAM-S24U-BLK-512", barcode: "8806095309421", price: 154999, oldPrice: 164999, stock: 8, image: "/products/galaxy-s24-ultra.jpg", options: { Color: "Titanium Black", Storage: "512GB" } },
+      { id: "s24u-gry-256", title: "Titanium Gray / 256GB", sku: "VM-SAM-S24U-GRY-256", barcode: "8806095309438", price: 139999, oldPrice: 149999, stock: 10, image: "/products/galaxy-s24-ultra.jpg", options: { Color: "Titanium Gray", Storage: "256GB" } },
+      { id: "s24u-gry-512", title: "Titanium Gray / 512GB", sku: "VM-SAM-S24U-GRY-512", barcode: "8806095309445", price: 154999, oldPrice: 164999, stock: 6, image: "/products/galaxy-s24-ultra.jpg", options: { Color: "Titanium Gray", Storage: "512GB" } },
+      { id: "s24u-vio-512", title: "Titanium Violet / 512GB", sku: "VM-SAM-S24U-VIO-512", barcode: "8806095309452", price: 154999, oldPrice: 164999, stock: 4, image: "/products/galaxy-s24-ultra.jpg", options: { Color: "Titanium Violet", Storage: "512GB" } },
+      { id: "s24u-yel-512", title: "Titanium Yellow / 512GB", sku: "VM-SAM-S24U-YEL-512", barcode: "8806095309469", price: 154999, oldPrice: 164999, stock: 5, image: "/products/galaxy-s24-ultra.jpg", options: { Color: "Titanium Yellow", Storage: "512GB" } },
+    ],
     specs: [
       { group: "Display", rows: [["Size", "6.8 inch QHD+ AMOLED"], ["Refresh Rate", "120Hz"]] },
       { group: "Performance", rows: [["Chip", "Snapdragon 8 Gen 3"], ["RAM", "12GB"], ["Storage", "256GB"]] },

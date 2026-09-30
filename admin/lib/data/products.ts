@@ -44,6 +44,9 @@ export interface ProductRow {
   tags?: string[];
   /** Optional responsible salesperson (bulk "Assign owner" action). */
   salesperson?: string;
+  images?: string[];
+  rawVariants?: any[];
+  rawOptions?: any[];
 }
 
 /** Filter options reused by the toolbar dropdowns (SearchableDropbox). */
@@ -97,16 +100,45 @@ export function availabilityOf(row: ProductRow): Availability {
   return "in_stock";
 }
 
-import { withOverlay } from "@/lib/data/ops";
+import { withOverlay, listAdded } from "@/lib/data/ops";
 import { PRODUCT_TEMPLATE } from "@/lib/data/workflows";
 
 /**
- * Async resolver used by the page. Merges the ops overlay so publication
- * actions (publish / archive) made in the UI are reflected everywhere.
- * Replace with a fetch to a real backend later.
+ * Async resolver used by the page. Merges newly created products and ops overlays
+ * so publication actions and newly created products show everywhere.
  */
 export async function getProducts(): Promise<ProductRow[]> {
-  return PRODUCTS.map((p) => withOverlay(PRODUCT_TEMPLATE, p.id, p));
+  const added = (typeof window !== "undefined" ? listAdded("product.template") : []) as unknown as any[];
+  const addedRows: ProductRow[] = added.map((item) => {
+    const priceNum = Number(item.price || 0);
+    const variantsList = Array.isArray(item.variants) ? item.variants : [];
+    const totalStock = variantsList.length > 0
+      ? variantsList.reduce((acc: number, v: any) => acc + (Number(v.stock) || 0), 0)
+      : Number(item.stock || 0);
+
+    return {
+      id: item.id || `PROD-${Date.now()}`,
+      name: item.name || "Untitled Product",
+      sku: item.sku || "PROD-SKU",
+      barcode: item.gtin || item.barcode || "",
+      category: item.category || "Mobiles & Tablets",
+      categoryKey: (item.category || "mobiles").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      channel: "Default Channel (BDT)",
+      channelKey: "default-channel",
+      price: `৳${priceNum.toLocaleString("en-BD")}`,
+      priceValue: priceNum,
+      stock: totalStock,
+      onOrder: 0,
+      variants: variantsList.length > 0 ? variantsList.length : 1,
+      status: item.isActive === false ? "Draft" : "Active",
+      reorderPoint: 10,
+      images: item.images || [],
+      rawVariants: variantsList,
+      rawOptions: item.options || [],
+    };
+  });
+
+  return [...addedRows, ...PRODUCTS.map((p) => withOverlay(PRODUCT_TEMPLATE, p.id, p))];
 }
 
 /** Aggregate catalog KPIs (counts), matching the Odoo/Saleor catalog view. */

@@ -40,16 +40,43 @@ export default function ProductPage() {
   const [isZoom, setIsZoom] = useState(false);
   const [origin, setOrigin] = useState("50% 50%");
 
+  // Dynamic Options State
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (product) {
       pushRecent(product.id);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActive(0);
       setQty(1);
       window.scrollTo({ top: 0 });
+
+      if (product.options && product.options.length > 0) {
+        const initial: Record<string, string> = {};
+        product.options.forEach((opt) => {
+          initial[opt.name] = opt.values[0];
+        });
+        setSelectedOptions(initial);
+      } else {
+        setSelectedOptions({});
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, product]);
+
+  const currentVariant = useMemo(() => {
+    if (!product?.variants || product.variants.length === 0) return null;
+    const match = product.variants.find((v) =>
+      Object.entries(selectedOptions).every(([k, val]) => v.options[k] === val)
+    );
+    return match || product.variants[0];
+  }, [product, selectedOptions]);
+
+  const effectivePrice = currentVariant ? currentVariant.price : product?.price || 0;
+  const effectiveOldPrice = currentVariant ? currentVariant.oldPrice : product?.oldPrice;
+  const effectiveStockCount = currentVariant ? currentVariant.stock : (product?.stockCount ?? 10);
+  const effectiveInStock = (product ? (currentVariant ? currentVariant.stock > 0 : product.inStock) : false);
+  const effectiveSku = currentVariant ? currentVariant.sku : (product?.id.toUpperCase() || "");
+  const effectiveImage = currentVariant?.image || product?.image;
 
   const related = useMemo(
     () => (product ? PRODUCTS.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4) : []),
@@ -68,10 +95,17 @@ export default function ProductPage() {
     );
   }
 
-  const disc = discountPercent(product.price, product.oldPrice);
+  const disc = discountPercent(effectivePrice, effectiveOldPrice);
   const saved = wishlist.includes(product.id);
   const comparing = compare.includes(product.id);
-  const gallery = [product, product, product, product]; // 4 angles (placeholder tiles)
+  const gallery = [effectiveImage, product.image, effectiveImage, product.image];
+
+  const handleSelectOption = (optName: string, val: string) => {
+    setSelectedOptions((prev) => ({ ...prev, [optName]: val }));
+    setActive(0); // reset to hero image to show selected variant
+  };
+
+  const selectedVariantTitle = currentVariant ? currentVariant.title : COLORS[color];
 
   return (
     <Container className="py-4 pb-24 sm:py-5 lg:pb-8">
@@ -81,9 +115,9 @@ export default function ProductPage() {
         {/* Gallery */}
         <div className="flex flex-col-reverse items-start gap-3 sm:flex-row">
           <div className="flex gap-1.5 sm:flex-col">
-            {gallery.map((_, i) => (
+            {gallery.map((img, i) => (
               <button key={i} type="button" onClick={() => setActive(i)} aria-label={`View ${i + 1}`} className={classNames("overflow-hidden rounded-md ring-2 transition", i === active ? "ring-primary-600" : "ring-transparent hover:ring-neutral-200")}>
-                <ProductImage category={product.category} tone={product.tone} name={product.name} src={product.image} className="h-14 w-14 sm:h-16 sm:w-16" rounded="rounded-none" />
+                <ProductImage category={product.category} tone={product.tone} name={product.name} src={img || product.image} className="h-14 w-14 sm:h-16 sm:w-16" rounded="rounded-none" />
               </button>
             ))}
           </div>
@@ -101,7 +135,7 @@ export default function ProductPage() {
               className="h-full w-full transition-transform duration-150 ease-out"
               style={{ transform: isZoom ? "scale(2)" : "scale(1)", transformOrigin: origin }}
             >
-              <ProductImage category={product.category} tone={product.tone} name={product.name} src={product.image} sizes="(max-width: 640px) 100vw, 600px" className="h-full w-full" rounded="rounded-none" />
+              <ProductImage category={product.category} tone={product.tone} name={product.name} src={gallery[active] || effectiveImage} sizes="(max-width: 640px) 100vw, 600px" className="h-full w-full" rounded="rounded-none" />
             </div>
             {disc && <span className="absolute left-2.5 top-2.5 rounded-sm bg-negative-600 px-2 py-0.5 text-[11px] font-bold text-white">-{disc}% OFF</span>}
             <span className="pointer-events-none absolute bottom-2 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-sm bg-primary-900/80 px-2 py-0.5 text-[10px] text-white opacity-0 transition group-hover:opacity-100 sm:block">
@@ -121,48 +155,88 @@ export default function ProductPage() {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs lg:text-sm">
             <span className="inline-flex items-center gap-1"><SfRating size="xs" value={product.rating} max={5} /><span className="text-neutral-500">{product.rating} ({product.reviews.toLocaleString("en-IN")})</span></span>
             <span className="text-neutral-400">·</span>
-            <span className="text-neutral-500">SKU: {product.id.toUpperCase()}</span>
-            <span className={classNames("font-medium", product.inStock ? "text-positive-700" : "text-negative-700")}>{product.inStock ? "In stock" : "Out of stock"}</span>
+            <span className="font-mono text-neutral-600 font-medium">SKU: {effectiveSku}</span>
+            <span className={classNames("font-medium", effectiveInStock ? "text-positive-700" : "text-negative-700")}>
+              {effectiveInStock ? `In stock (${effectiveStockCount} available)` : "Out of stock"}
+            </span>
           </div>
 
           <div className="rounded-md border border-neutral-200 bg-neutral-50/70 p-3 lg:p-4">
             <div className="flex items-end gap-2.5">
-              <span className="text-2xl font-bold text-neutral-900 lg:text-3xl">{formatPrice(product.price)}</span>
-              {product.oldPrice && <span className="pb-0.5 text-sm text-neutral-400 line-through lg:text-base">{formatPrice(product.oldPrice)}</span>}
-              {disc && <span className="pb-0.5 text-xs font-semibold text-negative-600 lg:text-sm">Save {formatPrice(product.oldPrice! - product.price)}</span>}
+              <span className="text-2xl font-bold text-neutral-900 lg:text-3xl">{formatPrice(effectivePrice)}</span>
+              {effectiveOldPrice && <span className="pb-0.5 text-sm text-neutral-400 line-through lg:text-base">{formatPrice(effectiveOldPrice)}</span>}
+              {disc && <span className="pb-0.5 text-xs font-semibold text-negative-600 lg:text-sm">Save {formatPrice(effectiveOldPrice! - effectivePrice)}</span>}
             </div>
             <p className="mt-0.5 text-[11px] text-neutral-500 lg:text-xs">Inclusive VAT where applicable · Official warranty included</p>
           </div>
 
-          {/* Variants */}
-          <div>
-            <p className="mb-1.5 text-xs font-semibold text-neutral-900 lg:text-sm">Color: <span className="font-normal text-neutral-600">{COLORS[color]}</span></p>
-            <div className="flex flex-wrap gap-1.5">
-              {COLORS.map((c, i) => (
-                <button key={c} type="button" onClick={() => setColor(i)} className={classNames("h-8 w-8 rounded-full ring-2 ring-offset-1 transition", i === color ? "ring-primary-600" : "ring-transparent hover:ring-neutral-300")} style={{ background: ["#2b2b2b", "#d7d9dd", "#2b4a72"][i] }} aria-label={c} />
-              ))}
+          {/* Dynamic Variant Options */}
+          {product.options && product.options.length > 0 ? (
+            <div className="space-y-3">
+              {product.options.map((opt) => {
+                const currentVal = selectedOptions[opt.name] || opt.values[0];
+                return (
+                  <div key={opt.name}>
+                    <p className="mb-1.5 text-xs font-semibold text-neutral-900 lg:text-sm">
+                      {opt.name}: <span className="font-normal text-neutral-600">{currentVal}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {opt.values.map((v) => {
+                        const isSelected = currentVal === v;
+                        return (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() => handleSelectOption(opt.name, v)}
+                            className={classNames(
+                              "px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-md border transition-all cursor-pointer",
+                              isSelected
+                                ? "border-primary-600 bg-primary-50 text-primary-800 ring-2 ring-primary-600/30"
+                                : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400"
+                            )}
+                          >
+                            {v}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-
-          {product.attrs.Storage && (
-            <div>
-              <p className="mb-1.5 text-xs font-semibold text-neutral-900 lg:text-sm">Storage</p>
-              <div className="flex flex-wrap gap-1.5">
-                {[product.attrs.Storage, ...Object.values(product.attrs).filter((v) => /GB|TB/.test(v) && v !== product.attrs.Storage)].slice(0, 4).map((s, i) => (
-                  <SfChip key={s + i} size="sm" inputProps={{ type: "radio", checked: i === 0, readOnly: true }} className={classNames("!rounded-sm text-xs lg:text-sm", i === 0 ? "!border-primary-600" : "")}>{s}</SfChip>
-                ))}
+          ) : (
+            <>
+              {/* Fallback Color Swatches */}
+              <div>
+                <p className="mb-1.5 text-xs font-semibold text-neutral-900 lg:text-sm">Color: <span className="font-normal text-neutral-600">{COLORS[color]}</span></p>
+                <div className="flex flex-wrap gap-1.5">
+                  {COLORS.map((c, i) => (
+                    <button key={c} type="button" onClick={() => setColor(i)} className={classNames("h-8 w-8 rounded-full ring-2 ring-offset-1 transition cursor-pointer", i === color ? "ring-primary-600" : "ring-transparent hover:ring-neutral-300")} style={{ background: ["#2b2b2b", "#d7d9dd", "#2b4a72"][i] }} aria-label={c} />
+                  ))}
+                </div>
               </div>
-            </div>
+
+              {product.attrs.Storage && (
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold text-neutral-900 lg:text-sm">Storage</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[product.attrs.Storage, ...Object.values(product.attrs).filter((v) => /GB|TB/.test(v) && v !== product.attrs.Storage)].slice(0, 4).map((s, i) => (
+                      <SfChip key={s + i} size="sm" inputProps={{ type: "radio", checked: i === 0, readOnly: true }} className={classNames("!rounded-sm text-xs lg:text-sm cursor-pointer", i === 0 ? "!border-primary-600" : "")}>{s}</SfChip>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Quantity + actions */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <QuantitySelector value={qty} onChange={setQty} max={product.stockCount} />
-            <SfButton size="sm" className="flex-1 !rounded-md !py-2 text-xs font-semibold lg:!py-2.5 lg:text-sm" disabled={!product.inStock} onClick={() => addToCart(product.id, qty, COLORS[color])}>
+            <QuantitySelector value={qty} onChange={setQty} max={effectiveStockCount} />
+            <SfButton size="sm" className="flex-1 !rounded-md !py-2 text-xs font-semibold lg:!py-2.5 lg:text-sm cursor-pointer" disabled={!effectiveInStock} onClick={() => addToCart(product.id, qty, selectedVariantTitle)}>
               <SfIconAddShoppingCart size="xs" /> Add to Cart
             </SfButton>
           </div>
-          <SfButton size="sm" variant="secondary" className="w-full !rounded-md !py-2 text-xs font-semibold lg:!py-2.5 lg:text-sm" disabled={!product.inStock} onClick={() => { addToCart(product.id, qty, COLORS[color]); router.push("/checkout"); }}>
+          <SfButton size="sm" variant="secondary" className="w-full !rounded-md !py-2 text-xs font-semibold lg:!py-2.5 lg:text-sm cursor-pointer" disabled={!effectiveInStock} onClick={() => { addToCart(product.id, qty, selectedVariantTitle); router.push("/checkout"); }}>
             Buy Now
           </SfButton>
 

@@ -147,7 +147,7 @@ export default function CartPage() {
                               <Link href={`/product/${product.id}`} className="line-clamp-2 text-xs sm:text-sm font-semibold text-neutral-900 transition-colors hover:text-primary-700 lg:text-[15px]">{product.name}</Link>
                               {item.variant && <span className="mt-1 inline-block rounded-xs bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">{item.variant}</span>}
                             </div>
-                            <button type="button" aria-label="Remove item" onClick={() => removeFromCart(product.id)} className="shrink-0 rounded-md p-1 text-neutral-400 transition-colors hover:bg-negative-50 hover:text-negative-600">
+                            <button type="button" aria-label="Remove item" onClick={() => removeFromCart(product.id, item.variant)} className="shrink-0 rounded-md p-1 text-neutral-400 transition-colors hover:bg-negative-50 hover:text-negative-600">
                               <SfIconDelete size="sm" />
                             </button>
                           </div>
@@ -159,10 +159,10 @@ export default function CartPage() {
 
                           <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
                             <div className="flex items-center gap-2.5">
-                              <QuantitySelector value={item.qty} onChange={(n) => updateQty(product.id, n)} max={product.stockCount} />
+                              <QuantitySelector value={item.qty} onChange={(n) => updateQty(product.id, n, item.variant)} max={product.stockCount} />
                               <button
                                 type="button"
-                                onClick={() => { toggleWishlist(product.id); removeFromCart(product.id); }}
+                                onClick={() => { toggleWishlist(product.id); removeFromCart(product.id, item.variant); }}
                                 className={classNames("inline-flex items-center gap-1 text-xs font-medium transition-colors", wishlist.includes(product.id) ? "text-negative-600" : "text-neutral-500 hover:text-primary-700")}
                               >
                                 <SfIconFavorite size="xs" /> {wishlist.includes(product.id) ? "Saved to wishlist" : "Save for later"}

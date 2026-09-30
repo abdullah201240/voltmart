@@ -36,6 +36,7 @@ import {
   type SaleAction,
 } from "@/lib/data/workflows";
 import { useConfirm, useToast } from "@/components/app-feedback";
+import { fulfillOrderWithCourierAction } from "@/app/actions/orders";
 
 const STATUS_META: Record<OrderStatus, string> = {
   Quotation: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
@@ -150,13 +151,37 @@ export default function OrderDetailPage() {
       });
       if (!allowed) return;
     }
+
+    if (action === "ship") {
+      const courierRes = await fulfillOrderWithCourierAction({
+        orderId: order.id,
+        carrier: "pathao",
+        recipientName: order.customer,
+        recipientPhone: "+880 1711-000000",
+        recipientAddress: order.shippingAddress || "Dhaka, Bangladesh",
+        amountToCollect: order.paymentStatus === "Paid" ? 0 : order.totalValue,
+        orderNumber: order.id,
+      });
+
+      if (!courierRes.success) {
+        appToast.error("Courier Booking Failed", courierRes.error || "Could not book consignment.");
+        return;
+      }
+      appToast.success("Courier Dispatched", `Consignment ${courierRes.consignmentId} booked with ${courierRes.carrier}.`);
+    }
+
     const res = applySaleAction(order.id, order.customer, action, {
       status: order.status,
       paymentStatus: order.paymentStatus,
       fulfillmentStatus: order.fulfillmentStatus,
     });
-    if (res.ok) appToast.success("Order updated", `${order.id} — ${res.message}`);
-    else appToast.error("Action failed", res.message);
+    if (res.ok) {
+      if (action !== "ship") {
+        appToast.success("Order updated", `${order.id} — ${res.message}`);
+      }
+    } else {
+      appToast.error("Action failed", res.message);
+    }
   };
 
   const resetToBase = async () => {
