@@ -17,6 +17,11 @@ import {
   CheckCircle2,
   CircleCheck,
   RotateCcw,
+  Check,
+  Boxes,
+  Truck,
+  XCircle,
+  AlertTriangle,
 } from "lucide-react";
 import {
   getPickings,
@@ -27,6 +32,8 @@ import {
   type PickingKind,
   type PickingState,
 } from "@/lib/data/inventory";
+import { useOps } from "@/lib/data/ops";
+import { applyPickingAction, type PickingAction } from "@/lib/data/workflows";
 
 const STATE_CLASS: Record<PickingState, string> = {
   draft: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
@@ -52,14 +59,15 @@ interface PickingBoardProps {
  */
 export function PickingBoard({ kind, title, heading, description, partnerLabel, validateLabel }: PickingBoardProps) {
   const { searchQuery } = useAdminLayout();
+  const version = useOps();
   const [rows, setRows] = useState<PickingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
+  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
     getPickings(kind).then((d) => {
       if (alive) {
         setRows(d);
@@ -69,7 +77,32 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
     return () => {
       alive = false;
     };
-  }, [kind]);
+  }, [kind, version]);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const t = setTimeout(() => setFeedback(null), 3200);
+    return () => clearTimeout(t);
+  }, [feedback]);
+
+  const act = (p: PickingRow, action: PickingAction) => {
+    setFeedback(applyPickingAction(p.id, kind, p.partner, p.origin, action, { state: p.state }));
+  };
+
+  const bulkValidate = (selected: PickingRow[], clear: () => void) => {
+    let done = 0;
+    let skipped = 0;
+    for (const p of selected) {
+      const res = applyPickingAction(p.id, kind, p.partner, p.origin, "transfer", { state: p.state });
+      if (res.ok) done += 1;
+      else skipped += 1;
+    }
+    setFeedback({
+      ok: done > 0,
+      message: `${done} operation(s) validated${skipped ? ` · ${skipped} skipped (confirm & reserve first)` : ""}.`,
+    });
+    clear();
+  };
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
   const stats = useMemo(() => pickingStats(rows), [rows]);
@@ -145,6 +178,37 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
         </span>
       ),
     },
+    {
+      id: "actions",
+      header: "Actions",
+      align: "right",
+      width: "240px",
+      accessorFn: (row) => row.id,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          {row.state === "draft" && (
+            <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "confirm")}>
+              <Check className="h-3.5 w-3.5" /> Confirm
+            </Button>
+          )}
+          {row.state === "confirmed" && (
+            <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "reserve")}>
+              <Boxes className="h-3.5 w-3.5" /> Reserve
+            </Button>
+          )}
+          {(row.state === "assigned" || row.state === "confirmed") && (
+            <Button className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "transfer")}>
+              <Truck className="h-3.5 w-3.5" /> {validateLabel}
+            </Button>
+          )}
+          {row.state !== "done" && row.state !== "cancel" && (
+            <Button variant="ghost" size="sm" className="h-9 px-2.5 text-xs font-semibold cursor-pointer text-rose-600 hover:bg-rose-500/10 dark:text-rose-400" onClick={() => act(row, "cancel")}>
+              <XCircle className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -163,7 +227,7 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
       {/* Operation KPIs */}
       <KpiGrid columns={4}>
         <KpiCard title={`Total ${title}`} value={String(stats.total)} icon={ClipboardList} tone="blue" />
-        <KpiCard title="Ready" value={String(stats.ready)} icon={CircleCheck} tone="amber" badge="TO DO" tooltip="Reserved / ready to validate" />
+        <KpiCard title="Ready" value={String(stats.ready)} icon={CircleCheck} tone="amber" tooltip="Reserved / ready to validate" />
         <KpiCard title="Waiting" value={String(stats.waiting)} icon={Clock} tone="violet" tooltip="Draft or awaiting availability" />
         <KpiCard title="Completed" value={String(stats.done)} icon={CheckCircle2} tone="emerald" tooltip="Validated / done" />
       </KpiGrid>
@@ -200,13 +264,10 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
         selectedActions={(selectedRows, clearSelection) => (
           <Button
             size="sm"
-            className="h-8 text-xs font-semibold cursor-pointer"
-            onClick={() => {
-              alert(`${validateLabel} ${selectedRows.length} operation(s)`);
-              clearSelection();
-            }}
+            className="h-9 px-4 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200"
+            onClick={() => bulkValidate(selectedRows, clearSelection)}
           >
-            {validateLabel}
+            <CheckCircle2 className="h-3.5 w-3.5" /> {validateLabel} Selected
           </Button>
         )}
         emptyAction={
@@ -217,6 +278,21 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
           )
         }
       />
+
+      {/* Action toast */}
+      {feedback && (
+        <div
+          className={cn(
+            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border flex items-center gap-2",
+            feedback.ok
+              ? "bg-card text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+              : "bg-card text-rose-600 dark:text-rose-400 border-rose-500/30",
+          )}
+        >
+          {feedback.ok ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+          {feedback.message}
+        </div>
+      )}
     </>
   );
 }

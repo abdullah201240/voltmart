@@ -19,6 +19,9 @@ import {
   Plus,
   RotateCcw,
   Check,
+  Lock,
+  XCircle,
+  AlertTriangle,
 } from "lucide-react";
 import {
   getPurchaseOrders,
@@ -29,6 +32,8 @@ import {
   type PurchaseOrderRow,
   type PoState,
 } from "@/lib/data/purchasing";
+import { useOps } from "@/lib/data/ops";
+import { applyPoAction, type PoAction } from "@/lib/data/workflows";
 
 const STATE_CLASS: Record<PoState, string> = {
   draft: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
@@ -51,17 +56,18 @@ interface PurchaseListProps {
 /** Shared purchase order list used by the RFQs and Purchase Orders pages. */
 export function PurchaseList({ rfq }: PurchaseListProps) {
   const { searchQuery } = useAdminLayout();
+  const version = useOps();
   const [rows, setRows] = useState<PurchaseOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
+  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
   const heading = rfq ? "Requests for Quotation" : "Purchase Orders";
   const shortTitle = rfq ? "RFQs" : "Orders";
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
     getPurchaseOrders().then((d) => {
       if (alive) {
         setRows(d.filter((r) => (rfq ? isRfq(r.state) : !isRfq(r.state))));
@@ -71,7 +77,32 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
     return () => {
       alive = false;
     };
-  }, [rfq]);
+  }, [rfq, version]);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const t = setTimeout(() => setFeedback(null), 3200);
+    return () => clearTimeout(t);
+  }, [feedback]);
+
+  const act = (p: PurchaseOrderRow, action: PoAction) => {
+    setFeedback(applyPoAction(p.id, p.vendor, action, { state: p.state, received: p.received }));
+  };
+
+  const bulkAction = (selected: PurchaseOrderRow[], action: PoAction, clear: () => void) => {
+    let done = 0;
+    let failed = 0;
+    for (const p of selected) {
+      const res = applyPoAction(p.id, p.vendor, action, { state: p.state, received: p.received });
+      if (res.ok) done += 1;
+      else failed += 1;
+    }
+    setFeedback({
+      ok: done > 0,
+      message: `${done} order(s) ${action === "confirm" ? "confirmed" : "received"}${failed ? ` · ${failed} skipped` : ""}.`,
+    });
+    clear();
+  };
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
   const stats = useMemo(() => purchaseStats(rows), [rows]);
@@ -152,6 +183,47 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
       align: "right",
       cell: ({ row }) => <span className="font-mono font-bold text-sm text-foreground">{row.total}</span>,
     },
+    {
+      id: "actions",
+      header: "Actions",
+      align: "right",
+      width: "230px",
+      accessorFn: (row) => row.id,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          {row.state === "draft" && (
+            <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "send")}>
+              <Send className="h-3.5 w-3.5" /> Send by Email
+            </Button>
+          )}
+          {row.state === "to approve" && (
+            <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "approve")}>
+              <Check className="h-3.5 w-3.5" /> Approve
+            </Button>
+          )}
+          {(row.state === "sent" || row.state === "draft") && (
+            <Button className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "confirm")}>
+              <Check className="h-3.5 w-3.5" /> Confirm
+            </Button>
+          )}
+          {row.state === "purchase" && !row.received && (
+            <Button className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "receive")}>
+              <PackageCheck className="h-3.5 w-3.5" /> Receive
+            </Button>
+          )}
+          {row.state === "purchase" && row.received && (
+            <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "lock")}>
+              <Lock className="h-3.5 w-3.5" /> Lock
+            </Button>
+          )}
+          {row.state !== "cancel" && row.state !== "done" && (
+            <Button variant="ghost" size="sm" className="h-9 px-2.5 text-xs font-semibold cursor-pointer text-rose-600 hover:bg-rose-500/10 dark:text-rose-400" onClick={() => act(row, "cancel")}>
+              <XCircle className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -176,7 +248,7 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
       {/* Purchase KPIs */}
       <KpiGrid columns={4}>
         <KpiCard title={rfq ? "Open RFQs" : "Active POs"} value={String(stats.open)} icon={rfq ? FileText : Send} tone="blue" />
-        <KpiCard title="Awaiting Receipt" value={String(stats.awaitingReceipt)} icon={PackageCheck} tone="amber" badge="TODO" tooltip="Confirmed POs not yet received" />
+        <KpiCard title="Awaiting Receipt" value={String(stats.awaitingReceipt)} icon={PackageCheck} tone="amber" tooltip="Confirmed POs not yet received" />
         <KpiCard title="Committed Spend" value={money(stats.committed)} icon={Banknote} tone="emerald" tooltip="Confirmed + locked purchase value" />
         <KpiCard title={`Total ${shortTitle}`} value={String(stats.total)} icon={FileText} tone="violet" />
       </KpiGrid>
@@ -210,18 +282,25 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
         pagination
         pageSize={10}
         pageSizeOptions={[10, 20, 50]}
-        selectedActions={(selectedRows, clearSelection) => (
-          <Button
-            size="sm"
-            className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
-            onClick={() => {
-              alert(`Confirming ${selectedRows.length} order(s)`);
-              clearSelection();
-            }}
-          >
-            <Check className="h-3.5 w-3.5" /> Confirm
-          </Button>
-        )}
+        selectedActions={(selectedRows, clearSelection) =>
+          rfq ? (
+            <Button
+              size="sm"
+              className="h-9 px-4 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200"
+              onClick={() => bulkAction(selectedRows, "confirm", clearSelection)}
+            >
+              <Check className="h-3.5 w-3.5" /> Confirm Orders
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className="h-9 px-4 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200"
+              onClick={() => bulkAction(selectedRows, "receive", clearSelection)}
+            >
+              <PackageCheck className="h-3.5 w-3.5" /> Receive Products
+            </Button>
+          )
+        }
         emptyAction={
           (selectedState !== "all" || effectiveQuery.length > 0) && (
             <Button variant="outline" size="sm" onClick={clearFilters} className="cursor-pointer text-xs font-semibold gap-1.5">
@@ -230,6 +309,21 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
           )
         }
       />
+
+      {/* Action toast */}
+      {feedback && (
+        <div
+          className={cn(
+            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border flex items-center gap-2",
+            feedback.ok
+              ? "bg-card text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+              : "bg-card text-rose-600 dark:text-rose-400 border-rose-500/30",
+          )}
+        >
+          {feedback.ok ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+          {feedback.message}
+        </div>
+      )}
     </>
   );
 }

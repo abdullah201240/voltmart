@@ -10,6 +10,7 @@
  */
 
 import type { OrderStatus } from "./orders";
+import { withOverlay } from "@/lib/data/ops";
 
 export interface CustomerRow {
   id: string;
@@ -91,6 +92,11 @@ export async function getCustomerTags(): Promise<CustomerTag[]> {
 export async function getCustomerById(id: string): Promise<CustomerDetail | undefined> {
   const row = CUSTOMERS.find((c) => c.id === id);
   if (!row) return undefined;
+  const detail = buildDetail(row);
+  return withOverlay("res.partner", id, detail);
+}
+
+function buildDetail(row: CustomerRow): CustomerDetail {
   const recentOrders: CustomerOrderRef[] = Array.from({ length: Math.min(row.orders, 4) }).map((_, i) => ({
     id: `ORD-${7390 - i}`,
     date: ["Sep 29, 2026", "Sep 21, 2026", "Sep 12, 2026", "Aug 30, 2026"][i],

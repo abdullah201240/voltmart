@@ -381,7 +381,7 @@ export default function OrderDetailPage() {
           </Card>
 
           {/* Odoo chatter — messages, internal notes, activities, history */}
-          <RecordChatter model={SALE_ORDER} ref={order.id} />
+          <RecordChatter model={SALE_ORDER} recordId={order.id} />
         </div>
       </div>
 

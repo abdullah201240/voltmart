@@ -220,3 +220,195 @@ export function setMoState(ref: string, to: MoState, base: { state: MoState; qty
   addHistory(MRP_PRODUCTION, ref, `State: ${from} → ${to}`, "Stage changed.");
   return ok(`Moved to ${to}.`);
 }
+
+// ------------------------------------------------------------------
+// Purchasing (`purchase.order`) — Phase 5
+// ------------------------------------------------------------------
+
+import type { PoState } from "@/lib/data/purchasing";
+
+export const PURCHASE_ORDER = "purchase.order";
+
+export type PoAction = "send" | "approve" | "confirm" | "receive" | "lock" | "cancel";
+
+/** Effective (overlay-merged) status pair for a purchase order. */
+export function poState(ref: string) {
+  const { fields } = getRecord(PURCHASE_ORDER, ref);
+  return {
+    state: fields.state as PoState | undefined,
+    received: fields.received as boolean | undefined,
+  };
+}
+
+/** Apply a purchase.order action with Odoo-style RFQ → PO → receipt transitions. */
+export function applyPoAction(
+  ref: string,
+  vendor: string,
+  action: PoAction,
+  base: { state: PoState; received: boolean },
+): ActionResult {
+  const live = poState(ref);
+  const state = live.state ?? base.state;
+  const received = live.received ?? base.received;
+
+  switch (action) {
+    case "send": {
+      if (state !== "draft") return fail("Only a draft RFQ can be sent to the vendor.");
+      patchFields(PURCHASE_ORDER, ref, { state: "sent" });
+      addHistory(PURCHASE_ORDER, ref, "RFQ sent to vendor", `Quotation ${ref} emailed to ${vendor}, awaiting their confirmation.`);
+      return ok("RFQ sent by email.");
+    }
+    case "approve": {
+      if (state !== "to approve") return fail("This order is not awaiting approval.");
+      patchFields(PURCHASE_ORDER, ref, { state: "purchase" });
+      addHistory(PURCHASE_ORDER, ref, "Approved → Purchase Order", `Purchase order ${ref} approved; awaiting receipt.`);
+      return ok("Purchase order approved.");
+    }
+    case "confirm": {
+      if (state !== "sent" && state !== "draft") return fail("Only an RFQ (draft or sent) can be confirmed.");
+      patchFields(PURCHASE_ORDER, ref, { state: "purchase" });
+      addHistory(PURCHASE_ORDER, ref, `Status: ${state} → Purchase Order`, `PO ${ref} confirmed with ${vendor}; receipt created and products reserved.`);
+      return ok("Purchase Order confirmed — receipt created.");
+    }
+    case "receive": {
+      if (state !== "purchase") return fail("Confirm the purchase order before receiving.");
+      if (received) return fail("Products have already been received for this order.");
+      patchFields(PURCHASE_ORDER, ref, { received: true });
+      addHistory(PURCHASE_ORDER, ref, "Receipt validated", `Incoming transfer for ${ref} validated — stock moved into WH/Stock.`);
+      return ok("Products received into stock.");
+    }
+    case "lock": {
+      if (!received) return fail("Validate the receipt before locking the order.");
+      if (state === "done") return fail("Order is already locked.");
+      if (state !== "purchase") return fail("Only a confirmed purchase order can be locked.");
+      patchFields(PURCHASE_ORDER, ref, { state: "done" });
+      addHistory(PURCHASE_ORDER, ref, "Status → Locked", `PO ${ref} locked — the bill can now be drafted.`);
+      return ok("Order locked.");
+    }
+    case "cancel": {
+      if (state === "cancel") return fail("Order is already cancelled.");
+      if (state === "done") return fail("Locked orders cannot be cancelled — use a vendor credit note.");
+      patchFields(PURCHASE_ORDER, ref, { state: "cancel" });
+      addHistory(PURCHASE_ORDER, ref, `Status: ${state} → Cancelled`, `PO ${ref} cancelled; related receipt (if any) dropped.`);
+      return ok("Purchase order cancelled.");
+    }
+  }
+}
+
+// ------------------------------------------------------------------
+// Warehouse (`stock.picking`) — Phase 5
+// ------------------------------------------------------------------
+
+import type { PickingState, PickingKind } from "@/lib/data/inventory";
+
+export const STOCK_PICKING = "stock.picking";
+
+export type PickingAction = "confirm" | "reserve" | "transfer" | "cancel";
+
+export function pickingState(ref: string): PickingState | undefined {
+  return getRecord(STOCK_PICKING, ref).fields.state as PickingState | undefined;
+}
+
+/** Apply a picking action; validating an incoming receipt also updates its PO. */
+export function applyPickingAction(
+  ref: string,
+  kind: PickingKind,
+  partner: string,
+  origin: string,
+  action: PickingAction,
+  base: { state: PickingState },
+): ActionResult {
+  const state = pickingState(ref) ?? base.state;
+
+  switch (action) {
+    case "confirm": {
+      if (state !== "draft") return fail("Only a draft operation can be confirmed.");
+      patchFields(STOCK_PICKING, ref, { state: "confirmed" });
+      addHistory(STOCK_PICKING, ref, "Draft → Confirmed", `${ref} confirmed for ${partner}; products are being awaited.`);
+      return ok("Operation confirmed.");
+    }
+    case "reserve": {
+      if (state !== "confirmed") return fail("Confirm the operation before reserving products.");
+      patchFields(STOCK_PICKING, ref, { state: "assigned" });
+      addHistory(STOCK_PICKING, ref, "Waiting → Ready", `Products reserved for ${ref} — ready to ${kind === "incoming" ? "receive" : "ship"}.`);
+      return ok("Products reserved.");
+    }
+    case "transfer": {
+      if (state === "done") return fail("This transfer is already validated.");
+      if (state === "draft") return fail("Confirm and reserve the operation before validating.");
+      patchFields(STOCK_PICKING, ref, { state: "done" });
+      if (kind === "outgoing") {
+        patchFields(STOCK_PICKING, ref, { state: "done", carrier: "DHL Express", tracking: `DHL${ref.replace(/\D/g, "").slice(-6)}` });
+      }
+      addHistory(STOCK_PICKING, ref, "State → Done", kind === "incoming" ? `Receipt validated — stock from ${partner} moved into WH/Stock.` : kind === "outgoing" ? `Delivery validated for ${partner} — handed to the carrier.` : `Internal transfer ${ref} validated.`);
+      // Cross-document effect: an incoming receipt settles its originating PO.
+      if (kind === "incoming" && /^P\d{5}$/.test(origin)) {
+        patchFields(PURCHASE_ORDER, origin, { received: true });
+        addHistory(PURCHASE_ORDER, origin, "Receipt validated", `Incoming transfer ${ref} validated — PO receipt marked received.`);
+      }
+      return ok("Transfer validated.");
+    }
+    case "cancel": {
+      if (state === "done") return fail("Validated transfers cannot be cancelled — do a return instead.");
+      if (state === "cancel") return fail("Operation is already cancelled.");
+      patchFields(STOCK_PICKING, ref, { state: "cancel" });
+      addHistory(STOCK_PICKING, ref, `State: ${state} → Cancelled`, "Operation cancelled; reservations released.");
+      return ok("Operation cancelled.");
+    }
+  }
+}
+
+
+// ------------------------------------------------------------------
+// Accounting (`account.move`) — Phase 4
+// ------------------------------------------------------------------
+
+import type { MoveState } from "@/lib/data/finance";
+
+export const ACCOUNT_MOVE = "account.move";
+
+export type MoveAction = "post" | "cancel" | "undo";
+
+/** Effective (overlay-merged) state of an account move. */
+export function moveState(ref: string): MoveState | undefined {
+  return getRecord(ACCOUNT_MOVE, ref).fields.state as MoveState | undefined;
+}
+
+/**
+ * Apply an account.move journalling action. `balanced` enforces the Odoo
+ * rule that only a balanced entry (debits = credits) may be posted.
+ */
+export function applyMoveAction(
+  ref: string,
+  action: MoveAction,
+  base: { state: MoveState },
+  balanced = true,
+): ActionResult {
+  const live = moveState(ref);
+  const state = live ?? base.state;
+
+  switch (action) {
+    case "post": {
+      if (state === "Posted" || state === "Paid") return fail("This entry is already posted.");
+      if (state === "Cancelled") return fail("Restore the entry to draft before posting.");
+      if (!balanced) return fail("Entry is not balanced — debits must equal credits before posting.");
+      patchFields(ACCOUNT_MOVE, ref, { state: "Posted" });
+      addHistory(ACCOUNT_MOVE, ref, `State: ${state} → Posted`, "Journal entry posted; movements are now accounted in the ledger.");
+      return ok("Entry posted.");
+    }
+    case "cancel": {
+      if (state === "Cancelled") return fail("Entry is already cancelled.");
+      if (state === "Paid") return fail("Paid entries cannot be cancelled — use a credit note.");
+      patchFields(ACCOUNT_MOVE, ref, { state: "Cancelled" });
+      addHistory(ACCOUNT_MOVE, ref, `State: ${state} → Cancelled`, "Entry cancelled; no ledger effect.");
+      return ok("Entry cancelled.");
+    }
+    case "undo": {
+      if (state !== "Posted") return fail("Only posted entries can be reset to draft.");
+      patchFields(ACCOUNT_MOVE, ref, { state: "Draft" });
+      addHistory(ACCOUNT_MOVE, ref, "State: Posted → Draft", "Entry reset to draft.");
+      return ok("Entry reset to draft.");
+    }
+  }
+}
+

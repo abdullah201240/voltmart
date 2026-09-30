@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { getCustomerById, type CustomerDetail } from "@/lib/data/customers";
 import type { OrderStatus } from "@/lib/data/orders";
+import { RecordChatter } from "@/components/ui/record-chatter";
+import { useOps } from "@/lib/data/ops";
 
 const STATUS_CLASS: Record<OrderStatus, "default" | "secondary" | "outline"> = {
   Quotation: "secondary",
@@ -44,12 +46,12 @@ function InfoRow({ label, value, icon: Icon }: { label: string; value: React.Rea
 
 export default function CustomerDetailPage() {
   const params = useParams<{ id: string }>();
+  const version = useOps();
   const [customer, setCustomer] = useState<CustomerDetail | undefined>();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
     getCustomerById(params.id).then((c) => {
       if (alive) {
         setCustomer(c);
@@ -59,7 +61,7 @@ export default function CustomerDetailPage() {
     return () => {
       alive = false;
     };
-  }, [params.id]);
+  }, [params.id, version]);
 
   if (loading) {
     return (
@@ -189,6 +191,9 @@ export default function CustomerDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Odoo chatter — messages, internal notes, activities, history */}
+      <RecordChatter model="res.partner" recordId={customer.id} />
     </>
   );
 }

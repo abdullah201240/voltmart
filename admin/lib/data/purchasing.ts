@@ -80,8 +80,11 @@ const VENDORS: VendorRow[] = [
   { id: "V5", name: "Gaming Depot", email: "wholesale@gamingdepot.example", country: "United Kingdom", products: 17, leadTime: 4, onTimeRate: 94, totalPurchased: 25050000 },
 ];
 
+import { withOverlay } from "@/lib/data/ops";
+import { PURCHASE_ORDER } from "@/lib/data/workflows";
+
 export async function getPurchaseOrders(): Promise<PurchaseOrderRow[]> {
-  return PURCHASE_ORDERS;
+  return PURCHASE_ORDERS.map((p) => withOverlay(PURCHASE_ORDER, p.id, p));
 }
 
 /** RFQs = draft / sent / to-approve; confirmed POs = purchase / done. */

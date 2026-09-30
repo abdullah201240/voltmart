@@ -65,13 +65,13 @@ function todayPlus(days: number) {
 
 export interface RecordChatterProps {
   model: string;
-  ref: string;
+  recordId: string;
   className?: string;
 }
 
-export function RecordChatter({ model, ref, className }: RecordChatterProps) {
+export function RecordChatter({ model, recordId, className }: RecordChatterProps) {
   useOps(); // subscribe: re-render on any mutation
-  const rec = getRecord(model, ref);
+  const rec = getRecord(model, recordId);
 
   const [tab, setTab] = useState<"discuss" | "activities">("discuss");
   const [composer, setComposer] = useState<"comment" | "note">("comment");
@@ -95,13 +95,13 @@ export function RecordChatter({ model, ref, className }: RecordChatterProps) {
   const post = () => {
     const text = body.trim();
     if (!text) return;
-    addMessage(model, ref, text, composer);
+    addMessage(model, recordId, text, composer);
     setBody("");
   };
 
   const addActivity = () => {
     if (!aSummary.trim()) return;
-    scheduleActivity(model, ref, { type: aType, summary: aSummary.trim(), due: aDue, assignee: aAssignee.trim() || "Admin · Alex" });
+    scheduleActivity(model, recordId, { type: aType, summary: aSummary.trim(), due: aDue, assignee: aAssignee.trim() || "Admin · Alex" });
     setASummary("");
     setShowForm(false);
   };
@@ -287,7 +287,7 @@ export function RecordChatter({ model, ref, className }: RecordChatterProps) {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setActivityState(model, ref, a.id, "done")}
+                      onClick={() => setActivityState(model, recordId, a.id, "done")}
                       title="Mark done"
                       className="inline-flex cursor-pointer items-center justify-center h-8 w-8 rounded-md border border-border text-emerald-600 transition-all duration-200 hover:bg-emerald-500/10 active:scale-[0.98]"
                     >
@@ -317,7 +317,7 @@ export function RecordChatter({ model, ref, className }: RecordChatterProps) {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setActivityState(model, ref, a.id, "open")}
+                      onClick={() => setActivityState(model, recordId, a.id, "open")}
                       title="Reopen"
                       className="inline-flex cursor-pointer items-center justify-center h-8 w-8 rounded-md border border-border text-muted-foreground transition-all duration-200 hover:bg-muted/40 active:scale-[0.98]"
                     >

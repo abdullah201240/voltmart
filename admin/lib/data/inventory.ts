@@ -96,12 +96,15 @@ const PICKINGS: PickingRow[] = [
   { id: "WH/INT/00006", name: "WH/INT/00006", kind: "internal", partner: "Stock → Quality Control", origin: "QC check", state: "done", scheduledDate: "Sep 25, 2026", lines: 1 },
 ];
 
+import { withOverlay } from "@/lib/data/ops";
+import { STOCK_PICKING } from "@/lib/data/workflows";
+
 export async function getStock(): Promise<StockRow[]> {
   return STOCK;
 }
 
 export async function getPickings(kind: PickingKind): Promise<PickingRow[]> {
-  return PICKINGS.filter((p) => p.kind === kind);
+  return PICKINGS.filter((p) => p.kind === kind).map((p) => withOverlay(STOCK_PICKING, p.id, p));
 }
 
 export function stockStats(rows: StockRow[]) {

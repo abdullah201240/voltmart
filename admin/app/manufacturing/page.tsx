@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import { SearchableDropbox, type DropboxOption } from "@/components/ui/searchable-dropbox";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
@@ -183,12 +183,12 @@ export default function ManufacturingPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-11 px-5 text-sm font-medium cursor-pointer" onClick={() => (window.location.href = "/manufacturing/bom")}>
+          <Link href="/manufacturing/bom" className="inline-flex h-11 items-center rounded-md border border-input bg-transparent px-5 text-sm font-medium cursor-pointer transition-all duration-200 hover:bg-muted/40 active:scale-[0.98]">
             <ClipboardList className="mr-2 h-4 w-4" /> Bills of Materials
-          </Button>
-          <Button className="h-11 px-5 text-sm font-medium cursor-pointer" onClick={() => (window.location.href = "/manufacturing/workcenters")}>
+          </Link>
+          <Link href="/manufacturing/workcenters" className="inline-flex h-11 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground cursor-pointer transition-all duration-200 hover:bg-primary/90 active:scale-[0.98]">
             <Factory className="mr-2 h-4 w-4" /> Work Centres
-          </Button>
+          </Link>
         </div>
       </div>
 

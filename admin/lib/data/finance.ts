@@ -13,6 +13,9 @@
 
 export type MoveState = "Draft" | "Posted" | "Paid" | "Cancelled";
 
+import { withOverlay } from "@/lib/data/ops";
+import { ACCOUNT_MOVE } from "@/lib/data/workflows";
+
 export interface InvoiceRow {
   id: string;
   number: string;
@@ -85,11 +88,11 @@ const PAYMENTS: PaymentRow[] = [
 ];
 
 export async function getInvoices(): Promise<InvoiceRow[]> {
-  return INVOICES;
+  return INVOICES.map((inv) => withOverlay(ACCOUNT_MOVE, inv.id, inv));
 }
 
 export async function getBills(): Promise<BillRow[]> {
-  return BILLS;
+  return BILLS.map((b) => withOverlay(ACCOUNT_MOVE, b.id, b));
 }
 
 export async function getPayments(): Promise<PaymentRow[]> {
