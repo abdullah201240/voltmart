@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -17,6 +17,7 @@ import {
   Truck,
   Wallet,
   Ticket,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,11 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Analytics",
         href: "/analytics",
         icon: BarChart3,
+      },
+      {
+        title: "Notifications",
+        href: "/notifications",
+        icon: Bell,
       },
     ],
   },
@@ -151,7 +157,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 interface AdminSidebarProps {
   collapsed: boolean;
-  onToggleCollapse: () => void;
+  onToggleCollapse?: () => void;
   mobileOpen: boolean;
   onMobileClose: () => void;
   className?: string;
@@ -159,22 +165,16 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({
   collapsed,
-  onToggleCollapse,
   mobileOpen,
   onMobileClose,
   className,
 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // Auto-expand the dropdown containing the active route
-  useEffect(() => {
-    if (collapsed) {
-      setOpenDropdown(null);
-      return;
-    }
-
+  // Auto-derived active dropdown based on current route
+  const activeDropdown = useMemo(() => {
+    if (collapsed) return null;
     for (const group of NAV_GROUPS) {
       for (const item of group.items) {
         if (item.children) {
@@ -182,13 +182,37 @@ export function AdminSidebar({
             child.href === "/" ? pathname === "/" : pathname.startsWith(child.href)
           );
           if (hasActiveChild) {
-            setOpenDropdown(item.title);
-            return;
+            return item.title;
           }
         }
       }
     }
+    return null;
   }, [collapsed, pathname]);
+
+  // Track explicit user toggle overrides
+  const [userDropdownOverride, setUserDropdownOverride] = useState<{
+    pathname: string;
+    dropdown: string | null;
+  } | null>(null);
+
+  const [collapsedFlyout, setCollapsedFlyout] = useState<string | null>(null);
+
+  const openDropdown =
+    !collapsed && userDropdownOverride && userDropdownOverride.pathname === pathname
+      ? userDropdownOverride.dropdown
+      : activeDropdown;
+
+  const handleToggleDropdown = (title: string) => {
+    if (collapsed) {
+      setCollapsedFlyout((prev) => (prev === title ? null : title));
+    } else {
+      setUserDropdownOverride({
+        pathname,
+        dropdown: openDropdown === title ? null : title,
+      });
+    }
+  };
 
   // Close collapsed flyout menus on click outside
   useEffect(() => {
@@ -198,17 +222,12 @@ export function AdminSidebar({
         sidebarRef.current &&
         !sidebarRef.current.contains(event.target as Node)
       ) {
-        setOpenDropdown(null);
+        setCollapsedFlyout(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [collapsed]);
-
-  const handleToggleDropdown = (title: string) => {
-    // Accordion behavior: opening one automatically closes all others
-    setOpenDropdown((current) => (current === title ? null : title));
-  };
 
   const sidebarContent = (
     <div
@@ -268,7 +287,9 @@ export function AdminSidebar({
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const hasChildren = Boolean(item.children && item.children.length > 0);
-                const isOpen = openDropdown === item.title;
+                const isOpen = collapsed
+                  ? collapsedFlyout === item.title
+                  : openDropdown === item.title;
 
                 // Check if any child is active
                 const isChildActive = hasChildren
@@ -327,7 +348,7 @@ export function AdminSidebar({
                                       key={child.href}
                                       href={child.href}
                                       onClick={() => {
-                                        setOpenDropdown(null);
+                                        setCollapsedFlyout(null);
                                         onMobileClose();
                                       }}
                                       className={cn(

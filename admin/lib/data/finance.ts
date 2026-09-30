@@ -62,11 +62,11 @@ export const MOVE_STATE_OPTIONS = [
 ];
 
 const INVOICES: InvoiceRow[] = [
-  { id: "INV-3001", number: "INV/2026/0031", reference: "ORD-7389", partner: "Noah Wilson", date: "Sep 28, 2026", dueDate: "Oct 28, 2026", subtotal: 42546, tax: 8934, total: 51480, state: "Paid" },
-  { id: "INV-3002", number: "INV/2026/0030", reference: "ORD-7385", partner: "Mia Clark", date: "Sep 26, 2026", dueDate: "Oct 26, 2026", subtotal: 317355.6, tax: 66524.4, total: 383880, state: "Posted" },
-  { id: "INV-3003", number: "INV/2026/0029", reference: "ORD-7388", partner: "James Davis", date: "Sep 27, 2026", dueDate: "Oct 27, 2026", subtotal: 1409454, tax: 295746, total: 1705200, state: "Draft" },
-  { id: "INV-3004", number: "INV/2026/0028", reference: "ORD-7390", partner: "Emma Brown", date: "Sep 28, 2026", dueDate: "Oct 28, 2026", subtotal: 182578.8, tax: 38221.2, total: 220800, state: "Paid" },
-  { id: "INV-3005", number: "INV/2026/0027", reference: "ORD-7386", partner: "Lucas White", date: "Sep 26, 2026", dueDate: "Oct 26, 2026", subtotal: 7933.2, tax: 1665.6, total: 9598.8, state: "Cancelled" },
+  { id: "INV-3001", number: "INV/2026/0031", reference: "ORD-7389", partner: "Noah Wilson", date: "Sep 28, 2026", dueDate: "Oct 28, 2026", subtotal: 44765.22, tax: 6714.78, total: 51480, state: "Paid" },
+  { id: "INV-3002", number: "INV/2026/0030", reference: "ORD-7385", partner: "Mia Clark", date: "Sep 26, 2026", dueDate: "Oct 26, 2026", subtotal: 333808.7, tax: 50071.3, total: 383880, state: "Posted" },
+  { id: "INV-3003", number: "INV/2026/0029", reference: "ORD-7388", partner: "James Davis", date: "Sep 27, 2026", dueDate: "Oct 27, 2026", subtotal: 1482782.61, tax: 222417.39, total: 1705200, state: "Draft" },
+  { id: "INV-3004", number: "INV/2026/0028", reference: "ORD-7390", partner: "Emma Brown", date: "Sep 28, 2026", dueDate: "Oct 28, 2026", subtotal: 192000, tax: 28800, total: 220800, state: "Paid" },
+  { id: "INV-3005", number: "INV/2026/0027", reference: "ORD-7386", partner: "Lucas White", date: "Sep 26, 2026", dueDate: "Oct 26, 2026", subtotal: 8346.78, tax: 1252.02, total: 9598.8, state: "Cancelled" },
 ];
 
 const BILLS: BillRow[] = [

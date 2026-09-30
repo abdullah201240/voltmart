@@ -83,13 +83,15 @@ Do NOT reinvent custom tables, stat blocks, or dropdowns. Always import and use 
 ### B. Central KPI Card (`KpiCard` & `KpiGrid`)
 - **Import**: `import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";`
 - **Features**:
-  - Responsive grid wrapper: `<KpiGrid columns={4}>`
-  - Inline smooth SVG sparklines: `sparkline={[30, 45, 60, ... ]}`
-  - Progress goal bars: `progress={82}`, `progressLabel="Target: $55k"`
-  - Inverted metrics support: `trendInverse={true}` (e.g., for bounce rate, cart abandonment, returns where down is positive)
+  - Responsive grid wrapper: `<KpiGrid columns={3 | 4}>`
+  - Focused, uncluttered card structure: Title, primary Metric Value, and Icon.
   - Tones: `emerald`, `blue`, `violet`, `amber`, `rose`, `cyan`, `indigo`, `default`
+  - Clean trend indicators: `trend="up" | "down"`, `change="+12.4%"`
   - Variants: `default`, `accent`, `subtle`, `compact`
-  - Tooltips, badge chips, and click navigation (`href` or `onClick`)
+- **STRICT ANTI-CLUTTER RULE (Zero Extra Bloat)**:
+  - **NEVER** add large progress bars (`progress={...}`), progress labels (`progressLabel={...}`), or fake telemetry cards (e.g. "Operational 100%").
+  - KPI cards must ALWAYS remain clean, compact, uniform, and simple.
+  - Never add bulky secondary footers or bloated telemetry meters that disrupt visual harmony.
 
 ### C. Searchable Dropbox (`SearchableDropbox`)
 - **Import**: `import { SearchableDropbox, type DropboxOption } from "@/components/ui/searchable-dropbox";`

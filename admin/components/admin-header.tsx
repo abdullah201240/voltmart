@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Search,
-  Bell,
   Menu,
   ChevronRight,
   X,
@@ -15,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationsPopover } from "@/components/notifications-popover";
 
 interface AdminHeaderProps {
   onMobileMenuToggle: () => void;
@@ -37,6 +37,7 @@ const BREADCRUMB_MAP: Record<string, { section: string; page: string }> = {
   "/discounts": { section: "Growth", page: "Discounts & Vouchers" },
   "/channels": { section: "System", page: "Sales Channels" },
   "/settings": { section: "System", page: "Store Settings" },
+  "/notifications": { section: "System", page: "Notifications Center" },
 };
 
 export function AdminHeader({
@@ -48,7 +49,6 @@ export function AdminHeader({
   className,
 }: AdminHeaderProps) {
   const pathname = usePathname();
-  const [hasUnreadAlerts, setHasUnreadAlerts] = useState(true);
 
   const breadcrumb = BREADCRUMB_MAP[pathname] || {
     section: "Admin",
@@ -148,23 +148,8 @@ export function AdminHeader({
         {/* Theme Toggle */}
         <ThemeToggle />
 
-        {/* Notification Bell */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setHasUnreadAlerts(false)}
-          className="relative h-9 w-9 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer transition-colors"
-          aria-label="View notifications"
-        >
-          <Bell size={19} className="size-[19px]" />
-          {hasUnreadAlerts && (
-            <span className="absolute top-2 right-2 flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
-            </span>
-          )}
-        </Button>
+        {/* Interactive Notifications Popover */}
+        <NotificationsPopover />
 
         {/* Admin Profile */}
         <div className="flex items-center gap-2.5 pl-1.5 cursor-pointer hover:opacity-85 transition-opacity">

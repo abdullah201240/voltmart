@@ -98,8 +98,8 @@ export async function getGeneralSettings(): Promise<GeneralSettings> {
 export async function getChannels(): Promise<ChannelRow[]> {
   return [
     { id: "CH1", name: "Default Channel", slug: "default-channel", currency: "BDT", warehouse: "Main Warehouse", publishedProducts: 210, active: true },
-    { id: "CH2", name: "Dhaka Store", slug: "channel-eur", currency: "BDT", warehouse: "Main Warehouse", publishedProducts: 188, active: true },
-    { id: "CH3", name: "Chattogram Store", slug: "channel-pln", currency: "BDT", warehouse: "Chattogram Hub", publishedProducts: 142, active: true },
+    { id: "CH2", name: "Dhaka Store", slug: "channel-dhk", currency: "BDT", warehouse: "Main Warehouse", publishedProducts: 188, active: true },
+    { id: "CH3", name: "Chattogram Store", slug: "channel-ctg", currency: "BDT", warehouse: "Chattogram Hub", publishedProducts: 142, active: true },
     { id: "CH4", name: "B2B Wholesale", slug: "b2b-wholesale", currency: "BDT", warehouse: "Main Warehouse", publishedProducts: 96, active: false },
   ];
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,15 @@ import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { ProductFormDrawer } from "@/components/product-form-drawer";
 import { useAdminLayout } from "@/components/admin-shell";
+import { CHANNEL_OPTIONS } from "@/lib/data/products";
+import {
+  getOrders,
+  orderStats,
+  ORDER_STATUS_OPTIONS,
+  PAYMENT_STATUS_OPTIONS,
+  type OrderRow,
+  type OrderStatus,
+} from "@/lib/data/orders";
 import {
   Banknote,
   Package,
@@ -22,8 +32,6 @@ import {
   Users,
   Download,
   Plus,
-  Store,
-  Layers,
   RotateCcw,
   AlertCircle,
   ShoppingBag,
@@ -32,171 +40,28 @@ import {
   Percent,
 } from "lucide-react";
 
-const CHANNEL_OPTIONS: DropboxOption[] = [
-  {
-    value: "all",
-    label: "All Channels",
-    badge: "GLOBAL",
-    description: "Combined sales across all markets",
-    icon: <Store className="h-4 w-4" />,
-  },
-  {
-    value: "default-channel",
-    label: "Default Channel (BDT)",
-    badge: "BDT",
-    description: "Primary nationwide online store",
-    icon: <Store className="h-4 w-4" />,
-  },
-  {
-    value: "channel-pln",
-    label: "Chattogram Store (BDT)",
-    badge: "BDT",
-    description: "Chattogram regional storefront",
-    icon: <Store className="h-4 w-4" />,
-  },
-  {
-    value: "channel-eur",
-    label: "Dhaka Store (BDT)",
-    badge: "BDT",
-    description: "Dhaka direct-to-consumer store",
-    icon: <Store className="h-4 w-4" />,
-  },
-  {
-    value: "mobile-app",
-    label: "Mobile App Channel",
-    badge: "APP",
-    description: "iOS & Android in-app purchases",
-    icon: <Store className="h-4 w-4" />,
-  },
-  {
-    value: "b2b-wholesale",
-    label: "B2B Wholesale Portal",
-    badge: "B2B",
-    description: "Tiered pricing corporate sales",
-    icon: <Store className="h-4 w-4" />,
-  },
-];
+/** Order status badge tones — shared vocabulary with the Orders pages. */
+const STATUS_META: Record<OrderStatus, string> = {
+  Quotation: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
+  Confirmed: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+  Fulfilled: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+  Invoiced: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+  Cancelled: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+};
 
-const STATUS_OPTIONS: DropboxOption[] = [
-  { value: "all", label: "All Statuses", description: "Show all orders" },
-  {
-    value: "Fulfilled",
-    label: "Fulfilled",
-    badge: "DELIVERED",
-    description: "Completed & shipped out",
-  },
-  {
-    value: "Processing",
-    label: "Processing",
-    badge: "PACKING",
-    description: "In warehouse preparation",
-  },
-  {
-    value: "Pending",
-    label: "Pending Payment",
-    badge: "WAITING",
-    description: "Awaiting gateway clearance",
-  },
-  {
-    value: "Cancelled",
-    label: "Cancelled",
-    badge: "REFUNDED",
-    description: "Voided or cancelled orders",
-  },
-];
-
-const CATEGORY_OPTIONS: DropboxOption[] = [
-  { value: "all", label: "All Categories", icon: <Layers className="h-4 w-4" /> },
-  { value: "mobiles", label: "Smartphones & Tablets", description: "Flagships, foldables & pads" },
-  { value: "laptops", label: "Laptops & Workstations", description: "Ultrabooks & creators" },
-  { value: "audio", label: "Audio & Acoustics", description: "Noise-canceling & studio gear" },
-  { value: "gaming", label: "Gaming Gear", description: "Consoles, handhelds, peripherals" },
-  { value: "accessories", label: "Peripherals & Cables", description: "Chargers, hubs, adapters" },
-];
-
-const ALL_ORDERS = [
-  {
-    id: "ORD-7392",
-    customer: "Liam Johnson",
-    email: "liam@example.com",
-    channel: "Default Channel (BDT)",
-    channelKey: "default-channel",
-    total: "৳43,080",
-    status: "Fulfilled",
-    date: "Sep 29, 2026",
-  },
-  {
-    id: "ORD-7391",
-    customer: "Olivia Smith",
-    email: "olivia@example.com",
-    channel: "Mobile App Channel",
-    channelKey: "mobile-app",
-    total: "৳1,07,940",
-    status: "Processing",
-    date: "Sep 29, 2026",
-  },
-  {
-    id: "ORD-7390",
-    customer: "Noah Williams",
-    email: "noah@example.com",
-    channel: "Default Channel (BDT)",
-    channelKey: "default-channel",
-    total: "৳14,880",
-    status: "Fulfilled",
-    date: "Sep 28, 2026",
-  },
-  {
-    id: "ORD-7389",
-    customer: "Emma Brown",
-    email: "emma@example.com",
-    channel: "Chattogram Store (BDT)",
-    channelKey: "channel-pln",
-    total: "৳2,20,800",
-    status: "Pending",
-    date: "Sep 28, 2026",
-  },
-  {
-    id: "ORD-7388",
-    customer: "James Davis",
-    email: "james@example.com",
-    channel: "B2B Wholesale Portal",
-    channelKey: "b2b-wholesale",
-    total: "৳17,04,000",
-    status: "Fulfilled",
-    date: "Sep 27, 2026",
-  },
-  {
-    id: "ORD-7387",
-    customer: "Sophia Taylor",
-    email: "sophia@example.com",
-    channel: "Dhaka Store (BDT)",
-    channelKey: "channel-eur",
-    total: "৳51,600",
-    status: "Processing",
-    date: "Sep 27, 2026",
-  },
-  {
-    id: "ORD-7386",
-    customer: "Lucas White",
-    email: "lucas@example.com",
-    channel: "Default Channel (BDT)",
-    channelKey: "default-channel",
-    total: "৳9,599",
-    status: "Cancelled",
-    date: "Sep 26, 2026",
-  },
-];
-
-const ORDER_COLUMNS: CentralTableColumn<(typeof ALL_ORDERS)[0]>[] = [
+const ORDER_COLUMNS: CentralTableColumn<OrderRow>[] = [
   {
     accessorKey: "id",
-    header: "Order ID",
+    header: "Order",
     sortable: true,
-    width: "140px",
-    cell: ({ value }) => (
-      <span className="font-mono font-bold text-sm text-foreground">
+    width: "130px",
+    cell: ({ row, value }) => (
+      <Link
+        href={`/orders/${row.id}`}
+        className="font-mono font-bold text-sm text-foreground hover:text-primary transition-colors"
+      >
         {value}
-      </span>
+      </Link>
     ),
   },
   {
@@ -204,26 +69,32 @@ const ORDER_COLUMNS: CentralTableColumn<(typeof ALL_ORDERS)[0]>[] = [
     header: "Customer",
     sortable: true,
     cell: ({ row }) => (
-      <div>
-        <div className="font-semibold text-sm text-foreground">{row.customer}</div>
-        <div className="text-xs text-muted-foreground mt-0.5">{row.email}</div>
+      <div className="min-w-0">
+        <div className="font-semibold text-sm text-foreground truncate">{row.customer}</div>
+        <div className="text-xs text-muted-foreground mt-0.5 truncate">{row.email}</div>
       </div>
-    ),
-  },
-  {
-    accessorKey: "channel",
-    header: "Sales Channel",
-    sortable: true,
-    cell: ({ value }) => (
-      <span className="text-sm text-muted-foreground font-medium">{value}</span>
     ),
   },
   {
     accessorKey: "date",
     header: "Date",
     sortable: true,
+    cell: ({ value }) => <span className="text-sm text-muted-foreground">{value}</span>,
+  },
+  {
+    accessorKey: "channel",
+    header: "Channel",
+    sortable: true,
+    cell: ({ value }) => <span className="text-sm text-muted-foreground font-medium">{value}</span>,
+  },
+  {
+    accessorKey: "itemCount",
+    header: "Items",
+    align: "center",
     cell: ({ value }) => (
-      <span className="text-sm text-muted-foreground">{value}</span>
+      <Badge variant="outline" className="text-xs font-semibold tabular-nums">
+        {value}
+      </Badge>
     ),
   },
   {
@@ -231,71 +102,83 @@ const ORDER_COLUMNS: CentralTableColumn<(typeof ALL_ORDERS)[0]>[] = [
     header: "Status",
     sortable: true,
     cell: ({ value }) => (
-      <Badge
-        variant={
-          value === "Fulfilled"
-            ? "default"
-            : value === "Processing"
-            ? "secondary"
-            : "outline"
-        }
-        className="text-xs font-semibold px-3 py-1"
-      >
+      <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full border inline-block", STATUS_META[value as OrderStatus])}>
+        {value}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "paymentStatus",
+    header: "Payment",
+    sortable: true,
+    cell: ({ value }) => (
+      <Badge variant={value === "Paid" ? "default" : value === "Refunded" ? "outline" : "secondary"} className="text-xs font-semibold px-2.5 py-1">
         {value}
       </Badge>
     ),
   },
   {
-    accessorKey: "total",
+    accessorKey: "totalValue",
     header: "Total",
     sortable: true,
     align: "right",
-    cell: ({ value }) => (
-      <span className="font-mono font-bold text-sm text-foreground">{value}</span>
-    ),
+    cell: ({ row }) => <span className="font-mono font-bold text-sm text-foreground">{row.total}</span>,
   },
 ];
 
 export default function AdminDashboardPage() {
   const { searchQuery } = useAdminLayout();
   const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
+  const [rows, setRows] = useState<OrderRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedChannel, setSelectedChannel] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedPayment, setSelectedPayment] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
   const [kpiTab, setKpiTab] = useState<"overview" | "cart" | "compact">("overview");
 
+  useEffect(() => {
+    let alive = true;
+    getOrders().then((data) => {
+      if (alive) {
+        setRows(data);
+        setLoading(false);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
+  const stats = useMemo(() => orderStats(rows), [rows]);
 
   const filteredOrders = useMemo(() => {
-    return ALL_ORDERS.filter((order) => {
-      const matchesChannel =
-        selectedChannel === "all" || order.channelKey === selectedChannel;
-      const matchesStatus =
-        selectedStatus === "all" || order.status === selectedStatus;
+    return rows.filter((o) => {
+      const matchesChannel = selectedChannel === "all" || o.channelKey === selectedChannel;
+      const matchesStatus = selectedStatus === "all" || o.status === selectedStatus;
+      const matchesPayment = selectedPayment === "all" || o.paymentStatus === selectedPayment;
       const matchesQuery =
         !effectiveQuery ||
-        order.id.toLowerCase().includes(effectiveQuery) ||
-        order.customer.toLowerCase().includes(effectiveQuery) ||
-        order.email.toLowerCase().includes(effectiveQuery);
-
-      return matchesChannel && matchesStatus && matchesQuery;
+        o.id.toLowerCase().includes(effectiveQuery) ||
+        o.customer.toLowerCase().includes(effectiveQuery) ||
+        o.email.toLowerCase().includes(effectiveQuery);
+      return matchesChannel && matchesStatus && matchesPayment && matchesQuery;
     });
-  }, [selectedChannel, selectedStatus, effectiveQuery]);
+  }, [rows, selectedChannel, selectedStatus, selectedPayment, effectiveQuery]);
 
-  const hasActiveFilters =
-    selectedChannel !== "all" ||
-    selectedStatus !== "all" ||
-    selectedCategory !== "all" ||
-    effectiveQuery.length > 0;
+  const clearFilters = () => {
+    setSelectedChannel("all");
+    setSelectedStatus("all");
+    setSelectedPayment("all");
+    setSearchTableQuery("");
+  };
 
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (selectedChannel !== "all") count++;
-    if (selectedStatus !== "all") count++;
-    if (selectedCategory !== "all") count++;
-    return count;
-  }, [selectedChannel, selectedStatus, selectedCategory]);
+  const activeFiltersCount =
+    (selectedChannel !== "all" ? 1 : 0) +
+    (selectedStatus !== "all" ? 1 : 0) +
+    (selectedPayment !== "all" ? 1 : 0);
+  const hasActiveFilters = activeFiltersCount > 0 || effectiveQuery.length > 0;
 
   return (
     <>
@@ -493,47 +376,44 @@ export default function AdminDashboardPage() {
             <CentralTable
               data={filteredOrders}
               columns={ORDER_COLUMNS}
+              loading={loading}
+              loadingRows={5}
               selectable
               searchable
               searchPlaceholder="Quick filter live orders..."
               title="Recent Customer Orders"
-              description="Real-time multi-channel order pipeline and transaction status"
+              description={`${filteredOrders.length} of ${stats.total} orders · ${stats.pending} awaiting action`}
               filters={
                 <div className="grid gap-5 sm:grid-cols-3 w-full">
                   <SearchableDropbox
                     label="Sales Channel"
-                    options={CHANNEL_OPTIONS}
+                    options={CHANNEL_OPTIONS as DropboxOption[]}
                     value={selectedChannel}
                     onChange={setSelectedChannel}
-                    placeholder="Choose channel..."
-                    searchPlaceholder="Search channel or currency..."
+                    placeholder="All channels..."
+                    searchPlaceholder="Search channel..."
                   />
                   <SearchableDropbox
                     label="Order Status"
-                    options={STATUS_OPTIONS}
+                    options={ORDER_STATUS_OPTIONS as DropboxOption[]}
                     value={selectedStatus}
                     onChange={setSelectedStatus}
-                    placeholder="Choose status..."
+                    placeholder="All statuses..."
                     searchPlaceholder="Search order status..."
                   />
                   <SearchableDropbox
-                    label="Product Category"
-                    options={CATEGORY_OPTIONS}
-                    value={selectedCategory}
-                    onChange={setSelectedCategory}
-                    placeholder="Choose category..."
-                    searchPlaceholder="Search product category..."
+                    label="Payment Status"
+                    options={PAYMENT_STATUS_OPTIONS as DropboxOption[]}
+                    value={selectedPayment}
+                    onChange={setSelectedPayment}
+                    placeholder="Any payment..."
+                    searchPlaceholder="Search payment..."
                   />
                 </div>
               }
               activeFiltersCount={activeFiltersCount}
               defaultFiltersOpen={true}
-              onClearFilters={() => {
-                setSelectedChannel("all");
-                setSelectedStatus("all");
-                setSelectedCategory("all");
-                setSearchTableQuery("");
-              }}
+              onClearFilters={clearFilters}
               pagination
               pageSize={5}
               pageSizeOptions={[5, 10, 20]}
@@ -567,12 +447,7 @@ export default function AdminDashboardPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setSelectedChannel("all");
-                      setSelectedStatus("all");
-                      setSelectedCategory("all");
-                      setSearchTableQuery("");
-                    }}
+                    onClick={clearFilters}
                     className="cursor-pointer text-xs font-semibold gap-1.5"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />

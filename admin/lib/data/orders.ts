@@ -89,13 +89,13 @@ export const ORDER_FLOW: OrderStatus[] = [
 
 const ORDERS: OrderRow[] = [
   { id: "ORD-7392", customer: "Olivia Martin", email: "olivia@example.com", channel: "Default Channel (BDT)", channelKey: "default-channel", date: "Sep 29, 2026", totalValue: 225478.8, total: "৳2,25,478.80", itemCount: 3, status: "Quotation", paymentStatus: "Pending", fulfillmentStatus: "Unfulfilled" },
-  { id: "ORD-7391", customer: "Liam Anderson", email: "liam@example.com", channel: "Dhaka Store (BDT)", channelKey: "channel-eur", date: "Sep 29, 2026", totalValue: 263880, total: "৳2,63,880.00", itemCount: 1, status: "Confirmed", paymentStatus: "Paid", fulfillmentStatus: "Unfulfilled" },
-  { id: "ORD-7390", customer: "Emma Brown", email: "emma@example.com", channel: "Chattogram Store (BDT)", channelKey: "channel-pln", date: "Sep 28, 2026", totalValue: 220800, total: "৳2,20,800.00", itemCount: 2, status: "Fulfilled", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
+  { id: "ORD-7391", customer: "Liam Anderson", email: "liam@example.com", channel: "Dhaka Store (BDT)", channelKey: "channel-dhk", date: "Sep 29, 2026", totalValue: 263880, total: "৳2,63,880.00", itemCount: 1, status: "Confirmed", paymentStatus: "Paid", fulfillmentStatus: "Unfulfilled" },
+  { id: "ORD-7390", customer: "Emma Brown", email: "emma@example.com", channel: "Chattogram Store (BDT)", channelKey: "channel-ctg", date: "Sep 28, 2026", totalValue: 220800, total: "৳2,20,800.00", itemCount: 2, status: "Fulfilled", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
   { id: "ORD-7389", customer: "Noah Wilson", email: "noah@example.com", channel: "Default Channel (BDT)", channelKey: "default-channel", date: "Sep 28, 2026", totalValue: 51480, total: "৳51,480.00", itemCount: 1, status: "Invoiced", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
   { id: "ORD-7388", customer: "James Davis", email: "james@example.com", channel: "B2B Wholesale (BDT)", channelKey: "b2b-wholesale", date: "Sep 27, 2026", totalValue: 1704000, total: "৳17,04,000.00", itemCount: 8, status: "Confirmed", paymentStatus: "Pending", fulfillmentStatus: "Partially" },
-  { id: "ORD-7387", customer: "Sophia Taylor", email: "sophia@example.com", channel: "Dhaka Store (BDT)", channelKey: "channel-eur", date: "Sep 27, 2026", totalValue: 51600, total: "৳51,600.00", itemCount: 2, status: "Fulfilled", paymentStatus: "Paid", fulfillmentStatus: "Partially" },
+  { id: "ORD-7387", customer: "Sophia Taylor", email: "sophia@example.com", channel: "Dhaka Store (BDT)", channelKey: "channel-dhk", date: "Sep 27, 2026", totalValue: 51600, total: "৳51,600.00", itemCount: 2, status: "Fulfilled", paymentStatus: "Paid", fulfillmentStatus: "Partially" },
   { id: "ORD-7386", customer: "Lucas White", email: "lucas@example.com", channel: "Default Channel (BDT)", channelKey: "default-channel", date: "Sep 26, 2026", totalValue: 9598.8, total: "৳9,598.80", itemCount: 1, status: "Cancelled", paymentStatus: "Refunded", fulfillmentStatus: "Unfulfilled" },
-  { id: "ORD-7385", customer: "Mia Clark", email: "mia@example.com", channel: "Chattogram Store (BDT)", channelKey: "channel-pln", date: "Sep 26, 2026", totalValue: 383880, total: "৳3,83,880.00", itemCount: 2, status: "Invoiced", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
+  { id: "ORD-7385", customer: "Mia Clark", email: "mia@example.com", channel: "Chattogram Store (BDT)", channelKey: "channel-ctg", date: "Sep 26, 2026", totalValue: 383880, total: "৳3,83,880.00", itemCount: 2, status: "Invoiced", paymentStatus: "Paid", fulfillmentStatus: "Fulfilled" },
 ];
 
 export async function getOrders(): Promise<OrderRow[]> {
@@ -112,7 +112,7 @@ export async function getOrderById(id: string): Promise<OrderDetail | undefined>
   const lines = SAMPLE_LINES[row.itemCount % SAMPLE_LINES_POOL.length];
   const subtotal = lines.reduce((s, l) => s + l.total, 0);
   const shipping = row.channelKey === "b2b-wholesale" ? 0 : 1740;
-  const tax = Math.round(subtotal * 0.21 * 100) / 100;
+  const tax = Math.round(subtotal * 0.15 * 100) / 100;
   return {
     ...row,
     lines,

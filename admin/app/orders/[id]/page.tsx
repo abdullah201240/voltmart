@@ -196,7 +196,7 @@ export default function OrderDetailPage() {
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="font-mono tabular-nums">{money(order.subtotal)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span className="font-mono tabular-nums">{order.shipping === 0 ? "Free" : money(order.shipping)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Tax (21%)</span><span className="font-mono tabular-nums">{money(order.tax)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Tax (VAT 15%)</span><span className="font-mono tabular-nums">{money(order.tax)}</span></div>
               <div className="flex justify-between text-base font-bold pt-1"><span>Total</span><span className="font-mono tabular-nums">{money(order.subtotal + order.shipping + order.tax)}</span></div>
             </div>
           </Card>

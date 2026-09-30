@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { AdminHeader } from "@/components/admin-header";
 import { AdminFooter } from "@/components/admin-footer";
+import { NotificationsProvider } from "@/lib/notifications-context";
 
 interface AdminLayoutContextValue {
   sidebarCollapsed: boolean;
@@ -123,46 +124,48 @@ export function AdminShell({ children, className }: AdminShellProps) {
         setSearchQuery,
       }}
     >
-      <div
-        className={cn(
-          "relative h-dvh w-full overflow-hidden bg-background text-foreground flex selection:bg-primary/20",
-          className
-        )}
-      >
-        {/* Desktop & Mobile Responsive Admin Sidebar (Fixed inset-y-0) */}
-        <AdminSidebar
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={handleToggleSidebar}
-          mobileOpen={mobileOpen}
-          onMobileClose={() => setMobileOpen(false)}
-        />
-
-        {/* Dynamic Edge-to-Edge Main Panel Layout (Fixed Header at top, Fixed Footer at bottom) */}
+      <NotificationsProvider>
         <div
           className={cn(
-            "flex flex-col flex-1 w-full min-w-0 h-dvh overflow-hidden transition-[padding] duration-300 ease-in-out",
-            sidebarCollapsed ? "lg:pl-16" : "lg:pl-56"
+            "relative h-dvh w-full overflow-hidden bg-background text-foreground flex selection:bg-primary/20",
+            className
           )}
         >
-          {/* Permanently Fixed Top Header */}
-          <AdminHeader
-            className="shrink-0"
-            onMobileMenuToggle={() => setMobileOpen(true)}
-            sidebarCollapsed={sidebarCollapsed}
-            onToggleSidebar={handleToggleSidebar}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
+          {/* Desktop & Mobile Responsive Admin Sidebar (Fixed inset-y-0) */}
+          <AdminSidebar
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={handleToggleSidebar}
+            mobileOpen={mobileOpen}
+            onMobileClose={() => setMobileOpen(false)}
           />
 
-          {/* Smooth Scrollable Middle Content Viewport with Global Page Layout */}
-          <main className="flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden px-2 md:px-4 lg:px-4 py-5 md:py-6 space-y-4">
-            {children}
-          </main>
+          {/* Dynamic Edge-to-Edge Main Panel Layout (Fixed Header at top, Fixed Footer at bottom) */}
+          <div
+            className={cn(
+              "flex flex-col flex-1 w-full min-w-0 h-dvh overflow-hidden transition-[padding] duration-300 ease-in-out",
+              sidebarCollapsed ? "lg:pl-16" : "lg:pl-56"
+            )}
+          >
+            {/* Permanently Fixed Top Header */}
+            <AdminHeader
+              className="shrink-0"
+              onMobileMenuToggle={() => setMobileOpen(true)}
+              sidebarCollapsed={sidebarCollapsed}
+              onToggleSidebar={handleToggleSidebar}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
 
-          {/* Permanently Fixed Bottom Telemetry Footer */}
-          <AdminFooter className="shrink-0" />
+            {/* Smooth Scrollable Middle Content Viewport with Global Page Layout */}
+            <main className="flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden px-2 md:px-4 lg:px-4 py-5 md:py-6 space-y-4">
+              {children}
+            </main>
+
+            {/* Permanently Fixed Bottom Telemetry Footer */}
+            <AdminFooter className="shrink-0" />
+          </div>
         </div>
-      </div>
+      </NotificationsProvider>
     </AdminLayoutContext.Provider>
   );
 }
