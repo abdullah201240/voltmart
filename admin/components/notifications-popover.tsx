@@ -112,6 +112,7 @@ export function NotificationsPopover() {
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
         aria-label="View notifications"
+        suppressHydrationWarning
         className={cn(
           "relative h-9 w-9 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer transition-colors",
           isOpen && "bg-muted/70 text-foreground"
@@ -121,7 +122,10 @@ export function NotificationsPopover() {
 
         {unreadCount > 0 && (
           <>
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-xs pointer-events-none">
+            <span
+              suppressHydrationWarning
+              className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-xs pointer-events-none"
+            >
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
             <span className="absolute top-2 right-2 flex h-2 w-2 pointer-events-none">

@@ -10,6 +10,8 @@
  * `getOrderById()` with real queries and keep the return contracts.
  */
 
+import { withOverlay } from "./ops";
+
 /** Order lifecycle — the business-process states an order moves through. */
 export type OrderStatus =
   | "Quotation"
@@ -99,7 +101,8 @@ const ORDERS: OrderRow[] = [
 ];
 
 export async function getOrders(): Promise<OrderRow[]> {
-  return ORDERS;
+  // Merge any persisted workflow overlay so status changes show in the list.
+  return ORDERS.map((o) => withOverlay("sale.order", o.id, o));
 }
 
 /**
@@ -113,7 +116,7 @@ export async function getOrderById(id: string): Promise<OrderDetail | undefined>
   const subtotal = lines.reduce((s, l) => s + l.total, 0);
   const shipping = row.channelKey === "b2b-wholesale" ? 0 : 1740;
   const tax = Math.round(subtotal * 0.15 * 100) / 100;
-  return {
+  const detail: OrderDetail = {
     ...row,
     lines,
     subtotal,
@@ -124,6 +127,8 @@ export async function getOrderById(id: string): Promise<OrderDetail | undefined>
     carrier: row.fulfillmentStatus === "Unfulfilled" ? "Not assigned" : "DHL Express",
     trackingUrl: row.fulfillmentStatus !== "Unfulfilled" ? "https://tracking.example.com/" + row.id : undefined,
   };
+  // Reflect workflow transitions (status/fulfillment/payment/carrier) onto detail.
+  return withOverlay("sale.order", id, detail);
 }
 
 /** Aggregate order KPIs for the list header. */

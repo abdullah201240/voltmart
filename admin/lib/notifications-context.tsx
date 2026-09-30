@@ -3,8 +3,8 @@
 import React, {
   createContext,
   useContext,
-  useState,
   useCallback,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -132,65 +132,96 @@ const NotificationsContext = createContext<NotificationsContextValue | null>(nul
 
 const STORAGE_KEY = "voltmart_admin_notifications_v1";
 
-export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    if (typeof window === "undefined") return INITIAL_NOTIFICATIONS;
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Ignore parse errors in SSR/hydration
-    }
-    return INITIAL_NOTIFICATIONS;
-  });
+let memoryNotifications: NotificationItem[] | null = null;
+const listeners = new Set<() => void>();
 
-  // Save changes to localStorage
-  const saveNotifications = useCallback((updated: NotificationItem[]) => {
-    setNotifications(updated);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch {
-      // Ignore storage errors
+function getNotificationsSnapshot(): NotificationItem[] {
+  if (memoryNotifications !== null) return memoryNotifications;
+  if (typeof window === "undefined") return INITIAL_NOTIFICATIONS;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        memoryNotifications = parsed;
+        return memoryNotifications;
+      }
     }
-  }, []);
+  } catch {
+    // Ignore parse errors
+  }
+  memoryNotifications = INITIAL_NOTIFICATIONS;
+  return memoryNotifications;
+}
+
+function setStoreNotifications(next: NotificationItem[]) {
+  memoryNotifications = next;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore storage errors
+  }
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(callback: () => void) {
+  listeners.add(callback);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY && e.newValue) {
+      try {
+        memoryNotifications = JSON.parse(e.newValue);
+        callback();
+      } catch {}
+    }
+  };
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(callback);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+const getServerSnapshot = () => INITIAL_NOTIFICATIONS;
+
+export function NotificationsProvider({ children }: { children: ReactNode }) {
+  const notifications = useSyncExternalStore(
+    subscribe,
+    getNotificationsSnapshot,
+    getServerSnapshot
+  );
 
   const markAsRead = useCallback(
     (id: string) => {
-      saveNotifications(
+      setStoreNotifications(
         notifications.map((item) => (item.id === id ? { ...item, read: true } : item))
       );
     },
-    [notifications, saveNotifications]
+    [notifications]
   );
 
   const markAsUnread = useCallback(
     (id: string) => {
-      saveNotifications(
+      setStoreNotifications(
         notifications.map((item) => (item.id === id ? { ...item, read: false } : item))
       );
     },
-    [notifications, saveNotifications]
+    [notifications]
   );
 
   const markAllAsRead = useCallback(() => {
-    saveNotifications(notifications.map((item) => ({ ...item, read: true })));
-  }, [notifications, saveNotifications]);
+    setStoreNotifications(notifications.map((item) => ({ ...item, read: true })));
+  }, [notifications]);
 
   const deleteNotification = useCallback(
     (id: string) => {
-      saveNotifications(notifications.filter((item) => item.id !== id));
+      setStoreNotifications(notifications.filter((item) => item.id !== id));
     },
-    [notifications, saveNotifications]
+    [notifications]
   );
 
   const clearAll = useCallback(() => {
-    saveNotifications([]);
-  }, [saveNotifications]);
+    setStoreNotifications([]);
+  }, []);
 
   const addNotification = useCallback(
     (item: Omit<NotificationItem, "id" | "createdAt" | "timestamp" | "read">) => {
@@ -201,9 +232,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString(),
         read: false,
       };
-      saveNotifications([newItem, ...notifications]);
+      setStoreNotifications([newItem, ...notifications]);
     },
-    [notifications, saveNotifications]
+    [notifications]
   );
 
   const unreadCount = notifications.filter((item) => !item.read).length;

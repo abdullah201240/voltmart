@@ -17,7 +17,6 @@ import {
   Truck,
   Wallet,
   Ticket,
-  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,11 +49,6 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Analytics",
         href: "/analytics",
         icon: BarChart3,
-      },
-      {
-        title: "Notifications",
-        href: "/notifications",
-        icon: Bell,
       },
     ],
   },
