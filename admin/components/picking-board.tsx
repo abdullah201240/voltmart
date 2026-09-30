@@ -10,6 +10,9 @@ import {
 } from "@/components/ui/searchable-dropbox";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
+import { ViewSwitcher } from "@/components/ui/view-switcher";
+import { KanbanBoard } from "@/components/ui/kanban-board";
+import { GraphView } from "@/components/ui/graph-view";
 import { useAdminLayout } from "@/components/admin-shell";
 import {
   ClipboardList,
@@ -22,6 +25,9 @@ import {
   Truck,
   XCircle,
   AlertTriangle,
+  List,
+  LayoutGrid,
+  BarChart3,
 } from "lucide-react";
 import {
   getPickings,
@@ -41,6 +47,16 @@ const STATE_CLASS: Record<PickingState, string> = {
   assigned: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
   done: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   cancel: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+};
+
+/** stock.picking pipeline for Kanban / Graph views. */
+const STATE_KEYS: PickingState[] = ["draft", "confirmed", "assigned", "done", "cancel"];
+const STATE_ACCENT: Record<PickingState, string> = {
+  draft: "bg-slate-500",
+  confirmed: "bg-blue-500",
+  assigned: "bg-amber-500",
+  done: "bg-emerald-500",
+  cancel: "bg-rose-500",
 };
 
 interface PickingBoardProps {
@@ -65,6 +81,7 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
   const [selectedState, setSelectedState] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const [view, setView] = useState<"list" | "kanban" | "graph">("list");
 
   useEffect(() => {
     let alive = true;
@@ -123,6 +140,28 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
     setSelectedState("all");
     setSearchTableQuery("");
   };
+
+  // Drag a Kanban card into a new stage -> run the matching picking transition.
+  const moveStage = (row: PickingRow, toKey: string) => {
+    const action: PickingAction | null =
+      toKey === "confirmed" ? "confirm"
+        : toKey === "assigned" ? "reserve"
+        : toKey === "done" ? "transfer"
+        : toKey === "cancel" ? "cancel"
+        : null;
+    if (!action) {
+      setFeedback({ ok: false, message: `No direct transition to "${PICKING_STATE_LABEL[toKey as PickingState] ?? toKey}".` });
+      return;
+    }
+    setFeedback(applyPickingAction(row.id, kind, row.partner, row.origin, action, { state: row.state }));
+  };
+
+  // Operation count by state for the Graph view.
+  const graphData = STATE_KEYS.map((s) => ({
+    label: PICKING_STATE_LABEL[s],
+    value: filteredRows.filter((r) => r.state === s).length,
+    color: STATE_ACCENT[s] + "/70",
+  }));
 
   const COLUMNS: CentralTableColumn<PickingRow>[] = [
     {
@@ -232,7 +271,33 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
         <KpiCard title="Completed" value={String(stats.done)} icon={CheckCircle2} tone="emerald" tooltip="Validated / done" />
       </KpiGrid>
 
-      {/* Pickings table */}
+      {/* View switcher */}
+      <ViewSwitcher
+        active={view}
+        onChange={(k) => setView(k as typeof view)}
+        meta={`${filteredRows.length} of ${rows.length} operations`}
+        tabs={[
+          { key: "list", label: "List", icon: <List className="h-4 w-4" /> },
+          { key: "kanban", label: "Kanban", icon: <LayoutGrid className="h-4 w-4" /> },
+          { key: "graph", label: "Graph", icon: <BarChart3 className="h-4 w-4" /> },
+        ]}
+      />
+
+      {/* State filter also drives Kanban / Graph */}
+      {view !== "list" && (
+        <div className="grid gap-5 sm:grid-cols-3 w-full">
+          <SearchableDropbox
+            label="State"
+            options={PICKING_STATE_OPTIONS as DropboxOption[]}
+            value={selectedState}
+            onChange={setSelectedState}
+            placeholder="All states..."
+            searchPlaceholder="Search state..."
+          />
+        </div>
+      )}
+
+      {view === "list" && (
       <CentralTable
         data={filteredRows}
         columns={COLUMNS}
@@ -278,6 +343,36 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
           )
         }
       />
+      )}
+
+      {view === "kanban" && (
+        <KanbanBoard
+          data={filteredRows}
+          loading={loading}
+          idOf={(p) => p.id}
+          stageOf={(p) => p.state}
+          onMove={moveStage}
+          stages={STATE_KEYS.map((s) => ({ key: s, label: PICKING_STATE_LABEL[s], accent: STATE_ACCENT[s] }))}
+          renderCard={(p) => (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-sm font-bold text-foreground">{p.name}</span>
+                <span className="text-[10px] text-muted-foreground">{p.scheduledDate}</span>
+              </div>
+              <p className="truncate text-sm font-semibold text-foreground">{p.partner}</p>
+              <p className="truncate text-xs text-muted-foreground font-mono">{p.origin}</p>
+              <div className="flex items-center justify-between pt-1">
+                <Badge variant="outline" className="text-[10px] font-semibold">{p.lines} lines</Badge>
+                {p.carrier && <span className="truncate text-[10px] text-muted-foreground">{p.carrier}</span>}
+              </div>
+            </div>
+          )}
+        />
+      )}
+
+      {view === "graph" && (
+        <GraphView data={graphData} formatValue={(v) => `${v}`} onSelect={() => setView("list")} />
+      )}
 
       {/* Action toast */}
       {feedback && (

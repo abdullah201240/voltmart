@@ -42,16 +42,23 @@ export function SearchableDropbox({
 
   const selectedOption = options.find((opt) => opt.value === value);
 
-  // Auto-focus search input when opened
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
-      return () => clearTimeout(timer);
-    } else {
+  // Clear the search when the dropdown closes — adjusted during render on the
+  // open-state transition rather than via a cascading setState effect.
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (prevIsOpen !== isOpen) {
+    setPrevIsOpen(isOpen);
+    if (!isOpen) {
       setSearchQuery("");
     }
+  }
+
+  // Auto-focus search input when opened
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
   // Handle click outside to close

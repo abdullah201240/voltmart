@@ -93,12 +93,16 @@ export function availabilityOf(row: ProductRow): Availability {
   return "in_stock";
 }
 
+import { withOverlay } from "@/lib/data/ops";
+import { PRODUCT_TEMPLATE } from "@/lib/data/workflows";
+
 /**
- * Async resolver used by the page. Currently returns the mock catalog
- * after a tiny delay to exercise loading states; replace with a fetch.
+ * Async resolver used by the page. Merges the ops overlay so publication
+ * actions (publish / archive) made in the UI are reflected everywhere.
+ * Replace with a fetch to a real backend later.
  */
 export async function getProducts(): Promise<ProductRow[]> {
-  return PRODUCTS;
+  return PRODUCTS.map((p) => withOverlay(PRODUCT_TEMPLATE, p.id, p));
 }
 
 /** Aggregate catalog KPIs (counts), matching the Odoo/Saleor catalog view. */

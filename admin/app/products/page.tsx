@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/searchable-dropbox";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
+import { ViewSwitcher } from "@/components/ui/view-switcher";
+import { KanbanBoard } from "@/components/ui/kanban-board";
+import { GraphView, PivotView } from "@/components/ui/graph-view";
 import { ProductFormDrawer } from "@/components/product-form-drawer";
 import { useAdminLayout } from "@/components/admin-shell";
 import {
@@ -22,7 +25,17 @@ import {
   Download,
   RotateCcw,
   Barcode,
+  List,
+  LayoutGrid,
+  BarChart3,
+  Table2,
+  Check,
+  Archive,
+  ArchiveRestore,
+  AlertTriangle,
 } from "lucide-react";
+import { useOps } from "@/lib/data/ops";
+import { applyProductAction, type ProductAction } from "@/lib/data/workflows";
 import {
   getProducts,
   catalogStats,
@@ -141,6 +154,7 @@ const PRODUCT_COLUMNS: CentralTableColumn<ProductRow>[] = [
 
 export default function ProductsPage() {
   const { searchQuery } = useAdminLayout();
+  const version = useOps();
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
@@ -149,6 +163,8 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedAvailability, setSelectedAvailability] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
+  const [view, setView] = useState<"list" | "kanban" | "graph" | "pivot">("list");
+  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -161,7 +177,14 @@ export default function ProductsPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [version]);
+
+  // Auto-dismiss workflow notices.
+  useEffect(() => {
+    if (!feedback) return;
+    const t = setTimeout(() => setFeedback(null), 3200);
+    return () => clearTimeout(t);
+  }, [feedback]);
 
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
 
@@ -194,6 +217,90 @@ export default function ProductsPage() {
     (selectedCategory !== "all" ? 1 : 0) +
     (selectedAvailability !== "all" ? 1 : 0);
   const hasActiveFilters = activeFiltersCount > 0 || effectiveQuery.length > 0;
+
+  // --- Workflow actions (persist through the ops overlay) ---------------
+  const act = (p: ProductRow, action: ProductAction) => {
+    setFeedback(applyProductAction(p.id, p.name, action, { status: p.status }));
+  };
+
+  const bulkAct = (selected: ProductRow[], action: ProductAction, clear: () => void) => {
+    let done = 0;
+    let skipped = 0;
+    for (const p of selected) {
+      const res = applyProductAction(p.id, p.name, action, { status: p.status });
+      if (res.ok) done += 1;
+      else skipped += 1;
+    }
+    setFeedback({
+      ok: done > 0,
+      message: `${done} product(s) ${action === "archive" ? "archived" : action === "publish" ? "published" : action === "unarchive" ? "restored" : "unpublished"}${skipped ? ` · ${skipped} skipped` : ""}.`,
+    });
+    clear();
+  };
+
+  // Kanban drag between publication states.
+  const moveStage = (row: ProductRow, toKey: string) => {
+    const action: ProductAction | null =
+      toKey === "Active" ? "publish"
+        : toKey === "Draft" ? (row.status === "Archived" ? "unarchive" : "unpublish")
+        : toKey === "Archived" ? "archive"
+        : null;
+    if (!action) {
+      setFeedback({ ok: false, message: `Already in "${toKey}".` });
+      return;
+    }
+    act(row, action);
+  };
+
+  const money = (v: number) =>
+    "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+
+  // On-hand stock value by category for the Graph view.
+  const graphData = useMemo(() => {
+    const buckets = new Map<string, number>();
+    for (const p of filteredRows) {
+      buckets.set(p.category, (buckets.get(p.category) ?? 0) + p.priceValue * p.stock);
+    }
+    return [...buckets.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, value]) => ({ label, value }));
+  }, [filteredRows]);
+
+  // Table columns = the static catalog columns + a contextual actions column
+  // that drives the product.template workflow.
+  const COLUMNS: CentralTableColumn<ProductRow>[] = [
+    ...PRODUCT_COLUMNS,
+    {
+      id: "actions",
+      header: "Actions",
+      align: "right",
+      width: "200px",
+      accessorFn: (row) => row.id,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          {row.status === "Draft" && (
+            <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "publish")}>
+              <Check className="h-3.5 w-3.5" /> Publish
+            </Button>
+          )}
+          {row.status === "Active" && (
+            <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "unpublish")}>
+              <RotateCcw className="h-3.5 w-3.5" /> Unpublish
+            </Button>
+          )}
+          {row.status === "Archived" ? (
+            <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold cursor-pointer gap-1.5 active:scale-[0.98] transition-all duration-200" onClick={() => act(row, "unarchive")}>
+              <ArchiveRestore className="h-3.5 w-3.5" /> Restore
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" className="h-9 px-2.5 text-xs font-semibold cursor-pointer text-rose-600 hover:bg-rose-500/10 dark:text-rose-400" onClick={() => act(row, "archive")}>
+              <Archive className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <>
@@ -253,10 +360,54 @@ export default function ProductsPage() {
         />
       </KpiGrid>
 
-      {/* Products Table with integrated filters */}
+      {/* View switcher */}
+      <ViewSwitcher
+        active={view}
+        onChange={(k) => setView(k as typeof view)}
+        meta={`${filteredRows.length} of ${rows.length} products`}
+        tabs={[
+          { key: "list", label: "List", icon: <List className="h-4 w-4" /> },
+          { key: "kanban", label: "Kanban", icon: <LayoutGrid className="h-4 w-4" /> },
+          { key: "graph", label: "Graph", icon: <BarChart3 className="h-4 w-4" /> },
+          { key: "pivot", label: "Pivot", icon: <Table2 className="h-4 w-4" /> },
+        ]}
+      />
+
+      {/* Filters tray also drives Kanban / Graph / Pivot */}
+      {view !== "list" && (
+        <div className="grid gap-5 sm:grid-cols-3 w-full">
+          <SearchableDropbox
+            label="Sales Channel"
+            options={CHANNEL_OPTIONS as DropboxOption[]}
+            value={selectedChannel}
+            onChange={setSelectedChannel}
+            placeholder="All channels..."
+            searchPlaceholder="Search channel..."
+          />
+          <SearchableDropbox
+            label="Category"
+            options={CATEGORY_OPTIONS as DropboxOption[]}
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+            placeholder="All categories..."
+            searchPlaceholder="Search category..."
+          />
+          <SearchableDropbox
+            label="Availability"
+            options={AVAILABILITY_OPTIONS as DropboxOption[]}
+            value={selectedAvailability}
+            onChange={setSelectedAvailability}
+            placeholder="Any availability..."
+            searchPlaceholder="Search availability..."
+          />
+        </div>
+      )}
+
+      {view === "list" && (
+      /* Products Table with integrated filters */
       <CentralTable
         data={filteredRows}
-        columns={PRODUCT_COLUMNS}
+        columns={COLUMNS}
         loading={loading}
         loadingRows={6}
         selectable
@@ -303,24 +454,34 @@ export default function ProductsPage() {
             <Button
               size="sm"
               variant="outline"
-              className="h-8 text-xs font-semibold cursor-pointer"
-              onClick={() => {
-                alert(`Updating ${selectedRows.length} product(s)`);
-                clearSelection();
-              }}
+              className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
+              onClick={() => bulkAct(selectedRows as ProductRow[], "publish", clearSelection)}
             >
-              Publish
+              <Check className="h-3.5 w-3.5" /> Publish
             </Button>
             <Button
               size="sm"
               variant="outline"
-              className="h-8 text-xs font-semibold cursor-pointer"
-              onClick={() => {
-                alert(`Archiving ${selectedRows.length} product(s)`);
-                clearSelection();
-              }}
+              className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
+              onClick={() => bulkAct(selectedRows as ProductRow[], "unpublish", clearSelection)}
             >
-              Archive
+              <RotateCcw className="h-3.5 w-3.5" /> Unpublish
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
+              onClick={() => bulkAct(selectedRows as ProductRow[], "archive", clearSelection)}
+            >
+              <Archive className="h-3.5 w-3.5" /> Archive
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
+              onClick={() => bulkAct(selectedRows as ProductRow[], "unarchive", clearSelection)}
+            >
+              <ArchiveRestore className="h-3.5 w-3.5" /> Restore
             </Button>
           </div>
         )}
@@ -338,6 +499,68 @@ export default function ProductsPage() {
           )
         }
       />
+      )}
+
+      {view === "kanban" && (
+        <KanbanBoard
+          data={filteredRows}
+          loading={loading}
+          idOf={(p) => p.id}
+          stageOf={(p) => p.status}
+          onMove={moveStage}
+          stages={[
+            { key: "Draft", label: "Draft", accent: "bg-slate-500" },
+            { key: "Active", label: "Published", accent: "bg-emerald-500" },
+            { key: "Archived", label: "Archived", accent: "bg-rose-500" },
+          ]}
+          renderCard={(p) => {
+            const meta = AVAILABILITY_META[availabilityOf(p)];
+            return (
+              <div className="space-y-1.5">
+                <Link href={`/products/${p.id}`} className="block truncate text-sm font-semibold text-foreground hover:text-primary transition-colors">
+                  {p.name}
+                </Link>
+                <p className="truncate text-xs text-muted-foreground font-mono">{p.sku}</p>
+                <div className="flex items-center justify-between pt-1">
+                  <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full border", meta.className)}>{meta.label}</span>
+                  <span className="font-mono text-sm font-bold text-foreground">{p.price}</span>
+                </div>
+              </div>
+            );
+          }}
+        />
+      )}
+
+      {view === "graph" && <GraphView data={graphData} formatValue={money} />}
+
+      {view === "pivot" && (
+        <PivotView
+          rows={filteredRows}
+          groupOf={(p) => p.category}
+          title="Catalog by category"
+          formatValue={money}
+          columns={[
+            { key: "count", label: "Products", measure: (g) => g.length, format: (v) => String(v) },
+            { key: "qty", label: "On Hand", measure: (g) => g.reduce((s, p) => s + p.stock, 0), format: (v) => String(v) },
+            { key: "value", label: "Stock Value", measure: (g) => g.reduce((s, p) => s + p.stock * p.priceValue, 0) },
+          ]}
+        />
+      )}
+
+      {/* Workflow feedback toast */}
+      {feedback && (
+        <div
+          className={cn(
+            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border flex items-center gap-2",
+            feedback.ok
+              ? "bg-card text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+              : "bg-card text-rose-600 dark:text-rose-400 border-rose-500/30",
+          )}
+        >
+          {feedback.ok ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+          {feedback.message}
+        </div>
+      )}
 
       <ProductFormDrawer
         open={isProductDrawerOpen}

@@ -412,3 +412,112 @@ export function applyMoveAction(
   }
 }
 
+
+// ------------------------------------------------------------------
+// Catalog (`product.template`) — publication lifecycle
+// ------------------------------------------------------------------
+
+import type { ProductStatus } from "@/lib/data/products";
+
+export const PRODUCT_TEMPLATE = "product.template";
+
+export type ProductAction = "publish" | "unpublish" | "archive" | "unarchive";
+
+/** Effective (overlay-merged) publication status of a product template. */
+export function productStatus(ref: string): ProductStatus | undefined {
+  return getRecord(PRODUCT_TEMPLATE, ref).fields.status as ProductStatus | undefined;
+}
+
+/**
+ * Apply a catalog publication action (Odoo `product.template` lifecycle:
+ * Draft → Published, Archived restores to Draft).
+ */
+export function applyProductAction(
+  ref: string,
+  name: string,
+  action: ProductAction,
+  base: { status: ProductStatus },
+): ActionResult {
+  const state = productStatus(ref) ?? base.status;
+
+  switch (action) {
+    case "publish": {
+      if (state === "Active") return fail(`"${name}" is already published.`);
+      if (state === "Archived") return fail("Unarchive the product before publishing.");
+      patchFields(PRODUCT_TEMPLATE, ref, { status: "Active" });
+      addHistory(PRODUCT_TEMPLATE, ref, `State: ${state} → Active`, `${name} is now visible on its sales channels.`);
+      return ok("Product published.");
+    }
+    case "unpublish": {
+      if (state !== "Active") return fail(`"${name}" is not published.`);
+      patchFields(PRODUCT_TEMPLATE, ref, { status: "Draft" });
+      addHistory(PRODUCT_TEMPLATE, ref, "State: Active → Draft", `${name} unpublished from all channels.`);
+      return ok("Product moved to draft.");
+    }
+    case "archive": {
+      if (state === "Archived") return fail(`"${name}" is already archived.`);
+      patchFields(PRODUCT_TEMPLATE, ref, { status: "Archived" });
+      addHistory(PRODUCT_TEMPLATE, ref, `State: ${state} → Archived`, `${name} archived; hidden from the storefront.`);
+      return ok("Product archived.");
+    }
+    case "unarchive": {
+      if (state !== "Archived") return fail(`"${name}" is not archived.`);
+      patchFields(PRODUCT_TEMPLATE, ref, { status: "Draft" });
+      addHistory(PRODUCT_TEMPLATE, ref, "State: Archived → Draft", `${name} restored to draft.`);
+      return ok("Product restored to draft.");
+    }
+  }
+}
+
+
+// ------------------------------------------------------------------
+// Bank reconciliation (`account.bank.statement.line`)
+// ------------------------------------------------------------------
+
+export const BANK_STATEMENT = "account.bank.statement.line";
+
+/** Effective reconciliation status of a bank statement line. */
+export function statementStatus(ref: string): "unreconciled" | "reconciled" {
+  const s = getRecord(BANK_STATEMENT, ref).fields.status as "reconciled" | undefined;
+  return s === "reconciled" ? "reconciled" : "unreconciled";
+}
+
+/**
+ * Reconcile a bank statement line. When `match` is supplied (an open
+ * invoice/bill under `account.move`), the matched document is settled to
+ * Paid — mirroring Odoo auto-matching a bank movement to its receivable /
+ * payable. Otherwise the line is booked directly to an account.
+ */
+export function reconcileStatement(
+  ref: string,
+  label: string,
+  match: { docRef: string; docNumber: string } | null,
+): ActionResult {
+  if (statementStatus(ref) === "reconciled") return fail("This bank line is already reconciled.");
+  patchFields(BANK_STATEMENT, ref, { status: "reconciled" });
+  if (match) {
+    patchFields(ACCOUNT_MOVE, match.docRef, { state: "Paid" });
+    addHistory(ACCOUNT_MOVE, match.docRef, "Payment reconciled", `Bank line "${label}" matched and reconciled against ${match.docNumber}.`);
+    addHistory(BANK_STATEMENT, ref, "Reconciled", `${label} ↔ ${match.docNumber}.`);
+    return ok(`Reconciled against ${match.docNumber}.`);
+  }
+  addHistory(BANK_STATEMENT, ref, "Reconciled", `${label} reconciled directly to its account.`);
+  return ok("Line reconciled on account.");
+}
+
+/** Reverse a reconciliation; the matched document reverts to Posted. */
+export function unreconcileStatement(
+  ref: string,
+  label: string,
+  match: { docRef: string; docNumber: string } | null,
+): ActionResult {
+  if (statementStatus(ref) !== "reconciled") return fail("This bank line is not reconciled yet.");
+  patchFields(BANK_STATEMENT, ref, { status: "unreconciled" });
+  if (match) {
+    patchFields(ACCOUNT_MOVE, match.docRef, { state: "Posted" });
+    addHistory(ACCOUNT_MOVE, match.docRef, "Reconciliation reversed", `Bank line "${label}" un-reconciled from ${match.docNumber}.`);
+  }
+  addHistory(BANK_STATEMENT, ref, "Unreconciled", `${label} moved back to the unreconciled feed.`);
+  return ok("Reconciliation reversed.");
+}
+

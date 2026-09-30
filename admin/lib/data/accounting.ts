@@ -311,7 +311,7 @@ const MOVES: MoveRow[] = [
 // ------------------------------------------------------------------
 
 import { withOverlay, getRecord, patchFields, addHistory } from "@/lib/data/ops";
-import { ACCOUNT_MOVE } from "@/lib/data/workflows";
+import { ACCOUNT_MOVE, BANK_STATEMENT } from "@/lib/data/workflows";
 
 export async function getAccounts(): Promise<AccountRow[]> {
   return ACCOUNTS;
@@ -479,4 +479,39 @@ export function trialBalanceRows(moves: MoveRow[]) {
 /** Account row lookup for the CoA page. */
 export function accountCatalog(): AccountRow[] {
   return ACCOUNTS;
+}
+
+// ------------------------------------------------------------------
+// Bank statements (`account.bank.statement.line`) — reconciliation
+// ------------------------------------------------------------------
+
+/** A single line on a bank statement feed (money in is positive). */
+export interface BankStatementLine {
+  id: string;
+  date: string;
+  label: string;
+  partner: string;
+  amount: number;
+  /** "unreconciled" | "reconciled" — driven by the ops overlay. */
+  status: "unreconciled" | "reconciled";
+}
+
+const STATEMENT_LINES: BankStatementLine[] = [
+  { id: "BNKL-9001", date: "Sep 26, 2026", label: "Wire — Mia Clark", partner: "Mia Clark", amount: 383880, status: "unreconciled" },
+  { id: "BNKL-9002", date: "Sep 29, 2026", label: "Nagad — Olivia Martin", partner: "Olivia Martin", amount: 225478.8, status: "unreconciled" },
+  { id: "BNKL-9003", date: "Sep 24, 2026", label: "Transfer to Shenzhen Mobile Supply", partner: "Shenzhen Mobile Supply", amount: -5100000, status: "unreconciled" },
+  { id: "BNKL-9004", date: "Sep 26, 2026", label: "Part payment — AudioWorks Inc", partner: "AudioWorks Inc", amount: -360000, status: "unreconciled" },
+  { id: "BNKL-9005", date: "Sep 28, 2026", label: "Bank service charge", partner: "City Bank PLC", amount: -350, status: "unreconciled" },
+];
+
+/** Bank feed with any reconciliation made in the UI merged back in. */
+export async function getBankStatementLines(): Promise<BankStatementLine[]> {
+  return STATEMENT_LINES.map((l) => withOverlay(BANK_STATEMENT, l.id, l));
+}
+
+/** Counterpart account to auto-suggest for a statement line (receivable/payable/bank-charge). */
+export function suggestAccountForLine(line: BankStatementLine): { code: string; name: string } {
+  if (line.amount > 0) return { code: "111100", name: ACCOUNTS.find((a) => a.code === "111100")!.name };
+  if (/charge|fee/i.test(line.label)) return { code: "541000", name: ACCOUNTS.find((a) => a.code === "541000")?.name ?? "Bank Charges" };
+  return { code: "211000", name: ACCOUNTS.find((a) => a.code === "211000")!.name };
 }

@@ -26,8 +26,10 @@ export interface CentralTableColumn<TData> {
   /** Direct key of TData to read the value from */
   accessorKey?: keyof TData;
   /** Custom extractor function to get value from row */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   accessorFn?: (row: TData) => any;
   /** Custom cell renderer receiving the row, extracted value, and row index */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cell?: (info: { row: TData; value: any; index: number }) => ReactNode;
   /** Enable sorting on this column */
   sortable?: boolean;
@@ -166,6 +168,7 @@ export function CentralTable<TData>({
   // Helper to get unique row ID
   const getRowKey = (row: TData, idx: number): string | number => {
     if (keyExtractor) return keyExtractor(row, idx);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const r = row as any;
     if (r?.id !== undefined) return r.id;
     if (r?._id !== undefined) return r._id;
@@ -175,6 +178,7 @@ export function CentralTable<TData>({
   // Helper to extract cell value
   const getCellValue = (row: TData, col: CentralTableColumn<TData>) => {
     if (col.accessorFn) return col.accessorFn(row);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (col.accessorKey) return (row as any)[col.accessorKey];
     return null;
   };
@@ -234,12 +238,15 @@ export function CentralTable<TData>({
   const totalItems = sortedData.length;
   const totalPages = pagination ? Math.max(1, Math.ceil(totalItems / pageSize)) : 1;
 
-  // Auto-correct current page if out of bounds
-  React.useEffect(() => {
+  // Auto-correct current page if out of bounds (adjusted during render when
+  // the page count shrinks — avoids a cascading setState effect).
+  const [prevTotalPages, setPrevTotalPages] = useState(totalPages);
+  if (prevTotalPages !== totalPages) {
+    setPrevTotalPages(totalPages);
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
-  }, [totalPages, currentPage]);
+  }
 
   const paginatedData = useMemo(() => {
     if (!pagination) return sortedData;

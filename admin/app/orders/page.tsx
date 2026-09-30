@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/searchable-dropbox";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
+import { ViewSwitcher } from "@/components/ui/view-switcher";
 import { KanbanBoard } from "@/components/ui/kanban-board";
 import { GraphView, PivotView } from "@/components/ui/graph-view";
 import { useAdminLayout } from "@/components/admin-shell";
@@ -293,17 +294,17 @@ export default function OrdersPage() {
       </KpiGrid>
 
       {/* View switcher */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1 rounded-lg border border-border/80 bg-card p-1 shadow-xs">
-          <ViewTab active={view === "list"} onClick={() => setView("list")} icon={<List className="h-4 w-4" />}>List</ViewTab>
-          <ViewTab active={view === "kanban"} onClick={() => setView("kanban")} icon={<LayoutGrid className="h-4 w-4" />}>Kanban</ViewTab>
-          <ViewTab active={view === "graph"} onClick={() => setView("graph")} icon={<BarChart3 className="h-4 w-4" />}>Graph</ViewTab>
-          <ViewTab active={view === "pivot"} onClick={() => setView("pivot")} icon={<Table2 className="h-4 w-4" />}>Pivot</ViewTab>
-        </div>
-        <span className="text-xs text-muted-foreground">
-          {filteredRows.length} of {rows.length} orders
-        </span>
-      </div>
+      <ViewSwitcher
+        active={view}
+        onChange={(k) => setView(k as typeof view)}
+        meta={`${filteredRows.length} of ${rows.length} orders`}
+        tabs={[
+          { key: "list", label: "List", icon: <List className="h-4 w-4" /> },
+          { key: "kanban", label: "Kanban", icon: <LayoutGrid className="h-4 w-4" /> },
+          { key: "graph", label: "Graph", icon: <BarChart3 className="h-4 w-4" /> },
+          { key: "pivot", label: "Pivot", icon: <Table2 className="h-4 w-4" /> },
+        ]}
+      />
 
       {/* Filters tray (also drives Kanban / Graph / Pivot) */}
       {view !== "list" && (
@@ -485,20 +486,3 @@ export default function OrdersPage() {
     </>
   );
 }
-
-function ViewTab({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 h-9 text-sm font-medium transition-all duration-200 active:scale-[0.98]",
-        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-      )}
-    >
-      {icon}
-      <span className="hidden sm:inline">{children}</span>
-    </button>
-  );
-}
-

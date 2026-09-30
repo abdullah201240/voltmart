@@ -13,11 +13,13 @@ import {
 
 export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  // SSR-safe mount detection: server + first hydration render `false`,
+  // client renders after mount render `true` (no setState-in-effect).
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   if (!mounted) {
     return (

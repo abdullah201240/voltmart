@@ -95,7 +95,9 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api) return
-    onSelect(api)
+    // Deferred so the parent's select handler (often a state setter) is never
+    // invoked synchronously inside the effect body (react-hooks lint rule).
+    Promise.resolve().then(() => onSelect(api))
     api.on("reInit", onSelect)
     api.on("select", onSelect)
 

@@ -10,6 +10,9 @@ import {
 } from "@/components/ui/searchable-dropbox";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
+import { ViewSwitcher } from "@/components/ui/view-switcher";
+import { KanbanBoard } from "@/components/ui/kanban-board";
+import { GraphView } from "@/components/ui/graph-view";
 import { useAdminLayout } from "@/components/admin-shell";
 import {
   FileText,
@@ -22,6 +25,9 @@ import {
   Lock,
   XCircle,
   AlertTriangle,
+  List,
+  LayoutGrid,
+  BarChart3,
 } from "lucide-react";
 import {
   getPurchaseOrders,
@@ -48,6 +54,17 @@ function money(v: number) {
   return "৳" + v.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
+/** Full purchase.order pipeline for the Kanban / Graph views. */
+const STATE_KEYS: PoState[] = ["draft", "sent", "to approve", "purchase", "done", "cancel"];
+const STATE_ACCENT: Record<PoState, string> = {
+  draft: "bg-slate-500",
+  sent: "bg-blue-500",
+  "to approve": "bg-violet-500",
+  purchase: "bg-amber-500",
+  done: "bg-emerald-500",
+  cancel: "bg-rose-500",
+};
+
 interface PurchaseListProps {
   /** true = Requests for Quotation (draft/sent/to approve); false = confirmed POs. */
   rfq: boolean;
@@ -62,6 +79,7 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
   const [selectedState, setSelectedState] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const [view, setView] = useState<"list" | "kanban" | "graph">("list");
 
   const heading = rfq ? "Requests for Quotation" : "Purchase Orders";
   const shortTitle = rfq ? "RFQs" : "Orders";
@@ -122,6 +140,28 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
     setSelectedState("all");
     setSearchTableQuery("");
   };
+
+  // Drag a Kanban card into a new stage -> run the matching workflow transition.
+  const moveStage = (row: PurchaseOrderRow, toKey: string) => {
+    const action: PoAction | null =
+      toKey === "sent" ? "send"
+        : toKey === "purchase" ? "confirm"
+        : toKey === "done" ? "receive"
+        : toKey === "cancel" ? "cancel"
+        : null;
+    if (!action) {
+      setFeedback({ ok: false, message: `No direct transition to "${PO_STATE_LABEL[toKey as PoState] ?? toKey}".` });
+      return;
+    }
+    setFeedback(applyPoAction(row.id, row.vendor, action, { state: row.state, received: row.received }));
+  };
+
+  // Purchase value by state for the Graph view.
+  const graphData = STATE_KEYS.map((s) => ({
+    label: PO_STATE_LABEL[s],
+    value: filteredRows.filter((r) => r.state === s).reduce((sum, r) => sum + r.totalValue, 0),
+    color: STATE_ACCENT[s] + "/70",
+  }));
 
   const COLUMNS: CentralTableColumn<PurchaseOrderRow>[] = [
     {
@@ -253,7 +293,33 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
         <KpiCard title={`Total ${shortTitle}`} value={String(stats.total)} icon={FileText} tone="violet" />
       </KpiGrid>
 
-      {/* Table */}
+      {/* View switcher */}
+      <ViewSwitcher
+        active={view}
+        onChange={(k) => setView(k as typeof view)}
+        meta={`${filteredRows.length} of ${rows.length} ${shortTitle.toLowerCase()}`}
+        tabs={[
+          { key: "list", label: "List", icon: <List className="h-4 w-4" /> },
+          { key: "kanban", label: "Kanban", icon: <LayoutGrid className="h-4 w-4" /> },
+          { key: "graph", label: "Graph", icon: <BarChart3 className="h-4 w-4" /> },
+        ]}
+      />
+
+      {/* Status filter also drives Kanban / Graph */}
+      {view !== "list" && (
+        <div className="grid gap-5 sm:grid-cols-3 w-full">
+          <SearchableDropbox
+            label="Status"
+            options={PO_STATE_OPTIONS as DropboxOption[]}
+            value={selectedState}
+            onChange={setSelectedState}
+            placeholder="All statuses..."
+            searchPlaceholder="Search status..."
+          />
+        </div>
+      )}
+
+      {view === "list" && (
       <CentralTable
         data={filteredRows}
         columns={COLUMNS}
@@ -309,6 +375,35 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
           )
         }
       />
+      )}
+
+      {view === "kanban" && (
+        <KanbanBoard
+          data={filteredRows}
+          loading={loading}
+          idOf={(p) => p.id}
+          stageOf={(p) => p.state}
+          onMove={moveStage}
+          stages={STATE_KEYS.map((s) => ({ key: s, label: PO_STATE_LABEL[s], accent: STATE_ACCENT[s] }))}
+          renderCard={(p) => (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-sm font-bold text-foreground">{p.name}</span>
+                <span className="text-[10px] text-muted-foreground">{p.date}</span>
+              </div>
+              <p className="truncate text-sm font-semibold text-foreground">{p.vendor}</p>
+              <div className="flex items-center justify-between pt-1">
+                <Badge variant="outline" className="text-[10px] font-semibold">{p.lines} lines</Badge>
+                <span className="font-mono text-sm font-bold text-foreground">{p.total}</span>
+              </div>
+            </div>
+          )}
+        />
+      )}
+
+      {view === "graph" && (
+        <GraphView data={graphData} formatValue={money} onSelect={() => setView("list")} />
+      )}
 
       {/* Action toast */}
       {feedback && (

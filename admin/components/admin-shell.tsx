@@ -5,6 +5,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
@@ -14,9 +15,42 @@ import { AdminHeader } from "@/components/admin-header";
 import { AdminFooter } from "@/components/admin-footer";
 import { NotificationsProvider } from "@/lib/notifications-context";
 
+const SIDEBAR_KEY = "voltmart_sidebar_collapsed";
+const sidebarListeners = new Set<() => void>();
+
+function subscribeSidebar(cb: () => void) {
+  sidebarListeners.add(cb);
+  return () => {
+    sidebarListeners.delete(cb);
+  };
+}
+
+// Client snapshot reads the persisted boolean; server snapshot is always the
+// default so SSR and the first hydration paint match (no hydration warning).
+function getSidebarSnapshot() {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function getSidebarServerSnapshot() {
+  return false;
+}
+
+function writeSidebar(next: boolean) {
+  try {
+    localStorage.setItem(SIDEBAR_KEY, String(next));
+  } catch {
+    // Ignore localStorage write failures (SSR/sandbox/private mode)
+  }
+  sidebarListeners.forEach((l) => l());
+}
+
 interface AdminLayoutContextValue {
   sidebarCollapsed: boolean;
-  setSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+  setSidebarCollapsed: (next: boolean) => void;
   toggleSidebar: () => void;
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
@@ -43,38 +77,25 @@ interface AdminShellProps {
 
 export function AdminShell({ children, className }: AdminShellProps) {
   const pathname = usePathname();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const sidebarCollapsed = useSyncExternalStore(
+    subscribeSidebar,
+    getSidebarSnapshot,
+    getSidebarServerSnapshot,
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Persist sidebar state in localStorage if available
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("voltmart_sidebar_collapsed");
-      if (saved !== null) {
-        setSidebarCollapsed(saved === "true");
-      }
-    } catch {
-      // Ignore localStorage read failures in SSR/sandbox
-    }
-  }, []);
+  const setSidebarCollapsed = writeSidebar;
+  const handleToggleSidebar = () => writeSidebar(!sidebarCollapsed);
 
-  const handleToggleSidebar = () => {
-    setSidebarCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("voltmart_sidebar_collapsed", String(next));
-      } catch {
-        // Ignore localStorage write failures
-      }
-      return next;
-    });
-  };
-
-  // Close mobile drawer on route navigation
-  useEffect(() => {
+  // Close the mobile drawer whenever the route changes — adjusted during
+  // render (the React-recommended "reset state on prop change" pattern)
+  // instead of a cascading setState effect.
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
     setMobileOpen(false);
-  }, [pathname]);
+  }
 
   // Global keyboard shortcuts:
   // - ⌘K / Ctrl+K: focus global search

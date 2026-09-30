@@ -10,8 +10,10 @@ import {
 } from "@/components/ui/searchable-dropbox";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
+import { ViewSwitcher } from "@/components/ui/view-switcher";
+import { GraphView, PivotView } from "@/components/ui/graph-view";
 import { useAdminLayout } from "@/components/admin-shell";
-import { Users, UserCheck, Banknote, ShoppingCart, Plus, RotateCcw } from "lucide-react";
+import { Users, UserCheck, Banknote, ShoppingCart, Plus, RotateCcw, List, BarChart3, Table2 } from "lucide-react";
 import {
   getCustomers,
   customerStats,
@@ -97,6 +99,7 @@ export default function CustomersPage() {
   const [searchTableQuery, setSearchTableQuery] = useState("");
   const [selectedSegment, setSelectedSegment] = useState("all");
   const [selectedCountry, setSelectedCountry] = useState("all");
+  const [view, setView] = useState<"list" | "graph" | "pivot">("list");
 
   useEffect(() => {
     let alive = true;
@@ -137,6 +140,21 @@ export default function CustomersPage() {
     (selectedSegment !== "all" ? 1 : 0) + (selectedCountry !== "all" ? 1 : 0);
   const hasActiveFilters = activeFiltersCount > 0 || effectiveQuery.length > 0;
 
+  // Lifetime spend by segment tag for the Graph view (a customer counts under
+  // each of its tags). Falls back to "Unclassified".
+  const graphData = useMemo(() => {
+    const buckets = new Map<string, number>();
+    for (const c of filteredRows) {
+      const keys = c.tags.length ? c.tags : ["Unclassified"];
+      for (const t of keys) buckets.set(t, (buckets.get(t) ?? 0) + c.totalSpent);
+    }
+    return [...buckets.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, value]) => ({ label, value }));
+  }, [filteredRows]);
+
+  const segmentOf = (c: CustomerRow) => c.tags[0] ?? "Unclassified";
+
   return (
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -160,6 +178,40 @@ export default function CustomersPage() {
         <KpiCard title="Avg Orders / Customer" value={String(stats.avgOrders)} icon={ShoppingCart} tone="amber" />
       </KpiGrid>
 
+      <ViewSwitcher
+        active={view}
+        onChange={(k) => setView(k as typeof view)}
+        meta={`${filteredRows.length} of ${rows.length} customers`}
+        tabs={[
+          { key: "list", label: "List", icon: <List className="h-4 w-4" /> },
+          { key: "graph", label: "Graph", icon: <BarChart3 className="h-4 w-4" /> },
+          { key: "pivot", label: "Pivot", icon: <Table2 className="h-4 w-4" /> },
+        ]}
+      />
+
+      {/* Filters also drive Graph / Pivot */}
+      {view !== "list" && (
+        <div className="grid gap-5 sm:grid-cols-2 w-full">
+          <SearchableDropbox
+            label="Segment"
+            options={CUSTOMER_SEGMENT_OPTIONS as DropboxOption[]}
+            value={selectedSegment}
+            onChange={setSelectedSegment}
+            placeholder="All segments..."
+            searchPlaceholder="Search segment..."
+          />
+          <SearchableDropbox
+            label="Country"
+            options={COUNTRY_OPTIONS as DropboxOption[]}
+            value={selectedCountry}
+            onChange={setSelectedCountry}
+            placeholder="All countries..."
+            searchPlaceholder="Search country..."
+          />
+        </div>
+      )}
+
+      {view === "list" && (
       <CentralTable
         data={filteredRows}
         columns={CUSTOMER_COLUMNS}
@@ -204,6 +256,23 @@ export default function CustomersPage() {
           )
         }
       />
+      )}
+
+      {view === "graph" && <GraphView data={graphData} formatValue={money} />}
+
+      {view === "pivot" && (
+        <PivotView
+          rows={filteredRows}
+          groupOf={segmentOf}
+          title="Customers by segment"
+          formatValue={money}
+          columns={[
+            { key: "count", label: "Customers", measure: (g) => g.length, format: (v) => String(v) },
+            { key: "orders", label: "Orders", measure: (g) => g.reduce((s, c) => s + c.orders, 0), format: (v) => String(v) },
+            { key: "spent", label: "Lifetime Spent", measure: (g) => g.reduce((s, c) => s + c.totalSpent, 0) },
+          ]}
+        />
+      )}
     </>
   );
 }

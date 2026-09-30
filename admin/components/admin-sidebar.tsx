@@ -137,6 +137,7 @@ const NAV_GROUPS: NavGroup[] = [
           { title: "Bills", href: "/bills" },
           { title: "Payments", href: "/payments" },
           { title: "Journal Entries", href: "/accounting/journals" },
+                    { title: "Bank Reconciliation", href: "/accounting/reconciliation" },
           { title: "Chart of Accounts", href: "/accounting/chart-of-accounts" },
           { title: "Credit Notes", href: "/accounting/credit-notes" },
           { title: "Financial Reports", href: "/accounting/reports" },

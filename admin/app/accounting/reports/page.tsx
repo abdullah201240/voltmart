@@ -12,6 +12,7 @@ import {
   TrendingUp,
   Landmark,
   FileText,
+  Users,
 } from "lucide-react";
 import {
   getMoves,
@@ -28,19 +29,61 @@ import {
   type MoveRow,
   type ReportSection,
 } from "@/lib/data/accounting";
+import { getInvoices, getBills, type InvoiceRow, type BillRow } from "@/lib/data/finance";
 import { useOps } from "@/lib/data/ops";
 
 function money(v: number) {
   return "৳" + v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-type ReportTab = "trial" | "income" | "balance";
+type ReportTab = "trial" | "income" | "balance" | "aging";
 
 const TABS: { id: ReportTab; label: string; icon: React.ReactNode }[] = [
   { id: "trial", label: "Trial Balance", icon: <Scale className="h-4 w-4" /> },
   { id: "income", label: "Income Statement", icon: <TrendingUp className="h-4 w-4" /> },
   { id: "balance", label: "Balance Sheet", icon: <Landmark className="h-4 w-4" /> },
+  { id: "aging", label: "Partner Aging", icon: <Users className="h-4 w-4" /> },
 ];
+
+/** Fixed reference date so the mock aging buckets are deterministic. */
+const AS_OF = Date.parse("Sep 30, 2026 00:00:00");
+const AGE_BUCKETS = ["Current", "1-30", "31-60", "61-90", "Over 90"] as const;
+type AgeBucket = (typeof AGE_BUCKETS)[number];
+
+/** Days overdue from a due date (negative = not yet due). */
+function daysOverdue(dueDate: string): number {
+  return Math.floor((AS_OF - Date.parse(dueDate + " 00:00:00")) / 86_400_000);
+}
+
+function bucketOf(overdue: number): AgeBucket {
+  if (overdue <= 0) return "Current";
+  if (overdue <= 30) return "1-30";
+  if (overdue <= 60) return "31-60";
+  if (overdue <= 90) return "61-90";
+  return "Over 90";
+}
+
+/** Group open documents per partner into the five aging buckets. */
+interface AgingLine {
+  partner: string;
+  buckets: Record<AgeBucket, number>;
+  total: number;
+}
+
+function buildAging(docs: Array<{ partner: string; dueDate: string; open: number }>): AgingLine[] {
+  const byPartner = new Map<string, AgingLine>();
+  for (const d of docs) {
+    if (d.open <= 0.005) continue;
+    let line = byPartner.get(d.partner);
+    if (!line) {
+      line = { partner: d.partner, buckets: { Current: 0, "1-30": 0, "31-60": 0, "61-90": 0, "Over 90": 0 }, total: 0 };
+      byPartner.set(d.partner, line);
+    }
+    line.buckets[bucketOf(daysOverdue(d.dueDate))] += d.open;
+    line.total += d.open;
+  }
+  return [...byPartner.values()].sort((a, b) => b.total - a.total);
+}
 
 /** One indented account line inside a report section. */
 function ReportLine({ code, name, value, bold }: { code?: string; name: string; value: number; bold?: boolean }) {
@@ -72,17 +115,96 @@ function SectionCard({ section, subtitle }: { section: ReportSection; subtitle?:
   );
 }
 
+/** Aged balance schedule (Odoo "Aged Partner Balance") for AR or AP. */
+function AgingTable({
+  title,
+  lines,
+  grandTotal,
+  tone,
+  note,
+}: {
+  title: string;
+  lines: AgingLine[];
+  grandTotal: number;
+  tone: "emerald" | "rose";
+  note: string;
+}) {
+  const totals = AGE_BUCKETS.reduce(
+    (acc, b) => {
+      acc[b] = lines.reduce((s, l) => s + l.buckets[b], 0);
+      return acc;
+    },
+    { Current: 0, "1-30": 0, "31-60": 0, "61-90": 0, "Over 90": 0 } as Record<AgeBucket, number>,
+  );
+  const overdueTone = tone === "emerald" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
+
+  return (
+    <Card className="p-6 shadow-xs border-border/80">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-xl font-bold tracking-tight">{title}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{note}</p>
+        </div>
+        <span className={cn("font-mono text-lg font-extrabold tracking-tight", overdueTone)}>{money(grandTotal)}</span>
+      </div>
+      {lines.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Nothing outstanding.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left border-b border-border/80">
+                <th className="py-3 pr-4 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Partner</th>
+                {AGE_BUCKETS.map((b) => (
+                  <th key={b} className="py-3 px-4 text-right font-semibold text-xs uppercase tracking-wider text-muted-foreground">{b}</th>
+                ))}
+                <th className="py-3 pl-4 text-right font-semibold text-xs uppercase tracking-wider text-muted-foreground">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((l) => (
+                <tr key={l.partner} className="border-b border-border/60 hover:bg-muted/40 transition-colors">
+                  <td className="py-3 pr-4 font-medium text-foreground">{l.partner}</td>
+                  {AGE_BUCKETS.map((b) => (
+                    <td key={b} className={cn("py-3 px-4 text-right font-mono tabular-nums", l.buckets[b] > 0 && b !== "Current" ? overdueTone : "text-muted-foreground")}>
+                      {l.buckets[b] > 0 ? money(l.buckets[b]) : "—"}
+                    </td>
+                  ))}
+                  <td className="py-3 pl-4 text-right font-mono font-bold tabular-nums text-foreground">{money(l.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="font-bold border-t-2 border-border/80">
+                <td className="py-4 pr-4">Totals</td>
+                {AGE_BUCKETS.map((b) => (
+                  <td key={b} className="py-4 px-4 text-right font-mono tabular-nums">{money(totals[b])}</td>
+                ))}
+                <td className="py-4 pl-4 text-right font-mono tabular-nums">{money(grandTotal)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function FinancialReportsPage() {
   const version = useOps();
   const [moves, setMoves] = useState<MoveRow[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
+  const [bills, setBills] = useState<BillRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<ReportTab>("trial");
 
   useEffect(() => {
     let alive = true;
-    getMoves().then((m) => {
+    Promise.all([getMoves(), getInvoices(), getBills()]).then(([m, inv, bl]) => {
       if (alive) {
         setMoves(m);
+        setInvoices(inv);
+        setBills(bl);
         setLoading(false);
       }
     });
@@ -114,6 +236,19 @@ export default function FinancialReportsPage() {
   const tbDebit = tbRows.reduce((s, r) => s + (r.balance >= 0 ? r.balance : 0), 0);
   const tbCredit = tbRows.reduce((s, r) => s + (r.balance < 0 ? -r.balance : 0), 0);
   const tbBalanced = Math.abs(tbDebit - tbCredit) < 1;
+
+  // Partner aging: open receivables (Posted invoices) and payables (unpaid
+  // posted bill balances) bucketed by how overdue they are as of AS_OF.
+  const arAging = useMemo(
+    () => buildAging(invoices.filter((i) => i.state === "Posted").map((i) => ({ partner: i.partner, dueDate: i.dueDate, open: i.total }))),
+    [invoices],
+  );
+  const apAging = useMemo(
+    () => buildAging(bills.filter((b) => b.state === "Posted").map((b) => ({ partner: b.vendor, dueDate: b.dueDate, open: b.amountTotal - b.amountPaid }))),
+    [bills],
+  );
+  const arTotal = arAging.reduce((s, r) => s + r.total, 0);
+  const apTotal = apAging.reduce((s, r) => s + r.total, 0);
 
   return (
     <>
@@ -284,6 +419,13 @@ export default function FinancialReportsPage() {
                   </div>
                 </div>
               </Card>
+            </div>
+          )}
+
+          {tab === "aging" && (
+            <div className="w-full space-y-5">
+              <AgingTable title="Accounts Receivable — aged by customer" lines={arAging} grandTotal={arTotal} tone="emerald" note="Open customer invoices (Posted), bucketed by days past due." />
+              <AgingTable title="Accounts Payable — aged by vendor" lines={apAging} grandTotal={apTotal} tone="rose" note="Unpaid vendor bill balances (Posted), bucketed by days past due." />
             </div>
           )}
         </>

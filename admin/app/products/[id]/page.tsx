@@ -69,9 +69,16 @@ export default function ProductDetailPage() {
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // When navigating between products, re-enter the loading state during render
+  // (React's "adjust state on prop change" pattern) rather than a setState effect.
+  const [prevId, setPrevId] = useState(params.id);
+  if (prevId !== params.id) {
+    setPrevId(params.id);
+    setLoading(true);
+  }
+
   useEffect(() => {
     let alive = true;
-    setLoading(true);
     Promise.all([getProducts(), getVariantsFor(params.id)]).then(([prods, vars]) => {
       if (alive) {
         setProduct(prods.find((p) => p.id === params.id));

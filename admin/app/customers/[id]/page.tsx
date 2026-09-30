@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,11 +15,45 @@ import {
   Building2,
   ShoppingBag,
   Banknote,
+  FileText,
+  Truck,
 } from "lucide-react";
 import { getCustomerById, type CustomerDetail } from "@/lib/data/customers";
+import { getOrders } from "@/lib/data/orders";
+import { getInvoices } from "@/lib/data/finance";
+import { getPickings } from "@/lib/data/inventory";
 import type { OrderStatus } from "@/lib/data/orders";
 import { RecordChatter } from "@/components/ui/record-chatter";
 import { useOps } from "@/lib/data/ops";
+import { useAdminLayout } from "@/components/admin-shell";
+
+/** Odoo-style smart button (count tile that filters the related list). */
+function SmartButton({
+  icon: Icon,
+  count,
+  label,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  count: number;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex flex-col items-center gap-1 rounded-lg border border-border/80 bg-card px-4 py-3 shadow-xs transition-all duration-200 cursor-pointer hover:border-primary/40 hover:bg-muted/40 active:scale-[0.98]"
+    >
+      <span className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground group-hover:text-primary transition-colors">
+        {count}
+      </span>
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" /> {label}
+      </span>
+    </button>
+  );
+}
 
 const STATUS_CLASS: Record<OrderStatus, "default" | "secondary" | "outline"> = {
   Quotation: "secondary",
@@ -46,9 +80,12 @@ function InfoRow({ label, value, icon: Icon }: { label: string; value: React.Rea
 
 export default function CustomerDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const { setSearchQuery } = useAdminLayout();
   const version = useOps();
   const [customer, setCustomer] = useState<CustomerDetail | undefined>();
   const [loading, setLoading] = useState(true);
+  const [relCounts, setRelCounts] = useState({ orders: 0, invoices: 0, deliveries: 0 });
 
   useEffect(() => {
     let alive = true;
@@ -62,6 +99,25 @@ export default function CustomerDetailPage() {
       alive = false;
     };
   }, [params.id, version]);
+
+  // Related-document counters behind the smart buttons (overlay-aware so they
+  // track workflow transitions made anywhere in the admin).
+  useEffect(() => {
+    if (!customer) return;
+    let alive = true;
+    const name = customer.name;
+    Promise.all([getOrders(), getInvoices(), getPickings("outgoing")]).then(([orders, invoices, pickings]) => {
+      if (!alive) return;
+      setRelCounts({
+        orders: orders.filter((o) => o.customer === name && o.status !== "Cancelled").length,
+        invoices: invoices.filter((i) => i.partner === name && i.state !== "Cancelled").length,
+        deliveries: pickings.filter((p) => p.partner === name && p.state !== "cancel").length,
+      });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [customer, version]);
 
   if (loading) {
     return (
@@ -106,6 +162,37 @@ export default function CustomerDetailPage() {
           <Button variant="outline" className="h-10 px-4 text-sm font-medium"><Mail className="mr-2 h-4 w-4" /> Email</Button>
           <Button className="h-10 px-4 text-sm font-medium"><ShoppingBag className="mr-2 h-4 w-4" /> New Order</Button>
         </div>
+      </div>
+
+      {/* Smart buttons — jump to the related documents, pre-filtered */}
+      <div className="grid w-full grid-cols-3 gap-3">
+        <SmartButton
+          icon={ShoppingBag}
+          count={relCounts.orders}
+          label="Sales Orders"
+          onClick={() => {
+            setSearchQuery(customer.name);
+            router.push("/orders");
+          }}
+        />
+        <SmartButton
+          icon={FileText}
+          count={relCounts.invoices}
+          label="Invoices"
+          onClick={() => {
+            setSearchQuery(customer.name);
+            router.push("/invoices");
+          }}
+        />
+        <SmartButton
+          icon={Truck}
+          count={relCounts.deliveries}
+          label="Deliveries"
+          onClick={() => {
+            setSearchQuery(customer.name);
+            router.push("/inventory/deliveries");
+          }}
+        />
       </div>
 
       {/* Snapshot KPIs */}
