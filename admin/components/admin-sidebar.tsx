@@ -142,6 +142,7 @@ export const NAV_GROUPS: NavGroup[] = [
           { title: "Chart of Accounts", href: "/accounting/chart-of-accounts" },
           { title: "Credit Notes", href: "/accounting/credit-notes" },
           { title: "Financial Reports", href: "/accounting/reports" },
+          { title: "Fiscal Positions", href: "/accounting/fiscal" },
         ],
       },
     ],

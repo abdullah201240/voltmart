@@ -11,6 +11,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import {
+  Command,
   CommandDialog,
   CommandInput,
   CommandList,
@@ -124,46 +125,48 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       description="Search applications, create records and run actions"
       className="sm:max-w-lg"
     >
-      <CommandInput placeholder="Type a command or search…" />
-      <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+      <Command className="h-full">
+        <CommandInput placeholder="Type a command or search…" />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
 
-        <CommandGroup heading={<span className="inline-flex items-center gap-1.5"><LayoutGrid className="h-3.5 w-3.5" /> Create</span>}>
-          {createCmds.map((c) => (
-            <CommandItem key={c.label} value={`create ${c.label}`} onSelect={c.run}>
-              <c.icon className="text-primary" />
-              <span>{c.label}</span>
-              <CommandShortcut>New</CommandShortcut>
-            </CommandItem>
+          <CommandGroup heading={<span className="inline-flex items-center gap-1.5"><LayoutGrid className="h-3.5 w-3.5" /> Create</span>}>
+            {createCmds.map((c) => (
+              <CommandItem key={c.label} value={`create ${c.label}`} onSelect={c.run}>
+                <c.icon className="text-primary" />
+                <span>{c.label}</span>
+                <CommandShortcut>New</CommandShortcut>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+
+          <CommandSeparator />
+
+          {navGroups.map(([heading, items]) => (
+            <CommandGroup key={heading} heading={heading}>
+              {items.map((c) => (
+                <CommandItem key={heading + c.label} value={`${heading} ${c.label}`} onSelect={c.run}>
+                  <c.icon />
+                  <span>{c.label}</span>
+                  {c.hint && <CommandShortcut>{c.hint}</CommandShortcut>}
+                </CommandItem>
+              ))}
+            </CommandGroup>
           ))}
-        </CommandGroup>
 
-        <CommandSeparator />
+          <CommandSeparator />
 
-        {navGroups.map(([heading, items]) => (
-          <CommandGroup key={heading} heading={heading}>
-            {items.map((c) => (
-              <CommandItem key={heading + c.label} value={`${heading} ${c.label}`} onSelect={c.run}>
+          <CommandGroup heading="Actions">
+            {utilityCmds.map((c) => (
+              <CommandItem key={c.label} value={`action ${c.label}`} onSelect={c.run}>
                 <c.icon />
                 <span>{c.label}</span>
                 {c.hint && <CommandShortcut>{c.hint}</CommandShortcut>}
               </CommandItem>
             ))}
           </CommandGroup>
-        ))}
-
-        <CommandSeparator />
-
-        <CommandGroup heading="Actions">
-          {utilityCmds.map((c) => (
-            <CommandItem key={c.label} value={`action ${c.label}`} onSelect={c.run}>
-              <c.icon />
-              <span>{c.label}</span>
-              {c.hint && <CommandShortcut>{c.hint}</CommandShortcut>}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-      </CommandList>
+        </CommandList>
+      </Command>
     </CommandDialog>
   );
 }

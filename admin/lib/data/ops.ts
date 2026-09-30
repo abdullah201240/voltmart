@@ -178,6 +178,28 @@ export function clearAllOps() {
   commit();
 }
 
+/**
+ * Inject a brand-new row for a model (the create-drawer flow). The mock
+ * resolvers can only patch existing base rows, so UI-created records live
+ * under a `new-…` ref convention and are appended by `listAdded`.
+ */
+export function addRecord(model: string, fields: Record<string, unknown>): string {
+  const ref = `new-${uid("r")}`;
+  patchFields(model, ref, fields);
+  addHistory(model, ref, "Created via UI");
+  return ref;
+}
+
+/** All UI-created rows for a model, oldest first (empty during SSR). */
+export function listAdded(model: string): Record<string, unknown>[] {
+  const store = load();
+  const prefix = `${model}:new-`;
+  return Object.entries(store)
+    .filter(([k]) => k.startsWith(prefix))
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, v]) => v.fields);
+}
+
 /** True if a record has any persisted operation (for badge/reset affordances). */
 export function recordTouched(model: string, ref: string) {
   const r = getRecord(model, ref);

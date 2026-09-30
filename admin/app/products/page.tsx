@@ -500,9 +500,11 @@ export default function ProductsPage() {
         loadingRows={6}
         selectable
         searchable
-        searchPlaceholder="Search name, SKU or barcode..."
+        searchPlaceholder="Search name/SKU... or category:phone, price>1000"
         title="Catalog"
         description={`${filteredRows.length} of ${rows.length} products`}
+        groupable
+        favoriteKey="products"
         filters={
           <div className="grid gap-5 sm:grid-cols-3 w-full">
             <SearchableDropbox

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, ReactNode } from "react";
+import React, { useState, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import {
   ChevronUp,
   ChevronDown,
@@ -12,11 +12,74 @@ import {
   Inbox,
   Filter,
   RotateCcw,
+  ListFilter,
+  BookmarkPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
+
+// --- Advanced search + saved-view helpers ---------------------------------
+/** A persisted "Favorites" view (Odoo saved filter). */
+export interface SavedView {
+  id: string;
+  name: string;
+  query: string;
+  sortKey: string | null;
+  sortDir: "asc" | "desc" | null;
+  groupKey: string | null;
+  pageSize: number;
+}
+
+const FAV_PREFIX = "vm_views_";
+let favVersion = 0;
+const favListeners = new Set<() => void>();
+function subscribeFav(cb: () => void) {
+  favListeners.add(cb);
+  return () => {
+    favListeners.delete(cb);
+  };
+}
+function bumpFav() {
+  favVersion += 1;
+  favListeners.forEach((l) => l());
+}
+function readViews(key: string): SavedView[] {
+  if (typeof window === "undefined" || !key) return [];
+  try {
+    const raw = window.localStorage.getItem(FAV_PREFIX + key);
+    return raw ? (JSON.parse(raw) as SavedView[]) : [];
+  } catch {
+    return [];
+  }
+}
+function writeViews(key: string, views: SavedView[]) {
+  try {
+    window.localStorage.setItem(FAV_PREFIX + key, JSON.stringify(views));
+  } catch {
+    /* ignore quota / private mode */
+  }
+  bumpFav();
+}
+const emptySubscribe = () => () => {};
+/** SSR-safe mounted flag (avoids hydration mismatch on localStorage reads). */
+function useIsMounted() {
+  return useSyncExternalStore(emptySubscribe, () => true, () => false);
+}
+/** Resolve an `field:` / `field>value` token to a column by id / accessor / header. */
+function resolveTokenColumn<T>(
+  columns: CentralTableColumn<T>[],
+  token: string,
+): CentralTableColumn<T> | undefined {
+  const t = token.toLowerCase();
+  return columns.find((c) => {
+    const id = c.id || (typeof c.accessorKey === "string" ? c.accessorKey : undefined);
+    if (id && id.toLowerCase() === t) return true;
+    if (typeof c.header === "string" && c.header.toLowerCase() === t) return true;
+    return false;
+  });
+}
 
 export interface CentralTableColumn<TData> {
   /** Unique column identifier (defaults to accessorKey if not provided) */
@@ -106,6 +169,10 @@ export interface CentralTableProps<TData> {
   striped?: boolean;
   /** Outer container className */
   className?: string;
+  /** Opt-in: show a "Group by" control and render collapsible group headers. */
+  groupable?: boolean;
+  /** Opt-in: enable saved "Favorites" views persisted under this localStorage key. */
+  favoriteKey?: string;
 }
 
 export function CentralTable<TData>({
@@ -140,6 +207,8 @@ export function CentralTable<TData>({
   onRowClick,
   striped = false,
   className,
+  groupable = false,
+  favoriteKey,
 }: CentralTableProps<TData>) {
   // Filter drawer state
   const [isFilterOpen, setIsFilterOpen] = useState(defaultFiltersOpen);
@@ -165,6 +234,12 @@ export function CentralTable<TData>({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
 
+  // Group-by + saved favorites state (opt-in)
+  const [groupKey, setGroupKey] = useState<string | null>(null);
+  const mounted = useIsMounted();
+  const favV = useSyncExternalStore(subscribeFav, () => favVersion, () => 0);
+  const views = useMemo(() => readViews(favoriteKey ?? ""), [favoriteKey, favV]);
+
   // Helper to get unique row ID
   const getRowKey = (row: TData, idx: number): string | number => {
     if (keyExtractor) return keyExtractor(row, idx);
@@ -183,23 +258,63 @@ export function CentralTable<TData>({
     return null;
   };
 
-  // 1. Filtered Data
+  // 1. Filtered Data (with Odoo-style advanced search operators)
   const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return data;
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return data;
 
     if (searchFilter) {
       return data.filter((row) => searchFilter(row, searchQuery));
     }
 
-    const query = searchQuery.toLowerCase().trim();
-    return data.filter((row) => {
+    // Parse a single `field OP value` token against the resolved column.
+    const toNum = (v: unknown): number | null => {
+      if (typeof v === "number") return Number.isNaN(v) ? null : v;
+      const s = String(v ?? "").replace(/[^0-9.\-]/g, "");
+      const n = parseFloat(s);
+      return Number.isNaN(n) ? null : n;
+    };
+
+    const compareOperator = (cellVal: unknown, op: string, rawVal: string): boolean => {
+      const cellStr = cellVal === null || cellVal === undefined ? "" : String(cellVal);
+      const needle = rawVal.trim();
+      if (op === ":") return cellStr.toLowerCase().includes(needle.toLowerCase());
+      if (op === "=" || op === "==") {
+        return (
+          cellStr.toLowerCase() === needle.toLowerCase() ||
+          (toNum(cellVal) !== null && toNum(cellVal) === toNum(needle))
+        );
+      }
+      if (op === "!=") return cellStr.toLowerCase() !== needle.toLowerCase();
+      const a = toNum(cellVal);
+      const b = toNum(needle);
+      if (a === null || b === null) return false;
+      if (op === ">") return a > b;
+      if (op === ">=") return a >= b;
+      if (op === "<") return a < b;
+      if (op === "<=") return a <= b;
+      return false;
+    };
+
+    const tokenMatches = (row: TData, token: string): boolean => {
+      const m = token.match(/^([A-Za-z0-9_]+)\s*(>=|<=|==|!=|>|<|:|=)\s*(.+)$/);
+      if (m) {
+        const col = resolveTokenColumn(columns, m[1]);
+        if (col) return compareOperator(getCellValue(row, col), m[2], m[3]);
+      }
+      // Bare token (or unknown field): AND-substring across every column.
+      const lower = token.toLowerCase();
       return columns.some((col) => {
         const val = getCellValue(row, col);
         if (val === null || val === undefined) return false;
-        return String(val).toLowerCase().includes(query);
+        return String(val).toLowerCase().includes(lower);
       });
-    });
+    };
+
+    const tokens = trimmed.toLowerCase().split(/\s+/).filter(Boolean);
+    return data.filter((row) => tokens.every((t) => tokenMatches(row, t)));
   }, [data, searchQuery, searchFilter, columns]);
+
 
   // 2. Sorted Data
   const sortedData = useMemo(() => {
@@ -234,8 +349,26 @@ export function CentralTable<TData>({
     });
   }, [filteredData, sortState, columns]);
 
+  // 2b. Grouped Data (opt-in) — order rows so the group column clusters together.
+  const groupCol = useMemo(() => {
+    if (!groupable || !groupKey) return null;
+    return columns.find((c) => (c.id || String(c.accessorKey)) === groupKey) || null;
+  }, [groupable, groupKey, columns]);
+
+  const groupedData = useMemo(() => {
+    if (!groupCol) return sortedData;
+    const label = (r: TData) => {
+      const v = getCellValue(r, groupCol);
+      return v === null || v === undefined ? "—" : String(v);
+    };
+    return [...sortedData].sort((a, b) =>
+      label(a).localeCompare(label(b), undefined, { numeric: true, sensitivity: "base" }),
+    );
+  }, [sortedData, groupCol]);
+
   // 3. Paginated Data
-  const totalItems = sortedData.length;
+  const totalItems = groupedData.length;
+
   const totalPages = pagination ? Math.max(1, Math.ceil(totalItems / pageSize)) : 1;
 
   // Auto-correct current page if out of bounds (adjusted during render when
@@ -249,10 +382,43 @@ export function CentralTable<TData>({
   }
 
   const paginatedData = useMemo(() => {
-    if (!pagination) return sortedData;
+    if (!pagination) return groupedData;
     const start = (currentPage - 1) * pageSize;
-    return sortedData.slice(start, start + pageSize);
-  }, [sortedData, pagination, currentPage, pageSize]);
+    return groupedData.slice(start, start + pageSize);
+  }, [groupedData, pagination, currentPage, pageSize]);
+
+  // Rows to render, with group-header sentinels interleaved (opt-in grouping).
+  type RenderItem =
+    | { kind: "group"; label: string; count: number }
+    | { kind: "row"; row: TData; index: number };
+  const renderItems = useMemo<RenderItem[]>(() => {
+    const items: RenderItem[] = [];
+    if (!groupCol) {
+      paginatedData.forEach((row, i) => items.push({ kind: "row", row, index: i }));
+      return items;
+    }
+    const labelOf = (r: TData) => {
+      const v = getCellValue(r, groupCol);
+      return v === null || v === undefined ? "—" : String(v);
+    };
+    // Count full group sizes across the grouped set for accurate badges.
+    const counts = new Map<string, number>();
+    groupedData.forEach((r) => {
+      const l = labelOf(r);
+      counts.set(l, (counts.get(l) ?? 0) + 1);
+    });
+    let last: string | null = null;
+    paginatedData.forEach((row, i) => {
+      const l = labelOf(row);
+      if (l !== last) {
+        items.push({ kind: "group", label: l, count: counts.get(l) ?? 0 });
+        last = l;
+      }
+      items.push({ kind: "row", row, index: i });
+    });
+    return items;
+  }, [paginatedData, groupCol, groupedData]);
+
 
   // Selection handlers
   const updateSelection = (newSelectedKeys: (string | number)[]) => {
@@ -318,12 +484,61 @@ export function CentralTable<TData>({
     return data.filter((row, idx) => selectedKeys.includes(getRowKey(row, idx)));
   }, [data, selectedKeys]);
 
+  // Saved-view (Favorites) handlers — opt-in via favoriteKey.
+  const applyView = (v: SavedView) => {
+    setSearchQuery(v.query);
+    setSortState(v.sortKey && v.sortDir ? { key: v.sortKey, direction: v.sortDir } : null);
+    setGroupKey(v.groupKey);
+    setPageSize(v.pageSize);
+    setCurrentPage(1);
+  };
+  const saveCurrentView = () => {
+    if (!favoriteKey) return;
+    const name = window.prompt("Save current view as:");
+    if (!name) return;
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `v_${Date.now()}`;
+    const view: SavedView = {
+      id,
+      name,
+      query: searchQuery,
+      sortKey: sortState?.key ?? null,
+      sortDir: sortState?.direction ?? null,
+      groupKey,
+      pageSize,
+    };
+    writeViews(favoriteKey, [...views, view]);
+  };
+  const deleteView = (id: string) => {
+    if (!favoriteKey) return;
+    writeViews(
+      favoriteKey,
+      views.filter((v) => v.id !== id),
+    );
+  };
+
+  // Columns that can be grouped (must have a string id / accessorKey).
+  const groupableColumns = useMemo(() => {
+    return columns
+      .map((c) => {
+        const key = c.id || (typeof c.accessorKey === "string" ? c.accessorKey : undefined);
+        const label = typeof c.header === "string" ? c.header : key;
+        return key ? { key, label: label ?? key } : null;
+      })
+      .filter((x): x is { key: string; label: string } => x !== null);
+  }, [columns]);
+
+  const showErgonomics = groupable || Boolean(favoriteKey);
+
   const hasToolbar = Boolean(
     title ||
       description ||
       searchable ||
       actions ||
       filters ||
+      showErgonomics ||
       (selectable && selectedKeys.length > 0)
   );
 
@@ -429,6 +644,84 @@ export function CentralTable<TData>({
               {actions && <div className="flex items-center gap-2.5">{actions}</div>}
             </div>
           </div>
+
+          {/* Group-by + Favorites ergonomics bar (opt-in) */}
+          {showErgonomics && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-border/70 bg-muted/20 px-6 py-2.5">
+              {groupable && (
+                <div className="flex items-center gap-1.5">
+                  <ListFilter className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-semibold text-muted-foreground">Group by</span>
+                  <select
+                    value={groupKey ?? ""}
+                    onChange={(e) => {
+                      setGroupKey(e.target.value || null);
+                      setCurrentPage(1);
+                    }}
+                    className="h-8 rounded-md border border-input/80 bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+                  >
+                    <option value="">None</option>
+                    {groupableColumns.map((c) => (
+                      <option key={c.key} value={c.key}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {favoriteKey && (
+                <>
+                  {groupable && <span className="mx-1 h-4 w-px bg-border/70" />}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {mounted &&
+                      views.map((v) => {
+                        const active =
+                          v.query === searchQuery &&
+                          v.groupKey === groupKey &&
+                          v.sortKey === (sortState?.key ?? null) &&
+                          v.pageSize === pageSize;
+                        return (
+                          <span
+                            key={v.id}
+                            className={cn(
+                              "group inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors cursor-pointer",
+                              active
+                                ? "border-primary/40 bg-primary/10 text-primary"
+                                : "border-border/80 bg-background text-muted-foreground hover:text-foreground hover:border-primary/30",
+                            )}
+                            onClick={() => applyView(v)}
+                            title="Apply saved view"
+                          >
+                            {v.name}
+                            <button
+                              type="button"
+                              aria-label={`Delete view ${v.name}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteView(v.id);
+                              }}
+                              className="ml-0.5 rounded-full p-0.5 text-muted-foreground/60 hover:bg-rose-500/15 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        );
+                      })}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={saveCurrentView}
+                      className="h-7 px-2 text-xs font-semibold gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      <BookmarkPlus className="h-3.5 w-3.5" /> Save view
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Integrated Filters Section Inside Table */}
           {filters && isFilterOpen && (
@@ -575,10 +868,35 @@ export function CentralTable<TData>({
                 </td>
               </tr>
             ) : (
-              // Real data rows
-              paginatedData.map((row, rowIdx) => {
+              // Real data rows (with optional group headers)
+              renderItems.map((item) => {
+                if (item.kind === "group") {
+                  return (
+                    <tr key={`grp-${item.label}`} className="border-b border-border/70 bg-muted/40">
+                      <td
+                        colSpan={columns.length + (selectable ? 1 : 0)}
+                        className="px-6 py-2.5"
+                      >
+                        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                          <ListFilter className="h-3.5 w-3.5" />
+                          {typeof groupCol?.header === "string" && (
+                            <span className="uppercase tracking-wider">{groupCol.header}:</span>
+                          )}
+                          <span className="text-foreground font-bold normal-case tracking-normal">{item.label}</span>
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
+                            {item.count}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                const row = item.row;
+                const rowIdx = item.index;
                 const rowKey = getRowKey(row, rowIdx);
                 const isSelected = selectedKeys.includes(rowKey);
+
 
                 return (
                   <tr

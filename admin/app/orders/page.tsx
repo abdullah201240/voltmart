@@ -344,9 +344,11 @@ export default function OrdersPage() {
           loadingRows={6}
           selectable
           searchable
-          searchPlaceholder="Search order, customer or email..."
+          searchPlaceholder="Search order/customer... or total>100000, status:draft"
           title="All Orders"
           description={`${filteredRows.length} of ${rows.length} orders`}
+          groupable
+          favoriteKey="orders"
           filters={
             <div className="grid gap-5 sm:grid-cols-3 w-full">
               <SearchableDropbox
