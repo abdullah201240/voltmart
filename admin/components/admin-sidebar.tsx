@@ -38,7 +38,7 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-const NAV_GROUPS: NavGroup[] = [
+export const NAV_GROUPS: NavGroup[] = [
   {
     items: [
       {
@@ -76,6 +76,7 @@ const NAV_GROUPS: NavGroup[] = [
           { title: "Receipts", href: "/inventory/receipts" },
           { title: "Deliveries", href: "/inventory/deliveries" },
           { title: "Transfers", href: "/inventory/transfers" },
+          { title: "Replenishment", href: "/inventory/replenishment" },
           { title: "Stock Levels", href: "/inventory" },
         ],
       },

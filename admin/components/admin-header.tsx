@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationsPopover } from "@/components/notifications-popover";
+import { useAdminLayout } from "@/components/admin-shell";
+import { Command as CommandIcon } from "lucide-react";
 
 interface AdminHeaderProps {
   onMobileMenuToggle: () => void;
@@ -50,6 +52,7 @@ export function AdminHeader({
   className,
 }: AdminHeaderProps) {
   const pathname = usePathname();
+  const { openCommand } = useAdminLayout();
 
   const breadcrumb = BREADCRUMB_MAP[pathname] || {
     section: "Admin",
@@ -118,6 +121,20 @@ export function AdminHeader({
 
       {/* Right: Global Search, Theme Toggle, Notification Bell, Admin Profile */}
       <div className="flex items-center gap-2.5">
+        {/* Global Command Bar (⌘K) Trigger */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={openCommand}
+          className="hidden md:inline-flex h-10 items-center gap-2 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer"
+          title="Command bar (⌘K)"
+          aria-label="Open command bar"
+        >
+          <CommandIcon className="h-4 w-4" />
+          <span>Menu</span>
+        </Button>
+
         {/* Global Quick Search Input with ⌘K Badge */}
         <div className="relative hidden md:block w-72 lg:w-96">
           <Search size={16} className="absolute left-3 top-3 size-4 text-muted-foreground pointer-events-none" />

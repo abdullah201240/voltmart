@@ -28,6 +28,7 @@ import {
   type OrderStatus,
 } from "@/lib/data/orders";
 import { RecordChatter } from "@/components/ui/record-chatter";
+import { PrintPreviewDialog } from "@/components/ui/print-preview";
 import { useOps, clearRecord, recordTouched } from "@/lib/data/ops";
 import {
   SALE_ORDER,
@@ -121,6 +122,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | undefined>();
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -201,7 +203,7 @@ export default function OrderDetailPage() {
           <Button
             variant="outline"
             className="h-10 px-4 text-sm font-medium cursor-pointer"
-            onClick={() => window.print()}
+            onClick={() => setPrintOpen(true)}
           >
             <Printer className="mr-2 h-4 w-4" /> Print
           </Button>
@@ -384,6 +386,14 @@ export default function OrderDetailPage() {
           <RecordChatter model={SALE_ORDER} recordId={order.id} />
         </div>
       </div>
+
+      {/* Print / PDF-stub preview (quotation · invoice · delivery slip) */}
+      <PrintPreviewDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        order={order}
+        initialKind={order.status === "Quotation" ? "quotation" : order.status === "Invoiced" ? "invoice" : "quotation"}
+      />
 
       {/* Action toast */}
       {feedback && (

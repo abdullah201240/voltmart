@@ -521,3 +521,58 @@ export function unreconcileStatement(
   return ok("Reconciliation reversed.");
 }
 
+// ------------------------------------------------------------------
+// Replenishment (`stock.warehouse.orderpoint`) — reorder-rule scheduler
+// ------------------------------------------------------------------
+// Mirrors Odoo's minimum/maximum rules: when free stock dips to/below the
+// minimum, the scheduler proposes a procurement to top back up to the max.
+// Running it "orders" the rule (generating a procurement reference); the
+// effect persists through the overlay so the board reflects it everywhere.
+
+export const ORDERPOINT = "stock.warehouse.orderpoint";
+
+export interface OrderpointLive {
+  status: "ordered" | null;
+  procurementRef: string | null;
+  orderedQty: number | null;
+  vendor: string | null;
+}
+
+/** Effective (overlay-merged) state of a reorder rule. */
+export function orderpointState(ref: string): OrderpointLive {
+  const f = getRecord(ORDERPOINT, ref).fields;
+  return {
+    status: (f.status as "ordered" | undefined) ?? null,
+    procurementRef: (f.procurementRef as string | undefined) ?? null,
+    orderedQty: (f.orderedQty as number | undefined) ?? null,
+    vendor: (f.vendor as string | undefined) ?? null,
+  };
+}
+
+/** Generate a procurement for a triggered order point. */
+export function scheduleOrderpoint(
+  ref: string,
+  product: string,
+  qty: number,
+  vendor: string,
+): ActionResult {
+  const live = orderpointState(ref);
+  if (live.status === "ordered") {
+    return fail(`${product} is already in replenishment (${live.procurementRef}).`);
+  }
+  if (qty <= 0) return fail(`${product} has enough stock — nothing to order.`);
+  const procurementRef = `PO/${ref}`;
+  patchFields(ORDERPOINT, ref, { status: "ordered", procurementRef, orderedQty: qty, vendor });
+  addHistory(ORDERPOINT, ref, "Procurement scheduled", `Scheduler generated ${procurementRef}: ${qty} × ${product} from ${vendor}.`);
+  return ok(`Procurement ${procurementRef} created · ${qty} units.`);
+}
+
+/** Cancel a generated procurement, returning the rule to triggered. */
+export function cancelOrderpoint(ref: string, product: string): ActionResult {
+  const live = orderpointState(ref);
+  if (live.status !== "ordered") return fail("This rule has no pending procurement to cancel.");
+  patchFields(ORDERPOINT, ref, { status: null, procurementRef: null, orderedQty: null });
+  addHistory(ORDERPOINT, ref, "Procurement cancelled", `Removed the pending procurement for ${product}.`);
+  return ok("Procurement cancelled.");
+}
+

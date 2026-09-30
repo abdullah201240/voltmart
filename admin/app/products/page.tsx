@@ -14,6 +14,12 @@ import { CentralTable, type CentralTableColumn } from "@/components/ui/central-t
 import { ViewSwitcher } from "@/components/ui/view-switcher";
 import { KanbanBoard } from "@/components/ui/kanban-board";
 import { GraphView, PivotView } from "@/components/ui/graph-view";
+import {
+  BulkActionBar,
+  type BulkApplyKind,
+  type BulkFieldDef,
+  type BulkChoice,
+} from "@/components/ui/bulk-actions";
 import { ProductFormDrawer } from "@/components/product-form-drawer";
 import { useAdminLayout } from "@/components/admin-shell";
 import {
@@ -34,8 +40,12 @@ import {
   ArchiveRestore,
   AlertTriangle,
 } from "lucide-react";
-import { useOps } from "@/lib/data/ops";
-import { applyProductAction, type ProductAction } from "@/lib/data/workflows";
+import { useOps, patchFields, addHistory } from "@/lib/data/ops";
+import {
+  applyProductAction,
+  PRODUCT_TEMPLATE,
+  type ProductAction,
+} from "@/lib/data/workflows";
 import {
   getProducts,
   catalogStats,
@@ -63,6 +73,40 @@ const STATUS_META: Record<ProductRow["status"], "default" | "secondary" | "outli
   Archived: "outline",
 };
 
+// Options backing the generic bulk "Action ▾" cascade on this table.
+const BULK_FIELDS: BulkFieldDef[] = [
+  {
+    id: "channel",
+    label: "Sales channel",
+    options: CHANNEL_OPTIONS.filter((o) => o.value !== "all").map((o) => ({
+      value: o.value,
+      label: o.label,
+    })),
+  },
+  {
+    id: "status",
+    label: "Publication",
+    options: [
+      { value: "Active", label: "Published" },
+      { value: "Draft", label: "Draft" },
+      { value: "Archived", label: "Archived" },
+    ],
+  },
+];
+
+const BULK_TAGS: BulkChoice[] = [
+  { value: "New", label: "New arrival" },
+  { value: "Best seller", label: "Best seller" },
+  { value: "Featured", label: "Featured" },
+  { value: "Clearance", label: "Clearance" },
+];
+
+const BULK_ASSIGNEES: BulkChoice[] = [
+  { value: "Alex", label: "Alex (Sales)" },
+  { value: "Priya", label: "Priya (Sales)" },
+  { value: "Marc", label: "Marc (Sales)" },
+];
+
 const PRODUCT_COLUMNS: CentralTableColumn<ProductRow>[] = [
   {
     accessorKey: "name",
@@ -77,6 +121,20 @@ const PRODUCT_COLUMNS: CentralTableColumn<ProductRow>[] = [
           {row.name}
         </Link>
         <div className="text-xs text-muted-foreground mt-0.5 font-mono">{row.sku}</div>
+        {(row.salesperson || (row.tags && row.tags.length > 0)) && (
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            {row.salesperson && (
+              <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                {row.salesperson}
+              </span>
+            )}
+            {row.tags?.map((t) => (
+              <Badge key={t} variant="outline" className="px-1.5 py-0 text-[10px] font-semibold">
+                {t}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
     ),
   },
@@ -236,6 +294,36 @@ export default function ProductsPage() {
       message: `${done} product(s) ${action === "archive" ? "archived" : action === "publish" ? "published" : action === "unarchive" ? "restored" : "unpublished"}${skipped ? ` · ${skipped} skipped` : ""}.`,
     });
     clear();
+  };
+
+  // Generic bulk "Action ▾" cascade — Set a field / Add a tag / Assign owner,
+  // persisted straight through the ops overlay (with a chatter history line).
+  const bulkApply = (
+    kind: BulkApplyKind,
+    fieldId: string | null,
+    value: string,
+    selected: ProductRow[],
+  ) => {
+    let n = 0;
+    for (const p of selected) {
+      if (kind === "field" && fieldId === "channel") {
+        const opt = CHANNEL_OPTIONS.find((o) => o.value === value);
+        patchFields(PRODUCT_TEMPLATE, p.id, { channelKey: value, channel: opt?.label ?? p.channel });
+        addHistory(PRODUCT_TEMPLATE, p.id, `Channel → ${opt?.label ?? value}`, `Bulk set sales channel for ${p.name}.`);
+      } else if (kind === "field" && fieldId === "status") {
+        patchFields(PRODUCT_TEMPLATE, p.id, { status: value });
+        addHistory(PRODUCT_TEMPLATE, p.id, `State → ${value}`, `Bulk set publication state for ${p.name}.`);
+      } else if (kind === "tag") {
+        const next = Array.from(new Set([...(p.tags ?? []), value]));
+        patchFields(PRODUCT_TEMPLATE, p.id, { tags: next });
+        addHistory(PRODUCT_TEMPLATE, p.id, `Tagged "${value}"`, `Bulk added tag "${value}" to ${p.name}.`);
+      } else if (kind === "assign") {
+        patchFields(PRODUCT_TEMPLATE, p.id, { salesperson: value });
+        addHistory(PRODUCT_TEMPLATE, p.id, `Assigned ${value}`, `Bulk assigned ${value} to ${p.name}.`);
+      }
+      n += 1;
+    }
+    setFeedback({ ok: n > 0, message: `Updated ${n} product(s).` });
   };
 
   // Kanban drag between publication states.
@@ -451,6 +539,14 @@ export default function ProductsPage() {
         pageSizeOptions={[10, 20, 50]}
         selectedActions={(selectedRows, clearSelection) => (
           <div className="flex items-center gap-2">
+            <BulkActionBar
+              rows={selectedRows}
+              clearSelection={clearSelection}
+              fields={BULK_FIELDS}
+              tags={BULK_TAGS}
+              assignees={BULK_ASSIGNEES}
+              onApply={bulkApply}
+            />
             <Button
               size="sm"
               variant="outline"

@@ -172,6 +172,12 @@ export function clearRecord(model: string, ref: string) {
   commit();
 }
 
+/** Wipe the entire overlay (all records) — global "reset demo data". */
+export function clearAllOps() {
+  blob = {};
+  commit();
+}
+
 /** True if a record has any persisted operation (for badge/reset affordances). */
 export function recordTouched(model: string, ref: string) {
   const r = getRecord(model, ref);

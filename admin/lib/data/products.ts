@@ -40,6 +40,10 @@ export interface ProductRow {
   status: ProductStatus;
   /** Reorder threshold; stock at/under this = low. */
   reorderPoint: number;
+  /** Optional merchandising tags (bulk "Add a tag" action). */
+  tags?: string[];
+  /** Optional responsible salesperson (bulk "Assign owner" action). */
+  salesperson?: string;
 }
 
 /** Filter options reused by the toolbar dropdowns (SearchableDropbox). */

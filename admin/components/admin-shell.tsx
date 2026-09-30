@@ -14,6 +14,7 @@ import { AdminSidebar } from "@/components/admin-sidebar";
 import { AdminHeader } from "@/components/admin-header";
 import { AdminFooter } from "@/components/admin-footer";
 import { NotificationsProvider } from "@/lib/notifications-context";
+import { CommandPalette } from "@/components/command-palette";
 
 const SIDEBAR_KEY = "voltmart_sidebar_collapsed";
 const sidebarListeners = new Set<() => void>();
@@ -56,6 +57,7 @@ interface AdminLayoutContextValue {
   setMobileOpen: (open: boolean) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  openCommand: () => void;
 }
 
 const AdminLayoutContext = createContext<AdminLayoutContextValue | null>(null);
@@ -84,6 +86,7 @@ export function AdminShell({ children, className }: AdminShellProps) {
   );
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const setSidebarCollapsed = writeSidebar;
   const handleToggleSidebar = () => writeSidebar(!sidebarCollapsed);
@@ -98,20 +101,14 @@ export function AdminShell({ children, className }: AdminShellProps) {
   }
 
   // Global keyboard shortcuts:
-  // - ⌘K / Ctrl+K: focus global search
+  // - ⌘K / Ctrl+K: open the global command bar
   // - ⌘B / Ctrl+B: toggle sidebar collapse
   // - Escape: close mobile drawer or blur search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        const searchInput = document.getElementById(
-          "admin-global-search"
-        ) as HTMLInputElement | null;
-        if (searchInput) {
-          searchInput.focus();
-          searchInput.select();
-        }
+        setPaletteOpen(true);
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
         e.preventDefault();
         handleToggleSidebar();
@@ -143,6 +140,7 @@ export function AdminShell({ children, className }: AdminShellProps) {
         setMobileOpen,
         searchQuery,
         setSearchQuery,
+        openCommand: () => setPaletteOpen(true),
       }}
     >
       <NotificationsProvider>
@@ -185,6 +183,9 @@ export function AdminShell({ children, className }: AdminShellProps) {
             {/* Permanently Fixed Bottom Telemetry Footer */}
             <AdminFooter className="shrink-0" />
           </div>
+
+          {/* Global ⌘K command bar (search + create + apps) */}
+          <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         </div>
       </NotificationsProvider>
     </AdminLayoutContext.Provider>

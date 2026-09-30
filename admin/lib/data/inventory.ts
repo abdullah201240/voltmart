@@ -121,3 +121,66 @@ export function pickingStats(rows: PickingRow[]) {
   const done = rows.filter((r) => r.state === "done").length;
   return { total: rows.length, ready, waiting, done };
 }
+
+// ------------------------------------------------------------------
+// Reorder rules / replenishment (`stock.warehouse.orderpoint`)
+// ------------------------------------------------------------------
+// Odoo's scheduler turns a min/max reorder rule into a procurement the
+// moment free stock dips to (or below) the minimum. Here the rules derive
+// straight from the on-hand table (`reorderPoint` = min, 2×min = max) and
+// the "need" is recomputed live, so the board always reflects current stock.
+
+export interface ReplenishRule {
+  /** Stable order-point ref (the SKU). */
+  id: string;
+  product: string;
+  sku: string;
+  warehouse: string;
+  location: string;
+  onHand: number;
+  reserved: number;
+  free: number;
+  min: number;
+  max: number;
+  /** Units to procure to reach the max (0 when covered). */
+  need: number;
+  /** True when free stock is at/below the minimum. */
+  shortage: boolean;
+  vendor: string;
+}
+
+const REPLENISH_VENDORS = ["Ready Mat", "Wood Corner", "Deco Addict", "AudioWorks Supply"];
+
+/** Derive the current replenishment rules from on-hand stock (synchronous). */
+export function getReplenishRules(): ReplenishRule[] {
+  return STOCK.map((s, i) => {
+    const min = s.reorderPoint;
+    const max = s.reorderPoint * 2;
+    const free = s.onHand - s.reserved;
+    const shortage = free <= min;
+    const need = shortage ? Math.max(0, max - s.onHand) : 0;
+    return {
+      id: s.sku,
+      product: s.product,
+      sku: s.sku,
+      warehouse: s.warehouse,
+      location: s.location,
+      onHand: s.onHand,
+      reserved: s.reserved,
+      free,
+      min,
+      max,
+      need,
+      shortage,
+      vendor: REPLENISH_VENDORS[i % REPLENISH_VENDORS.length],
+    };
+  });
+}
+
+/** Aggregate KPIs for the replenishment board. */
+export function replenishStats(rules: ReplenishRule[], statusOf: (id: string) => "ordered" | null) {
+  const triggered = rules.filter((r) => r.shortage && statusOf(r.id) !== "ordered").length;
+  const scheduled = rules.filter((r) => statusOf(r.id) === "ordered").length;
+  const unitsToOrder = rules.filter((r) => statusOf(r.id) !== "ordered").reduce((s, r) => s + r.need, 0);
+  return { rules: rules.length, triggered, scheduled, unitsToOrder };
+}
