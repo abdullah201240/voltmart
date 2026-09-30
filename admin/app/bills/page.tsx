@@ -157,7 +157,7 @@ export default function BillsPage() {
         title="Bills"
         description={`${filteredRows.length} of ${rows.length} bills`}
         filters={
-          <div className="grid gap-5 sm:grid-cols-1 w-full sm:max-w-xs">
+          <div className="grid gap-5 sm:grid-cols-3 w-full">
             <SearchableDropbox
               label="State"
               options={MOVE_STATE_OPTIONS as DropboxOption[]}

@@ -142,7 +142,7 @@ export default function ShippingMethodsPage() {
         title="Carriers"
         description={`${filteredRows.length} of ${rows.length} carriers`}
         filters={
-          <div className="grid gap-5 sm:grid-cols-1 w-full sm:max-w-xs">
+          <div className="grid gap-5 sm:grid-cols-3 w-full">
             <SearchableDropbox
               label="Provider"
               options={CARRIER_PROVIDER_OPTIONS as DropboxOption[]}

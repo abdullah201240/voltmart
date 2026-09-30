@@ -111,10 +111,12 @@ export default function NewCustomerPage() {
           <Button
             variant="ghost"
             size="icon"
+            asChild
             className="h-9 w-9 cursor-pointer hover:bg-muted"
-            render={<Link href="/customers" />}
           >
-            <ArrowLeft className="h-5 w-5" />
+            <Link href="/customers">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
           </Button>
           <div>
             <div className="flex items-center gap-2">

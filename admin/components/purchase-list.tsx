@@ -40,6 +40,7 @@ import {
   type PoState,
 } from "@/lib/data/purchasing";
 import { useOps } from "@/lib/data/ops";
+import { useToast } from "@/components/app-feedback";
 import { applyPoAction, type PoAction } from "@/lib/data/workflows";
 
 const STATE_CLASS: Record<PoState, string> = {
@@ -75,11 +76,11 @@ interface PurchaseListProps {
 export function PurchaseList({ rfq }: PurchaseListProps) {
   const { searchQuery } = useAdminLayout();
   const version = useOps();
+  const appToast = useToast();
   const [rows, setRows] = useState<PurchaseOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
   const [view, setView] = useState<"list" | "kanban" | "graph">("list");
 
   const heading = rfq ? "Requests for Quotation" : "Purchase Orders";
@@ -98,14 +99,13 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
     };
   }, [rfq, version]);
 
-  useEffect(() => {
-    if (!feedback) return;
-    const t = setTimeout(() => setFeedback(null), 3200);
-    return () => clearTimeout(t);
-  }, [feedback]);
-
   const act = (p: PurchaseOrderRow, action: PoAction) => {
-    setFeedback(applyPoAction(p.id, p.vendor, action, { state: p.state, received: p.received }));
+    const res = applyPoAction(p.id, p.vendor, action, { state: p.state, received: p.received });
+    if (res.ok) {
+      appToast.success("Purchase order updated", res.message);
+    } else {
+      appToast.error("Update failed", res.message);
+    }
   };
 
   const bulkAction = (selected: PurchaseOrderRow[], action: PoAction, clear: () => void) => {
@@ -116,10 +116,11 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
       if (res.ok) done += 1;
       else failed += 1;
     }
-    setFeedback({
-      ok: done > 0,
-      message: `${done} order(s) ${action === "confirm" ? "confirmed" : "received"}${failed ? ` · ${failed} skipped` : ""}.`,
-    });
+    if (done > 0) {
+      appToast.success("Orders updated", `${done} order(s) ${action === "confirm" ? "confirmed" : "received"}${failed ? ` · ${failed} skipped` : ""}.`);
+    } else {
+      appToast.error("Update failed", `Could not update selected order(s).`);
+    }
     clear();
   };
 
@@ -151,10 +152,15 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
         : toKey === "cancel" ? "cancel"
         : null;
     if (!action) {
-      setFeedback({ ok: false, message: `No direct transition to "${PO_STATE_LABEL[toKey as PoState] ?? toKey}".` });
+      appToast.warning("Invalid transition", `No direct transition to "${PO_STATE_LABEL[toKey as PoState] ?? toKey}".`);
       return;
     }
-    setFeedback(applyPoAction(row.id, row.vendor, action, { state: row.state, received: row.received }));
+    const res = applyPoAction(row.id, row.vendor, action, { state: row.state, received: row.received });
+    if (res.ok) {
+      appToast.success("Stage updated", res.message);
+    } else {
+      appToast.error("Update failed", res.message);
+    }
   };
 
   // Purchase value by state for the Graph view.
@@ -406,21 +412,6 @@ export function PurchaseList({ rfq }: PurchaseListProps) {
 
       {view === "graph" && (
         <GraphView data={graphData} formatValue={money} onSelect={() => setView("list")} />
-      )}
-
-      {/* Action toast */}
-      {feedback && (
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border flex items-center gap-2",
-            feedback.ok
-              ? "bg-card text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "bg-card text-rose-600 dark:text-rose-400 border-rose-500/30",
-          )}
-        >
-          {feedback.ok ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-          {feedback.message}
-        </div>
       )}
     </>
   );

@@ -228,7 +228,7 @@ export default function JournalEntriesPage() {
     {
       accessorKey: "narration",
       header: "Narration",
-      cell: ({ value }) => <span className="text-xs text-muted-foreground line-clamp-1 max-w-md">{value}</span>,
+      cell: ({ value }) => <span className="text-xs text-muted-foreground line-clamp-1 truncate">{value}</span>,
     },
     {
       accessorKey: "id",
@@ -343,7 +343,7 @@ export default function JournalEntriesPage() {
       {drawerMove && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpenMove(null)} />
-          <aside className="absolute right-0 top-0 h-full w-full max-w-3xl overflow-y-auto bg-card border-l border-border/80 shadow-xl p-6 md:p-8">
+          <aside className="absolute right-0 top-0 h-full w-full sm:w-[720px] overflow-y-auto bg-card border-l border-border/80 shadow-xl p-6 md:p-8">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
@@ -463,7 +463,7 @@ export default function JournalEntriesPage() {
         return (
           <div className="fixed inset-0 z-50">
             <div className="absolute inset-0 bg-black/40" onClick={() => setCreating(false)} />
-            <aside className="absolute right-0 top-0 h-full w-full max-w-3xl overflow-y-auto bg-card border-l border-border/80 shadow-xl p-6 md:p-8">
+            <aside className="absolute right-0 top-0 h-full w-full sm:w-[720px] overflow-y-auto bg-card border-l border-border/80 shadow-xl p-6 md:p-8">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <h2 className="text-2xl font-bold tracking-tight">Create Journal Entry</h2>

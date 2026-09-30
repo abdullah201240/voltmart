@@ -22,6 +22,7 @@ import {
   Boxes,
 } from "lucide-react";
 import { useOps } from "@/lib/data/ops";
+import { useToast } from "@/components/app-feedback";
 import { applyMoAction, setMoState } from "@/lib/data/workflows";
 import {
   getManufacturingOrders,
@@ -128,7 +129,7 @@ export default function ManufacturingPage() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"kanban" | "list" | "graph">("kanban");
   const [stateFilter, setStateFilter] = useState("all");
-  const [notice, setNotice] = useState<string | null>(null);
+  const appToast = useToast();
 
   useEffect(() => {
     let alive = true;
@@ -142,12 +143,6 @@ export default function ManufacturingPage() {
       alive = false;
     };
   }, [version]);
-
-  useEffect(() => {
-    if (!notice) return;
-    const t = setTimeout(() => setNotice(null), 3000);
-    return () => clearTimeout(t);
-  }, [notice]);
 
   const stats = useMemo(() => moStats(rows), [rows]);
   const filtered = useMemo(
@@ -166,11 +161,19 @@ export default function ManufacturingPage() {
 
   const act = (row: ManufacturingOrderRow, action: "confirm" | "start" | "produce" | "close") => {
     const res = applyMoAction(row.id, action, { state: row.state, qty: row.qty, qtyProduced: row.qtyProduced }, Math.ceil(row.qty / 2));
-    setNotice(res.message);
+    if (res.ok) {
+      appToast.success("MO updated", res.message);
+    } else {
+      appToast.error("Update failed", res.message);
+    }
   };
   const move = (row: ManufacturingOrderRow, toKey: string) => {
     const res = setMoState(row.id, toKey as MoState, { state: row.state, qty: row.qty, qtyProduced: row.qtyProduced });
-    if (!res.ok) setNotice(res.message);
+    if (res.ok) {
+      appToast.success("Stage updated", `Moved ${row.id} to ${toKey}`);
+    } else {
+      appToast.error("Transition failed", res.message);
+    }
   };
 
   return (
@@ -271,13 +274,6 @@ export default function ManufacturingPage() {
       )}
 
       {view === "graph" && <GraphView data={graphData} formatValue={(v) => `${v} units`} />}
-
-      {notice && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border border-primary/30 bg-card px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in fade-in-0 slide-in-from-bottom-2">
-          <RotateCcw className="h-4 w-4 text-primary" />
-          {notice}
-        </div>
-      )}
     </>
   );
 }

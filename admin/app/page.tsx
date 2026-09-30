@@ -13,7 +13,6 @@ import {
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
-import { CHANNEL_OPTIONS } from "@/lib/data/products";
 import {
   getOrders,
   orderStats,
@@ -24,20 +23,16 @@ import {
 } from "@/lib/data/orders";
 import {
   Banknote,
-  Package,
   ShoppingCart,
-  Users,
   Download,
   Plus,
   RotateCcw,
-  AlertCircle,
-  ShoppingBag,
-  TrendingUp,
-  Activity,
-  Percent,
+  AlertTriangle,
+  CreditCard,
   Truck,
   XCircle,
-  CreditCard,
+  Activity,
+  FileSpreadsheet,
 } from "lucide-react";
 import { applySaleAction } from "@/lib/data/workflows";
 import { useConfirm, useToast } from "@/components/app-feedback";
@@ -45,7 +40,24 @@ import { WarehouseTiles } from "@/components/warehouse-tiles";
 import { FinanceReconciliationPanel } from "@/components/finance-reconciliation-panel";
 import { CommercialAnalyticsPanel } from "@/components/commercial-analytics-panel";
 
-/** Order status badge tones — shared vocabulary with the Orders pages. */
+/** Channel filter options mapped from Saleor Multi-Channel Context */
+const DASHBOARD_CHANNELS: DropboxOption[] = [
+  { value: "all", label: "All Channels", badge: "GLOBAL" },
+  { value: "web", label: "Online Web Storefront", badge: "WEB" },
+  { value: "pos-dhanmondi", label: "POS Retail (Dhanmondi)", badge: "POS" },
+  { value: "daraz", label: "Daraz Flagship Mall", badge: "API" },
+  { value: "social", label: "Social Commerce (FB / WhatsApp)", badge: "SOCIAL" },
+];
+
+/** Date Range filter options for executive & operational reporting */
+const DATE_RANGE_OPTIONS: DropboxOption[] = [
+  { value: "today", label: "Today (Last 24h)", badge: "LIVE" },
+  { value: "7d", label: "Last 7 Days", badge: "WEEK" },
+  { value: "mtd", label: "Month to Date (MTD)", badge: "MONTH" },
+  { value: "ytd", label: "Year to Date (YTD)", badge: "YEAR" },
+];
+
+/** Order status badge tones — shared vocabulary with the Orders pages */
 const STATUS_META: Record<OrderStatus, string> = {
   Quotation: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
   Confirmed: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
@@ -63,7 +75,7 @@ const ORDER_COLUMNS: CentralTableColumn<OrderRow>[] = [
     cell: ({ row, value }) => (
       <Link
         href={`/orders/${row.id}`}
-        className="font-mono font-bold text-sm text-foreground hover:text-primary transition-colors"
+        className="font-mono font-bold text-sm text-foreground hover:text-primary transition-colors cursor-pointer"
       >
         {value}
       </Link>
@@ -137,33 +149,77 @@ export default function AdminDashboardPage() {
   const confirm = useConfirm();
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Top action bar states (Saleor + Odoo multi-channel & date context)
   const [selectedChannel, setSelectedChannel] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [selectedPayment, setSelectedPayment] = useState("all");
+  const [selectedDateRange, setSelectedDateRange] = useState("today");
+
+  // Secondary Operational View Switcher (Defaults to Warehouse & Fulfillment Pipeline)
+  const [activeOperationalTab, setActiveOperationalTab] = useState<"warehouse" | "finance" | "commercial">("warehouse");
+
+  // Live Orders CentralTable filters
+  const [tableChannel, setTableChannel] = useState("all");
+  const [tableStatus, setTableStatus] = useState("all");
+  const [tablePayment, setTablePayment] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
-  const [kpiTab, setKpiTab] = useState<"overview" | "cart" | "compact">("overview");
-  const [mainTab, setMainTab] = useState<"orders" | "warehouse" | "finance" | "commercial">("orders");
 
-  const handleDrillDown = (filter: { status?: string; query?: string; tab?: string }) => {
-    if (filter.tab) {
-      setMainTab(filter.tab as any);
-    } else {
-      setMainTab("orders");
-    }
-    if (filter.status) {
-      setSelectedStatus(filter.status);
-    }
-    if (filter.query) {
-      setSearchTableQuery(filter.query);
-    }
-    appToast.info("Filter applied", "Showing matching operational records.");
-  };
-
-  // Re-read orders so overlay workflow changes show up immediately.
+  // Re-read orders so overlay workflow changes show up immediately
   const reloadRows = () => {
     getOrders().then((data) => {
       setRows(data);
     });
+  };
+
+  useEffect(() => {
+    let alive = true;
+    getOrders().then((data) => {
+      if (alive) {
+        setRows(data);
+        setLoading(false);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const stats = useMemo(() => orderStats(rows), [rows]);
+
+  // 1-Click Operational Drill-Down Handler (from KPI cards & Odoo Kanban badges)
+  const handleDrillDown = (filter: { status?: string; query?: string; tab?: string }) => {
+    if (filter.tab === "warehouse" || filter.tab === "finance" || filter.tab === "commercial") {
+      setActiveOperationalTab(filter.tab);
+    }
+    if (filter.status) {
+      setTableStatus(filter.status);
+    }
+    if (filter.query) {
+      setSearchTableQuery(filter.query);
+    }
+
+    const tableEl = document.getElementById("live-orders-section");
+    if (tableEl) {
+      tableEl.scrollIntoView({ behavior: "smooth" });
+    }
+    appToast.info("Filter applied", "Showing matching operational records in Live Orders table.");
+  };
+
+  const exportDailyDossier = () => {
+    const header = ["Order ID", "Customer", "Email", "Channel", "Date", "Status", "Payment", "Items", "Total (BDT)"];
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = rows.map((o) =>
+      [o.id, o.customer, o.email, o.channel, o.date, o.status, o.paymentStatus, o.itemCount, o.totalValue]
+        .map(esc)
+        .join(",")
+    );
+    const blob = new Blob([[header.map(esc).join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `voltmart-daily-dossier-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    appToast.success("Daily dossier ready", `Exported full operational report (${rows.length} records) to CSV.`);
   };
 
   const exportCsv = (selected: OrderRow[]) => {
@@ -172,13 +228,13 @@ export default function AdminDashboardPage() {
     const lines = selected.map((o) =>
       [o.id, o.customer, o.email, o.channel, o.date, o.status, o.paymentStatus, o.itemCount, o.totalValue]
         .map(esc)
-        .join(","),
+        .join(",")
     );
     const blob = new Blob([[header.map(esc).join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `voltmart-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `voltmart-orders-selected-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     appToast.success("Export ready", `Exported ${selected.length} order(s) to CSV.`);
@@ -213,371 +269,312 @@ export default function AdminDashboardPage() {
   };
 
   const requestRestock = (productName: string) => {
-    appToast.success("Restock requested", `A replenishment request for “${productName}” was sent to inventory.`);
+    appToast.success("Restock requested", `Replenishment PO draft for “${productName}” created in Inventory.`);
   };
 
-  useEffect(() => {
-    let alive = true;
-    getOrders().then((data) => {
-      if (alive) {
-        setRows(data);
-        setLoading(false);
-      }
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   const effectiveQuery = (searchTableQuery || searchQuery).trim().toLowerCase();
-  const stats = useMemo(() => orderStats(rows), [rows]);
 
   const filteredOrders = useMemo(() => {
     return rows.filter((o) => {
-      const matchesChannel = selectedChannel === "all" || o.channelKey === selectedChannel;
-      const matchesStatus = selectedStatus === "all" || o.status === selectedStatus;
-      const matchesPayment = selectedPayment === "all" || o.paymentStatus === selectedPayment;
+      // Channel match combines top-bar channel context and table-specific channel filter
+      const channelToMatch = tableChannel !== "all" ? tableChannel : selectedChannel;
+      const matchesChannel =
+        channelToMatch === "all" ||
+        (channelToMatch === "web" && (o.channelKey === "default-channel" || o.channel.toLowerCase().includes("web"))) ||
+        (channelToMatch === "pos-dhanmondi" && (o.channelKey === "channel-dhk" || o.channel.toLowerCase().includes("dhanmondi"))) ||
+        (channelToMatch === "daraz" && o.channel.toLowerCase().includes("daraz")) ||
+        (channelToMatch === "social" && o.channel.toLowerCase().includes("social")) ||
+        o.channelKey === channelToMatch;
+
+      const matchesStatus = tableStatus === "all" || o.status === tableStatus;
+      const matchesPayment = tablePayment === "all" || o.paymentStatus === tablePayment;
       const matchesQuery =
         !effectiveQuery ||
         o.id.toLowerCase().includes(effectiveQuery) ||
         o.customer.toLowerCase().includes(effectiveQuery) ||
         o.email.toLowerCase().includes(effectiveQuery);
+
       return matchesChannel && matchesStatus && matchesPayment && matchesQuery;
     });
-  }, [rows, selectedChannel, selectedStatus, selectedPayment, effectiveQuery]);
+  }, [rows, selectedChannel, tableChannel, tableStatus, tablePayment, effectiveQuery]);
 
   const clearFilters = () => {
-    setSelectedChannel("all");
-    setSelectedStatus("all");
-    setSelectedPayment("all");
+    setTableChannel("all");
+    setTableStatus("all");
+    setTablePayment("all");
     setSearchTableQuery("");
   };
 
   const activeFiltersCount =
-    (selectedChannel !== "all" ? 1 : 0) +
-    (selectedStatus !== "all" ? 1 : 0) +
-    (selectedPayment !== "all" ? 1 : 0);
+    (tableChannel !== "all" ? 1 : 0) +
+    (tableStatus !== "all" ? 1 : 0) +
+    (tablePayment !== "all" ? 1 : 0);
   const hasActiveFilters = activeFiltersCount > 0 || effectiveQuery.length > 0;
 
   return (
-    <>
-        {/* Title & Actions Bar */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-            <p className="text-sm text-muted-foreground">
-              Monitor multi-channel revenue, orders, and fulfillment pipelines.
+    <div className="w-full space-y-6">
+      {/* TOP ACTION BAR: Panoramic Header (Saleor Channel Switcher + Date Range + Live Sync + Global Actions) */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between p-4 md:p-5 rounded-lg border border-border/80 bg-card shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+                Dashboard Overview
+              </h1>
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Live Sync Active
+              </div>
+            </div>
+            <p className="text-xs md:text-sm text-muted-foreground">
+              Dual-Engine Commerce Cockpit · Saleor Multi-Channel Growth & Odoo Warehouse Execution
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button variant="outline" className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all" onClick={() => exportCsv(rows)}>
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            <Button
-              className="h-11 px-5 text-sm font-medium cursor-pointer"
-              render={<Link href="/products/new" />}
-            >
-              <Plus className="mr-2 h-4 w-4" />
+          <div className="h-8 w-px bg-border hidden sm:block" />
+
+          {/* Panoramic Channel & Date Range Controls */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="w-48 sm:w-56">
+              <SearchableDropbox
+                options={DASHBOARD_CHANNELS}
+                value={selectedChannel}
+                onChange={setSelectedChannel}
+                placeholder="Channel context..."
+                searchPlaceholder="Search channel..."
+              />
+            </div>
+            <div className="w-44 sm:w-48">
+              <SearchableDropbox
+                options={DATE_RANGE_OPTIONS}
+                value={selectedDateRange}
+                onChange={setSelectedDateRange}
+                placeholder="Date range..."
+                searchPlaceholder="Search range..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Global Action Buttons */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Button
+            variant="outline"
+            className="h-10 px-4 text-xs md:text-sm font-semibold cursor-pointer active:scale-[0.98] transition-all gap-1.5"
+            onClick={exportDailyDossier}
+          >
+            <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+            <span className="hidden sm:inline">Export</span> Dossier
+          </Button>
+          <Button asChild variant="outline" className="h-10 px-4 text-xs md:text-sm font-semibold cursor-pointer active:scale-[0.98] transition-all gap-1.5">
+            <Link href="/products/new">
+              <Plus className="h-4 w-4" />
               Add Product
-            </Button>
-          </div>
+            </Link>
+          </Button>
+          <Button asChild className="h-10 px-4 text-xs md:text-sm font-semibold cursor-pointer active:scale-[0.98] transition-all gap-1.5">
+            <Link href="/orders/new">
+              <Plus className="h-4 w-4" />
+              Create Order
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* SECTION 1: PRIMARY KPI GRID (Glanceable Executive Strip — Standardized KpiGrid columns={4}) */}
+      <KpiGrid columns={4}>
+        <KpiCard
+          title="Net Revenue Today"
+          value="৳54,27,827"
+          icon={Banknote}
+          tone="emerald"
+          change="+14.2%"
+          trend="up"
+          tooltip="Real net revenue across all active channels after vouchers, discounts, and returns."
+        />
+        <div
+          onClick={() => handleDrillDown({ status: "Confirmed" })}
+          className="cursor-pointer active:scale-[0.98] transition-all"
+        >
+          <KpiCard
+            title="Orders to Fulfill"
+            value="42 Orders"
+            icon={ShoppingCart}
+            tone="blue"
+            change="8 Overdue"
+            trend="down"
+            tooltip="Active warehouse fulfillment queue. 8 orders past SLA. Click to filter live table."
+          />
+        </div>
+        <div
+          onClick={() => setActiveOperationalTab("finance")}
+          className="cursor-pointer active:scale-[0.98] transition-all"
+        >
+          <KpiCard
+            title="Payments to Settle"
+            value="৳14,82,400"
+            icon={CreditCard}
+            tone="violet"
+            change="MFS + COD"
+            tooltip="Cash float awaiting bank deposit across bKash, Nagad, and courier COD. Click to inspect."
+          />
+        </div>
+        <Link href="/inventory" className="block cursor-pointer active:scale-[0.98] transition-all">
+          <KpiCard
+            title="Stock Risk Alerts"
+            value="14 SKUs"
+            icon={AlertTriangle}
+            tone="amber"
+            change="3 Out of Stock"
+            trend="down"
+            tooltip="Items below safety buffer threshold requiring supplier replenishment POs."
+          />
+        </Link>
+      </KpiGrid>
+
+      {/* SECTION 2: VIEW SWITCHER TABS (Secondary Panoramic Operational Controls) */}
+      <Tabs
+        value={activeOperationalTab}
+        onValueChange={(v) => setActiveOperationalTab(v as any)}
+        className="w-full space-y-4"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/80 pb-3">
+          <TabsList className="h-11 p-1">
+            <TabsTrigger value="warehouse" className="text-sm font-semibold px-4 sm:px-5 cursor-pointer gap-2">
+              <span>📦</span> Warehouse & Fulfillment Pipeline
+            </TabsTrigger>
+            <TabsTrigger value="finance" className="text-sm font-semibold px-4 sm:px-5 cursor-pointer gap-2">
+              <span>💰</span> Financials & MFS Reconciliation
+            </TabsTrigger>
+            <TabsTrigger value="commercial" className="text-sm font-semibold px-4 sm:px-5 cursor-pointer gap-2">
+              <span>📊</span> Commercial Analytics (Pulse)
+            </TabsTrigger>
+          </TabsList>
+
+          <span className="text-xs text-muted-foreground">
+            {activeOperationalTab === "warehouse" && "Odoo-Style Operational Kanban Tiles with 1-Click Drill-Downs"}
+            {activeOperationalTab === "finance" && "bKash / Nagad balances, Courier COD float & NBR VAT 9.1"}
+            {activeOperationalTab === "commercial" && "Saleor Pulse AOV, gross vs net revenue & channel contribution"}
+          </span>
         </div>
 
-        {/* Centralized Reusable KPI System with View Switcher */}
-        <div className="space-y-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        {/* Tab 1: Warehouse & Fulfillment Pipeline (Odoo-Style Operational Kanban Tiles) */}
+        <TabsContent value="warehouse" className="w-full mt-0">
+          <WarehouseTiles onDrillDown={handleDrillDown} onRequestRestock={requestRestock} />
+        </TabsContent>
+
+        {/* Tab 2: Financials & MFS Reconciliation */}
+        <TabsContent value="finance" className="w-full mt-0">
+          <FinanceReconciliationPanel />
+        </TabsContent>
+
+        {/* Tab 3: Commercial Analytics (Saleor Pulse Style) */}
+        <TabsContent value="commercial" className="w-full mt-0">
+          <CommercialAnalyticsPanel />
+        </TabsContent>
+      </Tabs>
+
+      {/* SECTION 3: LIVE ORDERS & ANOMALY TRIAGE (Powered by CentralTable with Integrated Filters Tray) */}
+      <div id="live-orders-section" className="pt-2">
+        <CentralTable
+          data={filteredOrders}
+          columns={ORDER_COLUMNS}
+          loading={loading}
+          loadingRows={5}
+          selectable
+          searchable
+          searchPlaceholder="Quick filter live orders by ID, customer, email..."
+          title="Live Orders & Operational Anomaly Triage"
+          description={`${filteredOrders.length} matching orders · ${stats.pending} awaiting physical action · Click any row to view full dossier`}
+          filters={
+            <div className="grid gap-5 sm:grid-cols-3 w-full">
+              <SearchableDropbox
+                label="Sales Channel"
+                options={DASHBOARD_CHANNELS}
+                value={tableChannel}
+                onChange={setTableChannel}
+                placeholder="All channels..."
+                searchPlaceholder="Search channel..."
+              />
+              <SearchableDropbox
+                label="Order Status"
+                options={ORDER_STATUS_OPTIONS as DropboxOption[]}
+                value={tableStatus}
+                onChange={setTableStatus}
+                placeholder="All statuses..."
+                searchPlaceholder="Search order status..."
+              />
+              <SearchableDropbox
+                label="Payment Status"
+                options={PAYMENT_STATUS_OPTIONS as DropboxOption[]}
+                value={tablePayment}
+                onChange={setTablePayment}
+                placeholder="Any payment..."
+                searchPlaceholder="Search payment..."
+              />
+            </div>
+          }
+          activeFiltersCount={activeFiltersCount}
+          defaultFiltersOpen={true}
+          onClearFilters={clearFilters}
+          pagination
+          pageSize={10}
+          pageSizeOptions={[5, 10, 20, 50]}
+          selectedActions={(selectedRows, clearSelection) => (
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Key Performance Indicators
-              </span>
-              <span className="text-xs rounded-full bg-primary/10 text-primary px-2.5 py-0.5 font-medium">
-                Central Component
-              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
+                onClick={() => {
+                  exportCsv(selectedRows);
+                  clearSelection();
+                }}
+              >
+                <Download className="h-3.5 w-3.5" /> Export CSV
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
+                onClick={() => {
+                  bulkSaleAction(selectedRows, "ship");
+                  clearSelection();
+                }}
+              >
+                <Truck className="h-3.5 w-3.5" /> Fulfill Selected
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 text-xs font-semibold cursor-pointer gap-1.5 text-muted-foreground hover:text-rose-600"
+                onClick={() => {
+                  bulkSaleAction(selectedRows, "cancel");
+                  clearSelection();
+                }}
+              >
+                <XCircle className="h-3.5 w-3.5" /> Cancel Selected
+              </Button>
             </div>
-
-            <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-1 text-xs">
-              <button
-                type="button"
-                onClick={() => setKpiTab("overview")}
-                className={cn(
-                  "rounded-md px-3 py-1.5 font-medium transition-all cursor-pointer",
-                  kpiTab === "overview"
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Revenue & Operations
-              </button>
-              <button
-                type="button"
-                onClick={() => setKpiTab("cart")}
-                className={cn(
-                  "rounded-md px-3 py-1.5 font-medium transition-all cursor-pointer",
-                  kpiTab === "cart"
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Cart & Conversion
-              </button>
-              <button
-                type="button"
-                onClick={() => setKpiTab("compact")}
-                className={cn(
-                  "rounded-md px-3 py-1.5 font-medium transition-all cursor-pointer",
-                  kpiTab === "compact"
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Compact Strip
-              </button>
-            </div>
-          </div>
-
-          {kpiTab === "overview" && (
-            <KpiGrid columns={4}>
-              <KpiCard
-                title="Net Revenue Today"
-                value="৳54,27,827"
-                icon={Banknote}
-                tone="emerald"
-                change="+14.2%"
-                trend="up"
-                tooltip="Real net revenue across all active channels after vouchers, discounts, and returns"
-              />
-              <KpiCard
-                title="Orders to Fulfill"
-                value="42 Orders"
-                icon={ShoppingCart}
-                tone="blue"
-                change="8 Overdue"
-                trend="down"
-                tooltip="Active warehouse fulfillment queue awaiting picking or packing"
-              />
-              <KpiCard
-                title="Payments to Settle"
-                value="৳14,82,400"
-                icon={CreditCard}
-                tone="violet"
-                change="MFS + COD"
-                tooltip="Cash float awaiting bank deposit across bKash, Nagad, and courier COD"
-              />
-              <KpiCard
-                title="Stock Risk Alerts"
-                value="14 SKUs"
-                icon={AlertCircle}
-                tone="amber"
-                change="3 Out of Stock"
-                trend="down"
-                tooltip="Items below safety buffer threshold requiring supplier replenishment"
-              />
-            </KpiGrid>
           )}
-
-          {kpiTab === "cart" && (
-            <KpiGrid columns={4}>
-              <KpiCard
-                title="Average Cart Value (AOV)"
-                value="৳9,168"
-                icon={ShoppingBag}
-                tone="cyan"
-                tooltip="Average order value per completed checkout cart"
-              />
-              <KpiCard
-                title="Cart Abandonment Rate"
-                value="24.6%"
-                icon={Percent}
-                tone="emerald"
-                tooltip="Percentage of carts abandoned before checkout - downward trend is positive"
-              />
-              <KpiCard
-                title="Checkout Conversion Rate"
-                value="3.82%"
-                icon={TrendingUp}
-                tone="violet"
-                tooltip="Ratio of completed transactions relative to total unique store sessions"
-              />
-              <KpiCard
-                title="Active Cart Sessions"
-                value="482"
-                icon={Activity}
-                tone="indigo"
-                tooltip="Shoppers currently modifying carts or proceeding through checkout"
-              />
-            </KpiGrid>
-          )}
-
-          {kpiTab === "compact" && (
-            <KpiGrid columns={4}>
-              <KpiCard
-                title="Gross Revenue"
-                value="৳54.3L"
-                icon={Banknote}
-                tone="emerald"
-                variant="compact"
-              />
-              <KpiCard
-                title="Active Orders"
-                value="1,248"
-                icon={ShoppingCart}
-                tone="blue"
-                variant="compact"
-              />
-              <KpiCard
-                title="Cart Abandonment"
-                value="24.6%"
-                icon={ShoppingBag}
-                tone="cyan"
-                variant="compact"
-              />
-              <KpiCard
-                title="Low Inventory"
-                value="14"
-                icon={Package}
-                tone="amber"
-                variant="compact"
-              />
-            </KpiGrid>
-          )}
-        </div>
-
-        {/* Secondary View Switcher Tabs: Live Orders, Warehouse Operations, Financials & MFS, Commercial Analytics */}
-        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-5">
-          <div className="flex items-center justify-between">
-            <TabsList className="h-11 p-1">
-              <TabsTrigger value="orders" className="text-sm font-medium px-4 sm:px-5 cursor-pointer">
-                Live Orders ({filteredOrders.length})
-              </TabsTrigger>
-              <TabsTrigger value="warehouse" className="text-sm font-medium px-4 sm:px-5 cursor-pointer">
-                Warehouse Operations
-              </TabsTrigger>
-              <TabsTrigger value="finance" className="text-sm font-medium px-4 sm:px-5 cursor-pointer">
-                Financials & MFS
-              </TabsTrigger>
-              <TabsTrigger value="commercial" className="text-sm font-medium px-4 sm:px-5 cursor-pointer">
-                Commercial Analytics
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          {/* Orders Table Tab with CentralTable containing all integrated filters */}
-          <TabsContent value="orders">
-            <CentralTable
-              data={filteredOrders}
-              columns={ORDER_COLUMNS}
-              loading={loading}
-              loadingRows={5}
-              selectable
-              searchable
-              searchPlaceholder="Quick filter live orders..."
-              title="Recent Customer Orders"
-              description={`${filteredOrders.length} of ${stats.total} orders · ${stats.pending} awaiting action`}
-              filters={
-                <div className="grid gap-5 sm:grid-cols-3 w-full">
-                  <SearchableDropbox
-                    label="Sales Channel"
-                    options={CHANNEL_OPTIONS as DropboxOption[]}
-                    value={selectedChannel}
-                    onChange={setSelectedChannel}
-                    placeholder="All channels..."
-                    searchPlaceholder="Search channel..."
-                  />
-                  <SearchableDropbox
-                    label="Order Status"
-                    options={ORDER_STATUS_OPTIONS as DropboxOption[]}
-                    value={selectedStatus}
-                    onChange={setSelectedStatus}
-                    placeholder="All statuses..."
-                    searchPlaceholder="Search order status..."
-                  />
-                  <SearchableDropbox
-                    label="Payment Status"
-                    options={PAYMENT_STATUS_OPTIONS as DropboxOption[]}
-                    value={selectedPayment}
-                    onChange={setSelectedPayment}
-                    placeholder="Any payment..."
-                    searchPlaceholder="Search payment..."
-                  />
-                </div>
-              }
-              activeFiltersCount={activeFiltersCount}
-              defaultFiltersOpen={true}
-              onClearFilters={clearFilters}
-              pagination
-              pageSize={5}
-              pageSizeOptions={[5, 10, 20]}
-              selectedActions={(selectedRows, clearSelection) => (
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
-                    onClick={() => {
-                      exportCsv(selectedRows);
-                      clearSelection();
-                    }}
-                  >
-                    <Download className="h-3.5 w-3.5" /> Export CSV
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs font-semibold cursor-pointer gap-1.5"
-                    onClick={() => {
-                      bulkSaleAction(selectedRows, "ship");
-                      clearSelection();
-                    }}
-                  >
-                    <Truck className="h-3.5 w-3.5" /> Fulfill
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 text-xs font-semibold cursor-pointer gap-1.5 text-muted-foreground hover:text-rose-600"
-                    onClick={() => {
-                      bulkSaleAction(selectedRows, "cancel");
-                      clearSelection();
-                    }}
-                  >
-                    <XCircle className="h-3.5 w-3.5" /> Cancel
-                  </Button>
-                </div>
-              )}
-              emptyAction={
-                hasActiveFilters && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clearFilters}
-                    className="cursor-pointer text-xs font-semibold gap-1.5"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    Reset All Filters
-                  </Button>
-                )
-              }
-            />
-          </TabsContent>
-
-          {/* Warehouse Operations Tab with Odoo-Style Kanban Tiles */}
-          <TabsContent value="warehouse" className="w-full">
-            <WarehouseTiles onDrillDown={handleDrillDown} onRequestRestock={requestRestock} />
-          </TabsContent>
-
-          {/* Financials & MFS Tab */}
-          <TabsContent value="finance" className="w-full">
-            <FinanceReconciliationPanel />
-          </TabsContent>
-
-          {/* Commercial Analytics Tab (Saleor Pulse Style) */}
-          <TabsContent value="commercial" className="w-full">
-            <CommercialAnalyticsPanel />
-          </TabsContent>
-        </Tabs>
-
-    </>
+          emptyAction={
+            hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="cursor-pointer text-xs font-semibold gap-1.5"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reset All Filters
+              </Button>
+            )
+          }
+        />
+      </div>
+    </div>
   );
 }

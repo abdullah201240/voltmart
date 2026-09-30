@@ -16,6 +16,7 @@ import {
   ListChecks,
 } from "lucide-react";
 import { useOps } from "@/lib/data/ops";
+import { useToast } from "@/components/app-feedback";
 import {
   getReplenishRules,
   replenishStats,
@@ -41,25 +42,35 @@ function statusOf(rule: ReplenishRule): { key: "ordered" | "triggered" | "covere
 
 export default function ReplenishmentPage() {
   useOps(); // re-render whenever the ops overlay changes
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const appToast = useToast();
 
   // Rules + statuses are derived live from the on-hand table + overlay.
   const rules = getReplenishRules();
   const stats = replenishStats(rules, (id) => orderpointState(id).status);
 
   const order = (rule: ReplenishRule) => {
-    setFeedback(scheduleOrderpoint(rule.id, rule.product, rule.need, rule.vendor));
+    const res = scheduleOrderpoint(rule.id, rule.product, rule.need, rule.vendor);
+    if (res.ok) {
+      appToast.success("Procurement ordered", res.message);
+    } else {
+      appToast.error("Failed to order", res.message);
+    }
   };
 
   const cancel = (rule: ReplenishRule) => {
-    setFeedback(cancelOrderpoint(rule.id, rule.product));
+    const res = cancelOrderpoint(rule.id, rule.product);
+    if (res.ok) {
+      appToast.info("Replenishment cancelled", res.message);
+    } else {
+      appToast.error("Failed to cancel", res.message);
+    }
   };
 
   // The scheduler = Odoo's "Run Scheduled Jobs": order every triggered rule.
   const runScheduler = () => {
     const targets = rules.filter((r) => r.shortage && orderpointState(r.id).status !== "ordered");
     if (targets.length === 0) {
-      setFeedback({ ok: true, message: "Scheduler ran — nothing to replenish." });
+      appToast.info("Scheduler complete", "Nothing to replenish at this time.");
       return;
     }
     let units = 0;
@@ -67,7 +78,7 @@ export default function ReplenishmentPage() {
       const res = scheduleOrderpoint(r.id, r.product, r.need, r.vendor);
       if (res.ok) units += r.need;
     }
-    setFeedback({ ok: true, message: `Scheduler ordered ${targets.length} procurement(s) · ${units} units.` });
+    appToast.success("Scheduler executed", `Ordered ${targets.length} procurement(s) for a total of ${units} units.`);
   };
 
   const COLUMNS: CentralTableColumn<ReplenishRule>[] = [
@@ -230,21 +241,6 @@ export default function ReplenishmentPage() {
         pageSize={10}
         pageSizeOptions={[10, 20, 50]}
       />
-
-      {/* Action toast */}
-      {feedback && (
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium shadow-lg",
-            feedback.ok
-              ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "text-rose-600 dark:text-rose-400 border-rose-500/30",
-          )}
-        >
-          {feedback.ok ? <Check className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-          {feedback.message}
-        </div>
-      )}
     </>
   );
 }

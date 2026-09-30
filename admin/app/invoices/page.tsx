@@ -238,7 +238,7 @@ export default function InvoicesPage() {
           </Button>
         )}
         filters={
-          <div className="grid gap-5 sm:grid-cols-1 w-full sm:max-w-xs">
+          <div className="grid gap-5 sm:grid-cols-3 w-full">
             <SearchableDropbox
               label="State"
               options={MOVE_STATE_OPTIONS as DropboxOption[]}

@@ -39,6 +39,7 @@ import {
   type PickingState,
 } from "@/lib/data/inventory";
 import { useOps } from "@/lib/data/ops";
+import { useToast } from "@/components/app-feedback";
 import { applyPickingAction, type PickingAction } from "@/lib/data/workflows";
 
 const STATE_CLASS: Record<PickingState, string> = {
@@ -76,11 +77,11 @@ interface PickingBoardProps {
 export function PickingBoard({ kind, title, heading, description, partnerLabel, validateLabel }: PickingBoardProps) {
   const { searchQuery } = useAdminLayout();
   const version = useOps();
+  const appToast = useToast();
   const [rows, setRows] = useState<PickingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
   const [view, setView] = useState<"list" | "kanban" | "graph">("list");
 
   useEffect(() => {
@@ -96,14 +97,13 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
     };
   }, [kind, version]);
 
-  useEffect(() => {
-    if (!feedback) return;
-    const t = setTimeout(() => setFeedback(null), 3200);
-    return () => clearTimeout(t);
-  }, [feedback]);
-
   const act = (p: PickingRow, action: PickingAction) => {
-    setFeedback(applyPickingAction(p.id, kind, p.partner, p.origin, action, { state: p.state }));
+    const res = applyPickingAction(p.id, kind, p.partner, p.origin, action, { state: p.state });
+    if (res.ok) {
+      appToast.success("Operation updated", res.message);
+    } else {
+      appToast.error("Update failed", res.message);
+    }
   };
 
   const bulkValidate = (selected: PickingRow[], clear: () => void) => {
@@ -114,10 +114,11 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
       if (res.ok) done += 1;
       else skipped += 1;
     }
-    setFeedback({
-      ok: done > 0,
-      message: `${done} operation(s) validated${skipped ? ` · ${skipped} skipped (confirm & reserve first)` : ""}.`,
-    });
+    if (done > 0) {
+      appToast.success("Operations validated", `${done} operation(s) validated${skipped ? ` · ${skipped} skipped (confirm & reserve first)` : ""}.`);
+    } else {
+      appToast.error("Validation failed", `${skipped} operation(s) skipped (confirm & reserve first).`);
+    }
     clear();
   };
 
@@ -150,10 +151,15 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
         : toKey === "cancel" ? "cancel"
         : null;
     if (!action) {
-      setFeedback({ ok: false, message: `No direct transition to "${PICKING_STATE_LABEL[toKey as PickingState] ?? toKey}".` });
+      appToast.warning("Invalid transition", `No direct transition to "${PICKING_STATE_LABEL[toKey as PickingState] ?? toKey}".`);
       return;
     }
-    setFeedback(applyPickingAction(row.id, kind, row.partner, row.origin, action, { state: row.state }));
+    const res = applyPickingAction(row.id, kind, row.partner, row.origin, action, { state: row.state });
+    if (res.ok) {
+      appToast.success("Stage updated", res.message);
+    } else {
+      appToast.error("Update failed", res.message);
+    }
   };
 
   // Operation count by state for the Graph view.
@@ -372,21 +378,6 @@ export function PickingBoard({ kind, title, heading, description, partnerLabel, 
 
       {view === "graph" && (
         <GraphView data={graphData} formatValue={(v) => `${v}`} onSelect={() => setView("list")} />
-      )}
-
-      {/* Action toast */}
-      {feedback && (
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border flex items-center gap-2",
-            feedback.ok
-              ? "bg-card text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "bg-card text-rose-600 dark:text-rose-400 border-rose-500/30",
-          )}
-        >
-          {feedback.ok ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-          {feedback.message}
-        </div>
       )}
     </>
   );

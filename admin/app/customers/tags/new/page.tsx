@@ -169,7 +169,7 @@ export default function NewCustomerTagPage() {
                         )}
                       >
                         <span className={cn("h-5 w-5 rounded-full mb-1.5 shadow-xs", opt.value)} />
-                        <span className="text-[11px] truncate max-w-full">{opt.label}</span>
+                        <span className="text-[11px] truncate w-full">{opt.label}</span>
                       </button>
                     );
                   })}
@@ -232,7 +232,7 @@ export default function NewCustomerTagPage() {
             {assignmentMode === "spend" && (
               <div className="space-y-2 p-4 rounded-md bg-muted/30 border border-border/60">
                 <label className="text-sm font-medium text-foreground">Minimum Lifetime Spend (BDT)</label>
-                <div className="relative max-w-sm">
+                <div className="relative w-full sm:w-80">
                   <span className="absolute left-3 top-3 text-sm text-muted-foreground">৳</span>
                   <input
                     type="number"
@@ -249,7 +249,7 @@ export default function NewCustomerTagPage() {
             {assignmentMode === "orders" && (
               <div className="space-y-2 p-4 rounded-md bg-muted/30 border border-border/60">
                 <label className="text-sm font-medium text-foreground">Minimum Completed Orders</label>
-                <div className="relative max-w-sm">
+                <div className="relative w-full sm:w-80">
                   <input
                     type="number"
                     min="1"

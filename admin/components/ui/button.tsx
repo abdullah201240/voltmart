@@ -50,6 +50,7 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  nativeButton,
   children,
   ...props
 }: ButtonProps) {
@@ -60,9 +61,19 @@ function Button({
     })
   }
 
+  // When a custom render element (like <Link> or <a>) is used without explicitly
+  // providing nativeButton, default nativeButton to false so Base UI avoids console warnings.
+  const resolvedNativeButton =
+    nativeButton !== undefined
+      ? nativeButton
+      : props.render
+        ? false
+        : undefined
+
   return (
     <ButtonPrimitive
       data-slot="button"
+      nativeButton={resolvedNativeButton}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >

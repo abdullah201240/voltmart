@@ -440,12 +440,11 @@ export default function ProductsPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button
-            className="h-11 px-5 text-sm font-medium cursor-pointer"
-            render={<Link href="/products/new" />}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all">
+            <Link href="/products/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Product
+            </Link>
           </Button>
         </div>
       </div>

@@ -25,6 +25,7 @@ import { getCreditNotes, moveTotal, isBalanced, createCreditNote, type MoveRow, 
 import { getInvoices, type InvoiceRow } from "@/lib/data/finance";
 import { applyMoveAction } from "@/lib/data/workflows";
 import { useOps } from "@/lib/data/ops";
+import { useToast } from "@/components/app-feedback";
 
 function money(v: number) {
   return "৳" + v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -49,9 +50,9 @@ export default function CreditNotesPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [openNote, setOpenNote] = useState<MoveRow | null>(null);
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const [pickedInvoice, setPickedInvoice] = useState("all");
+  const appToast = useToast();
 
   useEffect(() => {
     let alive = true;
@@ -66,12 +67,6 @@ export default function CreditNotesPage() {
       alive = false;
     };
   }, [version]);
-
-  useEffect(() => {
-    if (!feedback) return;
-    const t = setTimeout(() => setFeedback(null), 3200);
-    return () => clearTimeout(t);
-  }, [feedback]);
 
   const drawerNote = openNote ? notes.find((r) => r.id === openNote.id) ?? null : null;
 
@@ -93,23 +88,27 @@ export default function CreditNotesPage() {
 
   const act = (m: MoveRow, action: "post" | "cancel") => {
     const res = applyMoveAction(m.id, action, { state: m.state }, isBalanced(m));
-    setFeedback(res);
+    if (res.ok) {
+      appToast.success("Credit note updated", res.message);
+    } else {
+      appToast.error("Update failed", res.message);
+    }
   };
 
   const issue = () => {
     const inv = invoices.find((i) => i.number === pickedInvoice);
     if (!inv) {
-      setFeedback({ ok: false, message: "Pick a posted or paid invoice first." });
+      appToast.error("Selection required", "Pick a posted or paid invoice first.");
       return;
     }
     const cn = createCreditNote(inv.number, inv.partner, inv.total);
     if (!cn) {
-      setFeedback({ ok: false, message: `A credit note already exists for ${inv.number}.` });
+      appToast.error("Duplicate credit note", `A credit note already exists for ${inv.number}.`);
       return;
     }
     setCreating(false);
     setPickedInvoice("all");
-    setFeedback({ ok: true, message: `Credit note ${cn.number} created in draft for ${inv.partner}.` });
+    appToast.success("Credit note created", `Credit note ${cn.number} created in draft for ${inv.partner}.`);
   };
 
   const COLUMNS: CentralTableColumn<MoveRow>[] = [
@@ -141,7 +140,7 @@ export default function CreditNotesPage() {
     {
       accessorKey: "narration",
       header: "Reason",
-      cell: ({ value }) => <span className="text-xs text-muted-foreground line-clamp-1 max-w-md">{value}</span>,
+      cell: ({ value }) => <span className="text-xs text-muted-foreground line-clamp-1 truncate">{value}</span>,
     },
     {
       accessorKey: "id",
@@ -218,7 +217,7 @@ export default function CreditNotesPage() {
       {drawerNote && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpenNote(null)} />
-          <aside className="absolute right-0 top-0 h-full w-full max-w-2xl overflow-y-auto bg-card border-l border-border/80 shadow-xl p-6 md:p-8">
+          <aside className="absolute right-0 top-0 h-full w-full sm:w-[640px] overflow-y-auto bg-card border-l border-border/80 shadow-xl p-6 md:p-8">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
@@ -310,21 +309,6 @@ export default function CreditNotesPage() {
               VAT (15%) is reversed proportionally; the receivable of <span className="font-mono">{pickedInvoice === "all" ? "—" : pickedInvoice}</span> is credited once posted.
             </p>
           </Card>
-        </div>
-      )}
-
-      {/* Action toast */}
-      {feedback && (
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border flex items-center gap-2",
-            feedback.ok
-              ? "bg-card text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "bg-card text-rose-600 dark:text-rose-400 border-rose-500/30",
-          )}
-        >
-          {feedback.ok ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-          {feedback.message}
         </div>
       )}
     </>

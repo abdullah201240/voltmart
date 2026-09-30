@@ -335,7 +335,7 @@ export default function NotificationsPage() {
             <h3 className="text-base font-bold text-foreground">
               No matching notifications
             </h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            <p className="text-xs text-muted-foreground mx-auto">
               There are no alerts matching your current filter criteria or search query.
             </p>
             <div className="pt-2">

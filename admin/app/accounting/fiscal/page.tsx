@@ -105,7 +105,7 @@ export default function FiscalPositionsPage() {
             <Landmark className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="font-semibold text-sm text-foreground truncate">{row.name}</span>
           </div>
-          <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-md">{row.note}</div>
+          <div className="text-xs text-muted-foreground mt-0.5 truncate">{row.note}</div>
         </div>
       ),
     },

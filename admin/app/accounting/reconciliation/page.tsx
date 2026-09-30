@@ -16,6 +16,7 @@ import {
 import { getInvoices, getBills, type InvoiceRow, type BillRow } from "@/lib/data/finance";
 import { reconcileStatement, unreconcileStatement, statementStatus } from "@/lib/data/workflows";
 import { useOps } from "@/lib/data/ops";
+import { useToast } from "@/components/app-feedback";
 
 function money(v: number) {
   const sign = v < 0 ? "−" : "";
@@ -39,7 +40,7 @@ export default function BankReconciliationPage() {
   const [bills, setBills] = useState<BillRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const appToast = useToast();
 
   useEffect(() => {
     let alive = true;
@@ -55,12 +56,6 @@ export default function BankReconciliationPage() {
       alive = false;
     };
   }, [version]);
-
-  useEffect(() => {
-    if (!feedback) return;
-    const t = setTimeout(() => setFeedback(null), 3200);
-    return () => clearTimeout(t);
-  }, [feedback]);
 
   // Effective status always read from the overlay so it survives reloads.
   const statusOf = (l: BankStatementLine) => statementStatus(l.id) ?? l.status;
@@ -90,24 +85,30 @@ export default function BankReconciliationPage() {
   const netMovement = lines.reduce((s, l) => s + l.amount, 0);
 
   const doReconcile = (line: BankStatementLine, match: OpenDoc | null) => {
-    setFeedback(
-      reconcileStatement(
-        line.id,
-        line.label,
-        match ? { docRef: match.ref, docNumber: match.number } : null,
-      ),
+    const res = reconcileStatement(
+      line.id,
+      line.label,
+      match ? { docRef: match.ref, docNumber: match.number } : null,
     );
+    if (res.ok) {
+      appToast.success("Statement reconciled", res.message);
+    } else {
+      appToast.error("Reconciliation failed", res.message);
+    }
   };
 
   const doUnreconcile = (line: BankStatementLine) => {
     const [m] = matchesFor(line);
-    setFeedback(
-      unreconcileStatement(
-        line.id,
-        line.label,
-        m ? { docRef: m.ref, docNumber: m.number } : null,
-      ),
+    const res = unreconcileStatement(
+      line.id,
+      line.label,
+      m ? { docRef: m.ref, docNumber: m.number } : null,
     );
+    if (res.ok) {
+      appToast.info("Reconciliation cleared", res.message);
+    } else {
+      appToast.error("Failed to unreconcile", res.message);
+    }
   };
 
   return (
@@ -191,7 +192,7 @@ export default function BankReconciliationPage() {
             <div className="flex flex-col items-center justify-center h-full min-h-[280px] text-center gap-2">
               <Landmark className="h-10 w-10 text-muted-foreground/40" />
               <p className="text-sm font-medium text-foreground">Select a bank statement line</p>
-              <p className="text-xs text-muted-foreground max-w-xs">Pick a movement on the left to match it against an open invoice or bill, or reconcile it directly to an account.</p>
+              <p className="text-xs text-muted-foreground">Pick a movement on the left to match it against an open invoice or bill, or reconcile it directly to an account.</p>
             </div>
           ) : (
             <div className="space-y-5">
@@ -272,21 +273,6 @@ export default function BankReconciliationPage() {
           )}
         </Card>
       </div>
-
-      {/* Feedback toast */}
-      {feedback && (
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium border flex items-center gap-2",
-            feedback.ok
-              ? "bg-card text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "bg-card text-rose-600 dark:text-rose-400 border-rose-500/30",
-          )}
-        >
-          {feedback.ok ? <CheckCheck className="h-4 w-4" /> : <CircleDashed className="h-4 w-4" />}
-          {feedback.message}
-        </div>
-      )}
     </>
   );
 }

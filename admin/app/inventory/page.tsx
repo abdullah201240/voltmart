@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -140,9 +141,17 @@ export default function InventoryPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-11 px-5 text-sm font-medium">
-            <ArrowDownToLine className="mr-2 h-4 w-4" />
-            Update Stock
+          <Button asChild variant="outline" className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all">
+            <Link href="/inventory/replenishment">
+              <Boxes className="mr-2 h-4 w-4" />
+              Replenishment
+            </Link>
+          </Button>
+          <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all">
+            <Link href="/inventory/receipts">
+              <ArrowDownToLine className="mr-2 h-4 w-4" />
+              Receive Stock
+            </Link>
           </Button>
         </div>
       </div>
