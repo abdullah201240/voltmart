@@ -13,7 +13,6 @@ import {
   Truck,
   CreditCard,
   User,
-  MapPin,
   FileText,
   Calculator,
 } from "lucide-react";

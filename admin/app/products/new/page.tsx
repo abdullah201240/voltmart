@@ -4,20 +4,16 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Package,
   Banknote,
   Layers,
   Image as ImageIcon,
-  CheckCircle,
   Truck,
   ShieldCheck,
-  Search,
   Plus,
   Trash2,
   Sparkles,
   Barcode,
-  Info,
   Globe,
   Save,
   Upload,
@@ -26,18 +22,14 @@ import {
   CheckSquare,
   Square,
   Camera,
-  SlidersHorizontal,
-  ChevronDown,
 } from "lucide-react";
 import {
-  CentralForm,
   CentralFormSection,
   CentralFormField,
   CentralFormInput,
   CentralFormTextarea,
   CentralFormSwitch,
   CentralFormDropzone,
-  CentralFormActions,
   type UploadedFileItem,
 } from "@/components/ui/central-form";
 import { SearchableDropbox, type DropboxOption } from "@/components/ui/searchable-dropbox";

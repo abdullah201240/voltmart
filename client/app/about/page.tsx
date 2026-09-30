@@ -5,7 +5,6 @@ import {
   SfIconSafetyCheck,
   SfIconLocalShipping,
   SfIconWarehouse,
-  SfIconContactSupport,
   SfIconStarFilled,
   SfIconCheckCircle,
   SfIconChevronRight,

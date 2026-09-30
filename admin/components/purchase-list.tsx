@@ -25,7 +25,6 @@ import {
   Check,
   Lock,
   XCircle,
-  AlertTriangle,
   List,
   LayoutGrid,
   BarChart3,

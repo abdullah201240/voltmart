@@ -7,11 +7,8 @@ import {
   ArrowLeft,
   Save,
   Percent,
-  Receipt,
   FileCheck2,
-  DollarSign,
   ShieldCheck,
-  Building,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

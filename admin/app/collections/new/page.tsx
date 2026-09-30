@@ -12,10 +12,8 @@ import {
   Eye,
   Image as ImageIcon,
   Tag,
-  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/app-feedback";
 import { addRecord } from "@/lib/data/ops";
 import { CollectionRow } from "@/lib/data/catalog";

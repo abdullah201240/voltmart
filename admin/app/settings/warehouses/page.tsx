@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { Warehouse, Plus } from "lucide-react";
-import { getWarehouses, WAREHOUSE, type WarehouseRow } from "@/lib/data/settings";
-import { addRecord } from "@/lib/data/ops";
+import { getWarehouses, type WarehouseRow } from "@/lib/data/settings";
 import { useToast } from "@/components/app-feedback";
 
 

@@ -1,6 +1,6 @@
 "use server";
 
-import { odoo, odooAuthenticate, odooExecute } from "@/lib/odoo/client";
+import { odoo, odooAuthenticate } from "@/lib/odoo/client";
 
 /**
  * Server Action: Sync sale order to Odoo 19 ERP

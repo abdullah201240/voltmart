@@ -9,13 +9,9 @@ import {
   Sparkles,
   Percent,
   Calendar,
-  Layers,
-  Store,
   Tag,
-  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/app-feedback";
 import { addRecord } from "@/lib/data/ops";
 import { PromotionRow } from "@/lib/data/discounts";

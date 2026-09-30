@@ -10,7 +10,6 @@ import {
   Globe,
   Tag,
   Eye,
-  FileText,
   Percent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -10,8 +10,6 @@ import {
   Globe,
   Image as ImageIcon,
   ShieldCheck,
-  Building2,
-  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/app-feedback";

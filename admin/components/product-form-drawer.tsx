@@ -9,7 +9,6 @@ import {
   CheckCircle,
   Truck,
   ShieldCheck,
-  Search,
   Plus,
   Trash2,
   Sparkles,
@@ -30,7 +29,6 @@ import {
 } from "@/components/ui/central-form";
 import { SearchableDropbox, type DropboxOption } from "@/components/ui/searchable-dropbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 const CATEGORY_OPTIONS: DropboxOption[] = [

@@ -8,10 +8,7 @@ import {
   Save,
   Truck,
   CheckCircle2,
-  Percent,
   Link2,
-  Coins,
-  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/app-feedback";

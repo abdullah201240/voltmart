@@ -8,14 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   Banknote,
   CreditCard,
-  Building2,
   FileCheck,
-  AlertCircle,
-  CheckCircle2,
-  ExternalLink,
   Receipt,
   Download,
-  Clock,
   ArrowUpRight,
 } from "lucide-react";
 

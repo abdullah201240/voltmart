@@ -6,11 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Save,
-  Truck,
-  Globe2,
   Coins,
-  Scale,
-  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/app-feedback";

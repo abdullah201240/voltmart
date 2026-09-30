@@ -12,7 +12,6 @@ import {
   Receipt,
   Building2,
   Calendar,
-  CreditCard,
   Calculator,
   ShieldCheck,
 } from "lucide-react";

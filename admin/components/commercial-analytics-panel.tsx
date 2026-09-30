@@ -6,15 +6,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  TrendingUp,
   ShoppingBag,
-  DollarSign,
   PieChart,
   ArrowUpRight,
   Globe,
   Store,
   Share2,
-  Percent,
 } from "lucide-react";
 
 export function CommercialAnalyticsPanel() {

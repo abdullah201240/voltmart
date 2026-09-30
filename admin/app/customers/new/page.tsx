@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   Save,
   User,
-  Building,
   Mail,
   Phone,
   MapPin,
@@ -16,7 +15,6 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/app-feedback";
 import { addRecord } from "@/lib/data/ops";
 import { CustomerRow } from "@/lib/data/customers";

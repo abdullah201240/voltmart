@@ -10,11 +10,9 @@ import {
   Mail,
   Phone,
   Globe,
-  MapPin,
   Clock,
   Landmark,
   FileText,
-  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/app-feedback";

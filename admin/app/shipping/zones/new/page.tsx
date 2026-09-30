@@ -7,10 +7,8 @@ import {
   ArrowLeft,
   Save,
   Globe2,
-  MapPin,
   Truck,
   Timer,
-  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/app-feedback";

@@ -24,7 +24,6 @@ import {
   Boxes,
   Truck,
   XCircle,
-  AlertTriangle,
   List,
   LayoutGrid,
   BarChart3,

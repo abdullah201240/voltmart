@@ -30,7 +30,7 @@ import {
   ShieldAlert,
   CalendarClock,
 } from "lucide-react";
-import { useOps, patchFields, addHistory, addRecord, clearRecord } from "@/lib/data/ops";
+import { useOps, patchFields, addHistory, clearRecord } from "@/lib/data/ops";
 import {
   getFiscalPositions,
   getTaxLockBase,

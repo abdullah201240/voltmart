@@ -16,7 +16,6 @@ import {
   BRAND_LOGOS,
   HERO_SLIDES,
   HERO_SIDE_PROMOS,
-  PROMO_BANNERS,
   type Product,
 } from "@/lib/data";
 import { ProductImage } from "@/components/ProductImage";

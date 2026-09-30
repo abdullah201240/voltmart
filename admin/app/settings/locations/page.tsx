@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { MapPin, Plus } from "lucide-react";
-import { getLocations, LOCATION, type LocationRow } from "@/lib/data/settings";
-import { addRecord } from "@/lib/data/ops";
+import { getLocations, type LocationRow } from "@/lib/data/settings";
 import { useToast } from "@/components/app-feedback";
 
 const TYPE_CLASS: Record<LocationRow["type"], "default" | "secondary" | "outline"> = {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, {} from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
@@ -10,8 +10,6 @@ import {
   Play,
   ShoppingCart,
   TriangleAlert,
-  Check,
-  XCircle,
   RotateCcw,
   ListChecks,
 } from "lucide-react";

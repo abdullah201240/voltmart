@@ -14,7 +14,6 @@ import {
   ClipboardList,
   Play,
   CheckCircle2,
-  RotateCcw,
   List,
   LayoutGrid,
   BarChart3,

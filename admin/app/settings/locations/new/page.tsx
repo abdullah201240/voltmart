@@ -8,7 +8,6 @@ import {
   Save,
   MapPin,
   Warehouse,
-  Layers,
   Barcode,
   Boxes,
   ShieldCheck,
@@ -18,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/app-feedback";
 import { addRecord } from "@/lib/data/ops";
 import { getWarehouses, LOCATION, type LocationRow } from "@/lib/data/settings";
-import { cn } from "@/lib/utils";
 
 const LOCATION_TYPES: { id: LocationRow["type"]; label: string; desc: string }[] = [
   { id: "Stock", label: "Internal Stock (Bin/Shelf)", desc: "Standard storage racks for picking and fulfillment" },

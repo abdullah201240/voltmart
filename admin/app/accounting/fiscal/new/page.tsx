@@ -7,11 +7,9 @@ import {
   ArrowLeft,
   Save,
   Landmark,
-  ShieldAlert,
   ArrowRight,
   Plus,
   Trash2,
-  FileText,
   ShieldCheck,
   Percent,
 } from "lucide-react";
@@ -206,7 +204,7 @@ export default function NewFiscalPositionPage() {
             </div>
 
             <div className="space-y-3">
-              {taxMaps.map((map, idx) => (
+              {taxMaps.map((map) => (
                 <div
                   key={map.id}
                   className="flex flex-col sm:flex-row items-center gap-3 p-3.5 rounded-lg border border-border/80 bg-muted/20"

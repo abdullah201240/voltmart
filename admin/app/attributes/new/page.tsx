@@ -7,14 +7,12 @@ import {
   ArrowLeft,
   Save,
   SlidersHorizontal,
-  Palette,
   Layers,
   Plus,
   Trash2,
   Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/app-feedback";
 import { addRecord } from "@/lib/data/ops";
 import { AttributeRow } from "@/lib/data/catalog";

@@ -9,11 +9,8 @@ import {
   Cog,
   Gauge,
   Clock,
-  Zap,
   Activity,
   DollarSign,
-  Building,
-  Wrench,
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

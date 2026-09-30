@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +16,6 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
-  FileText,
-  ShieldCheck,
 } from "lucide-react";
 
 export interface WarehouseTilesProps {

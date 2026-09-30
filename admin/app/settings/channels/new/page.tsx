@@ -8,9 +8,7 @@ import {
   Save,
   Globe,
   Store,
-  Layers,
   ShieldCheck,
-  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

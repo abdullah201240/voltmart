@@ -8,8 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
 import { UserPlus, RotateCcw } from "lucide-react";
-import { getStaff, USER, type StaffRow } from "@/lib/data/settings";
-import { addRecord } from "@/lib/data/ops";
+import { getStaff, type StaffRow } from "@/lib/data/settings";
 import { useToast } from "@/components/app-feedback";
 
 

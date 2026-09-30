@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { Percent, Plus } from "lucide-react";
-import { getTaxes, TAX, type TaxRow } from "@/lib/data/settings";
-import { addRecord } from "@/lib/data/ops";
+import { getTaxes, type TaxRow } from "@/lib/data/settings";
 import { useToast } from "@/components/app-feedback";
 
 

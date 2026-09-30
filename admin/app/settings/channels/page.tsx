@@ -7,8 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CentralTable, type CentralTableColumn } from "@/components/ui/central-table";
 import { useAdminLayout } from "@/components/admin-shell";
 import { Waypoints, Plus, RotateCcw } from "lucide-react";
-import { getChannels, getWarehouses, CHANNEL, type ChannelRow } from "@/lib/data/settings";
-import { addRecord } from "@/lib/data/ops";
+import { getChannels, getWarehouses, type ChannelRow } from "@/lib/data/settings";
 import { useToast } from "@/components/app-feedback";
 
 const CHANNEL_COLUMNS: CentralTableColumn<ChannelRow>[] = [

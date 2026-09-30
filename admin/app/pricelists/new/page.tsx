@@ -7,11 +7,7 @@ import {
   ArrowLeft,
   Save,
   ListChecks,
-  Coins,
-  Percent,
-  Layers,
   Users,
-  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/app-feedback";

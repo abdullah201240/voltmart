@@ -13,7 +13,6 @@ import {
   User,
   Calendar,
   Building,
-  CreditCard,
   Calculator,
   ShieldCheck,
 } from "lucide-react";

@@ -31,7 +31,6 @@ import {
   CreditCard,
   Truck,
   XCircle,
-  Activity,
   FileSpreadsheet,
 } from "lucide-react";
 import { applySaleAction } from "@/lib/data/workflows";

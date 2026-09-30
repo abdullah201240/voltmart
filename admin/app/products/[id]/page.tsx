@@ -23,14 +23,13 @@ import {
   Copy,
   ExternalLink,
   Sparkles,
-  Layers,
   X,
   Save,
 } from "lucide-react";
 import { getProducts, type ProductRow } from "@/lib/data/products";
 import { getVariantsFor, type VariantRow } from "@/lib/data/catalog";
 import { useToast, useConfirm } from "@/components/app-feedback";
-import { patchFields, listAdded } from "@/lib/data/ops";
+import { patchFields } from "@/lib/data/ops";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 
 function generateGtin13Barcode(): string {
