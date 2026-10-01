@@ -1,65 +1,230 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { BarChart3, Filter, RotateCcw } from "lucide-react";
 
 export interface GraphDatum {
   label: string;
   value: number;
-  /** Tailwind text/bg tone for the bar + label. */
+  count?: number;
+  /** Explicit CSS background/gradient or hex. Guaranteed to render. */
   color?: string;
+  dotColor?: string;
 }
 
 export interface GraphViewProps {
   data: GraphDatum[];
   /** Format the numeric value (e.g. currency). */
   formatValue?: (v: number) => string;
-  /** Bar click navigation. */
+  /** Bar click navigation / selection. */
   onSelect?: (d: GraphDatum) => void;
+  selectedLabel?: string;
+  onClearSelection?: () => void;
+  title?: string;
   className?: string;
 }
 
-const DEFAULT_TONE = "bg-primary/70";
+const DEFAULT_GRADIENTS: Record<string, string> = {
+  Quotation: "linear-gradient(180deg, #94a3b8 0%, #475569 100%)",
+  Confirmed: "linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%)",
+  Fulfilled: "linear-gradient(180deg, #34d399 0%, #059669 100%)",
+  Invoiced: "linear-gradient(180deg, #a78bfa 0%, #6d28d9 100%)",
+  Cancelled: "linear-gradient(180deg, #fb7185 0%, #e11d48 100%)",
+};
+
+const DEFAULT_DOTS: Record<string, string> = {
+  Quotation: "#64748b",
+  Confirmed: "#2563eb",
+  Fulfilled: "#10b981",
+  Invoiced: "#7c3aed",
+  Cancelled: "#e11d48",
+};
 
 /**
- * Dependency-free bar chart for the Odoo "Graph" view. Bars scale to the max
- * value; each shows its formatted total on top and the group label below.
+ * Modern high-contrast interactive bar chart for ERP Graph analytics.
+ * Renders guaranteed visible background tracks, real CSS gradients,
+ * Y-axis guidelines, and interactive drill-downs.
  */
-export function GraphView({ data, formatValue = (v) => String(v), onSelect, className }: GraphViewProps) {
+export function GraphView({
+  data,
+  formatValue = (v) => String(v),
+  onSelect,
+  selectedLabel,
+  onClearSelection,
+  title = "Pipeline Revenue Breakdown",
+  className,
+}: GraphViewProps) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
   const max = Math.max(1, ...data.map((d) => d.value));
   const total = data.reduce((s, d) => s + d.value, 0);
 
+  // Y-axis grid markers
+  const yTicks = [1, 0.75, 0.5, 0.25, 0];
+
   return (
-    <div className={cn("rounded-lg border border-border/80 bg-card p-5 sm:p-6 shadow-xs", className)}>
-      <div className="mb-5 flex items-center justify-between">
+    <div
+      className={cn(
+        "rounded-lg border border-border/80 bg-card p-5 sm:p-6 shadow-xs space-y-6 w-full",
+        className
+      )}
+    >
+      {/* Header with Title and Filter Reset */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/70 pb-4">
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Graph</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">{data.length} groups · total {formatValue(total)}</p>
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
+              {title}
+            </h3>
+            {selectedLabel && selectedLabel !== "all" && (
+              <Badge
+                variant="outline"
+                className="bg-primary/10 text-primary border-primary/30 text-xs gap-1"
+              >
+                <Filter className="h-3 w-3" />
+                Filtered: {selectedLabel}
+              </Badge>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {data.length} pipeline groups · Total Volume:{" "}
+            <strong className="text-foreground font-semibold">
+              {formatValue(total)}
+            </strong>
+          </p>
         </div>
+
+        {selectedLabel && selectedLabel !== "all" && onClearSelection && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClearSelection}
+            className="cursor-pointer text-xs h-8 gap-1.5 border-border hover:bg-muted/50"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Show All Stages
+          </Button>
+        )}
       </div>
 
-      <div className="flex h-64 items-end gap-3 sm:gap-4">
-        {data.map((d) => {
-          const pct = Math.round((d.value / max) * 100);
-          return (
-            <button
-              key={d.label}
-              type="button"
-              onClick={() => onSelect?.(d)}
-              className={cn("group flex h-full flex-1 flex-col items-center justify-end gap-2", onSelect && "cursor-pointer")}
-            >
-              <span className="text-xs font-bold tabular-nums text-foreground">{formatValue(d.value)}</span>
+      {/* Main Chart Area */}
+      <div className="relative pt-6 pb-2 w-full">
+        {/* Horizontal Background Reference Lines */}
+        <div className="absolute inset-x-0 top-6 bottom-16 flex flex-col justify-between pointer-events-none opacity-40">
+          {yTicks.map((tick, idx) => (
+            <div key={idx} className="w-full flex items-center gap-2">
+              <span className="text-[10px] font-mono text-muted-foreground w-16 text-right shrink-0">
+                {formatValue(Math.round(max * tick))}
+              </span>
+              <div className="w-full border-b border-dashed border-border" />
+            </div>
+          ))}
+        </div>
+
+        {/* Bars Container */}
+        <div className="relative ml-18 flex h-72 items-end justify-around gap-2 sm:gap-6 z-10">
+          {data.map((d, idx) => {
+            const pct = max > 0 ? Math.round((d.value / max) * 100) : 0;
+            const isHovered = hoveredIdx === idx;
+            const isSelected = selectedLabel === d.label;
+            const barGradient =
+              d.color ??
+              DEFAULT_GRADIENTS[d.label] ??
+              "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)";
+            const dotColor =
+              d.dotColor ?? DEFAULT_DOTS[d.label] ?? "#3b82f6";
+
+            return (
               <div
+                key={d.label}
+                onMouseEnter={() => setHoveredIdx(idx)}
+                onMouseLeave={() => setHoveredIdx(null)}
+                onClick={() => onSelect?.(d)}
                 className={cn(
-                  "w-full max-w-[64px] rounded-t-md transition-all duration-300 group-hover:opacity-80",
-                  d.color ?? DEFAULT_TONE,
+                  "group flex flex-col items-center justify-end h-full flex-1 max-w-[96px] cursor-pointer transition-all duration-200 select-none",
+                  onSelect && "active:scale-[0.98]"
                 )}
-                style={{ height: `${Math.max(2, pct)}%` }}
-              />
-              <span className="w-full truncate text-center text-[11px] font-medium text-muted-foreground">{d.label}</span>
-            </button>
-          );
-        })}
+              >
+                {/* Metric Value Label on Top */}
+                <div
+                  className={cn(
+                    "mb-2 text-center transition-all duration-200",
+                    isHovered || isSelected ? "scale-105" : ""
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "text-xs font-mono font-bold block",
+                      d.value > 0
+                        ? "text-foreground"
+                        : "text-muted-foreground/60"
+                    )}
+                  >
+                    {formatValue(d.value)}
+                  </span>
+                  {d.count !== undefined && (
+                    <span className="text-[10px] text-muted-foreground block">
+                      {d.count} {d.count === 1 ? "order" : "orders"}
+                    </span>
+                  )}
+                </div>
+
+                {/* Visible Vertical Bar Track Container */}
+                <div
+                  className={cn(
+                    "w-full h-52 rounded-t-lg bg-muted/40 border transition-all duration-200 flex flex-col justify-end p-1 relative overflow-hidden",
+                    isSelected
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/40 shadow-sm"
+                      : isHovered
+                      ? "border-primary/50 bg-muted/70 shadow-xs"
+                      : "border-border/70"
+                  )}
+                >
+                  {/* The Vibrant Filled Bar */}
+                  {d.value > 0 ? (
+                    <div
+                      className="w-full rounded-t-md transition-all duration-500 ease-out shadow-sm relative"
+                      style={{
+                        height: `${Math.max(4, pct)}%`,
+                        background: barGradient,
+                      }}
+                    >
+                      {/* Top highlight cap */}
+                      <div className="w-full h-0.5 bg-white/40 rounded-t-md" />
+                    </div>
+                  ) : (
+                    /* Zero indicator line */
+                    <div className="w-full h-1 bg-muted-foreground/20 rounded-t-sm" />
+                  )}
+                </div>
+
+                {/* Bottom Label and Indicator Dot */}
+                <div className="mt-3 flex items-center gap-1.5 text-center">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: dotColor }}
+                  />
+                  <span
+                    className={cn(
+                      "text-xs font-semibold truncate transition-colors",
+                      isSelected
+                        ? "text-primary font-bold"
+                        : isHovered
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {d.label}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -68,14 +233,12 @@ export function GraphView({ data, formatValue = (v) => String(v), onSelect, clas
 export interface PivotColumn<T> {
   key: string;
   label: string;
-  /** Aggregate a numeric measure across rows in a group. */
   measure: (rows: T[]) => number;
   format?: (v: number) => string;
 }
 
 export interface PivotViewProps<T> {
   rows: T[];
-  /** Value -> column label accessor for grouping. */
   groupOf: (row: T) => string;
   groupLabel?: (key: string) => string;
   columns: PivotColumn<T>[];
@@ -83,10 +246,6 @@ export interface PivotViewProps<T> {
   title?: string;
 }
 
-/**
- * Pivot table: rows grouped by a single dimension with one or more numeric
- * measures per group, plus a totals row — the Odoo "Pivot" reading view.
- */
 export function PivotView<T>({
   rows,
   groupOf,
@@ -98,51 +257,66 @@ export function PivotView<T>({
   const groups = new Map<string, T[]>();
   rows.forEach((r) => {
     const k = groupOf(r);
-    if (!groups.has(k)) groups.set(k, []);
-    groups.get(k)!.push(r);
+    const existing = groups.get(k) || [];
+    existing.push(r);
+    groups.set(k, existing);
   });
-  const keys = [...groups.keys()].sort();
+
+  const totals = columns.map((c) => c.measure(rows));
 
   return (
-    <div className="rounded-lg border border-border/80 bg-card shadow-xs overflow-hidden">
-      <div className="border-b border-border/70 px-5 py-3.5">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
+    <div className="rounded-lg border border-border/80 bg-card shadow-xs overflow-hidden w-full">
+      <div className="border-b border-border/80 px-5 py-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border/70 text-right text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="px-5 py-3 text-left font-semibold">Group</th>
+            <tr className="border-b border-border/80 bg-muted/40 text-xs font-semibold text-muted-foreground">
+              <th className="py-3 px-4 text-left">Group</th>
               {columns.map((c) => (
-                <th key={c.key} className="px-5 py-3 font-semibold">{c.label}</th>
+                <th key={c.key} className="py-3 px-4 text-right">
+                  {c.label}
+                </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/60">
-            {keys.map((k) => {
-              const gr = groups.get(k)!;
-              return (
-                <tr key={k} className="hover:bg-muted/40 transition-colors">
-                  <td className="px-5 py-3 font-medium text-foreground">{groupLabel ? groupLabel(k) : k}</td>
-                  {columns.map((c) => (
-                    <td key={c.key} className="px-5 py-3 text-right tabular-nums font-mono text-foreground">
-                      {(c.format ?? formatValue)(c.measure(gr))}
+          <tbody>
+            {Array.from(groups.entries()).map(([k, groupRows]) => (
+              <tr
+                key={k}
+                className="border-b border-border/60 hover:bg-muted/30 transition-colors"
+              >
+                <td className="py-3 px-4 font-semibold text-foreground">
+                  {groupLabel ? groupLabel(k) : k}
+                </td>
+                {columns.map((c) => {
+                  const val = c.measure(groupRows);
+                  return (
+                    <td
+                      key={c.key}
+                      className="py-3 px-4 text-right font-mono text-muted-foreground"
+                    >
+                      {c.format ? c.format(val) : formatValue(val)}
                     </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="border-t border-border/80 bg-muted/40 font-bold">
-              <td className="px-5 py-3 text-foreground">Total</td>
-              {columns.map((c) => (
-                <td key={c.key} className="px-5 py-3 text-right tabular-nums font-mono text-foreground">
-                  {(c.format ?? formatValue)(c.measure(rows))}
+                  );
+                })}
+              </tr>
+            ))}
+            <tr className="bg-muted/60 font-bold border-t-2 border-border/80">
+              <td className="py-3 px-4 text-foreground">Total</td>
+              {columns.map((c, i) => (
+                <td
+                  key={c.key}
+                  className="py-3 px-4 text-right font-mono text-foreground"
+                >
+                  {c.format ? c.format(totals[i]) : formatValue(totals[i])}
                 </td>
               ))}
             </tr>
-          </tfoot>
+          </tbody>
         </table>
       </div>
     </div>

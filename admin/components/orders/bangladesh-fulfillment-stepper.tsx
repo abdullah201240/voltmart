@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import {
   DollarSign,
   ArrowRight,
   ShieldCheck,
+  Barcode,
 } from "lucide-react";
 import { useToast, useConfirm } from "@/components/app-feedback";
 import {
@@ -43,6 +45,7 @@ interface StepItem {
   bnLabel: string;
   icon: React.ComponentType<{ className?: string }>;
   description: string;
+  href: (id: string) => string;
 }
 
 const FULFILLMENT_STEPS: StepItem[] = [
@@ -52,6 +55,7 @@ const FULFILLMENT_STEPS: StepItem[] = [
     bnLabel: "ফোন ভেরিফিকেশন",
     icon: PhoneCall,
     description: "Customer verification, fraud risk check & address validation",
+    href: (id) => `/orders/${id}/confirm`,
   },
   {
     id: "Confirmed",
@@ -59,6 +63,7 @@ const FULFILLMENT_STEPS: StepItem[] = [
     bnLabel: "অর্ডার কনফার্মড",
     icon: CheckCircle2,
     description: "Stock allocated from warehouse, queued for picking",
+    href: (id) => `/orders/${id}/confirm`,
   },
   {
     id: "Packed",
@@ -66,6 +71,7 @@ const FULFILLMENT_STEPS: StepItem[] = [
     bnLabel: "প্যাকিং ও স্ক্যান",
     icon: Scan,
     description: "SKU barcode scanning verification, gross weight & parcel label",
+    href: (id) => `/orders/${id}/pack`,
   },
   {
     id: "Handed to Courier",
@@ -73,6 +79,7 @@ const FULFILLMENT_STEPS: StepItem[] = [
     bnLabel: "কুরিয়ারে শিফট",
     icon: Truck,
     description: "Pathao / Steadfast 3PL consignment booking & manifest handover",
+    href: (id) => `/orders/${id}/dispatch`,
   },
   {
     id: "Delivered",
@@ -80,6 +87,7 @@ const FULFILLMENT_STEPS: StepItem[] = [
     bnLabel: "ডেলিভারি ও ক্যাশ",
     icon: DollarSign,
     description: "Doorstep delivery, Cash on Delivery collection & ledger settlement",
+    href: (id) => `/orders/${id}/delivery`,
   },
 ];
 
@@ -198,7 +206,7 @@ export function BangladeshFulfillmentStepper({
           </div>
         </div>
 
-        {/* 5-Step Visual Stepper */}
+        {/* 5-Step Visual Stepper - Clicking any step opens its dedicated full page */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-2 sm:gap-3">
           {FULFILLMENT_STEPS.map((step, idx) => {
             const isCompleted = currentStepIndex > idx || stage === "Delivered";
@@ -206,15 +214,16 @@ export function BangladeshFulfillmentStepper({
             const Icon = step.icon;
 
             return (
-              <div
+              <Link
                 key={step.id}
+                href={step.href(order.id)}
                 className={cn(
-                  "flex flex-col p-3 rounded-lg border transition-all duration-200 relative",
+                  "group flex flex-col p-3 rounded-lg border transition-all duration-200 relative cursor-pointer hover:border-primary/60 hover:shadow-xs",
                   isCurrent
                     ? "border-primary bg-primary/5 ring-1 ring-primary shadow-xs"
                     : isCompleted
                     ? "border-emerald-500/40 bg-emerald-500/5 text-foreground"
-                    : "border-border/60 bg-muted/20 opacity-70"
+                    : "border-border/60 bg-muted/20 opacity-80"
                 )}
               >
                 <div className="flex items-center justify-between mb-1.5">
@@ -230,24 +239,29 @@ export function BangladeshFulfillmentStepper({
                   >
                     {isCompleted ? <Check className="h-3.5 w-3.5" /> : idx + 1}
                   </div>
-                  <Icon
-                    className={cn(
-                      "h-4 w-4",
-                      isCompleted
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : isCurrent
-                        ? "text-primary"
-                        : "text-muted-foreground"
-                    )}
-                  />
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-primary transition-colors">
+                    <span className="text-[10px] hidden group-hover:inline font-medium">Page ↗</span>
+                    <Icon
+                      className={cn(
+                        "h-4 w-4",
+                        isCompleted
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : isCurrent
+                          ? "text-primary"
+                          : "text-muted-foreground"
+                      )}
+                    />
+                  </div>
                 </div>
 
-                <div className="font-bold text-xs text-foreground truncate">{step.label}</div>
+                <div className="font-bold text-xs text-foreground group-hover:text-primary transition-colors truncate">
+                  {step.label}
+                </div>
                 <div className="text-[11px] font-medium text-muted-foreground">{step.bnLabel}</div>
                 <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2 leading-tight">
                   {step.description}
                 </p>
-              </div>
+              </Link>
             );
           })}
         </div>
@@ -265,12 +279,26 @@ export function BangladeshFulfillmentStepper({
                   Call recipient to verify phone number, address, and COD acceptance before packing.
                 </div>
               </div>
-              <Button
-                onClick={() => setConfirmOpen(true)}
-                className="cursor-pointer active:scale-[0.98] transition-all font-semibold gap-1.5"
-              >
-                <ShieldCheck className="h-4 w-4" /> Verify &amp; Confirm Order
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmOpen(true)}
+                  className="cursor-pointer text-xs"
+                >
+                  Quick Call Dialog
+                </Button>
+                <Button
+                  asChild
+                  className="cursor-pointer active:scale-[0.98] transition-all font-semibold gap-1.5 bg-primary text-primary-foreground"
+                >
+                  <Link href={`/orders/${order.id}/confirm`}>
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>Open Phone Verification Page</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
             </>
           )}
 
@@ -282,15 +310,29 @@ export function BangladeshFulfillmentStepper({
                   <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Step 2: Confirmed &amp; Ready for Warehouse Picking
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Stock is allocated. Open the packing station to scan item barcodes and verify items.
+                  Stock is allocated. Open the dedicated packing terminal to scan item barcodes, weigh parcel, and print 4x6&quot; thermal label.
                 </div>
               </div>
-              <Button
-                onClick={() => setPackOpen(true)}
-                className="cursor-pointer active:scale-[0.98] transition-all font-semibold gap-1.5 bg-primary"
-              >
-                <Scan className="h-4 w-4" /> Start Pick &amp; Pack (Barcode Scan)
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPackOpen(true)}
+                  className="cursor-pointer text-xs"
+                >
+                  Quick Scan Dialog
+                </Button>
+                <Button
+                  asChild
+                  className="cursor-pointer active:scale-[0.98] transition-all font-semibold gap-1.5 bg-primary text-primary-foreground"
+                >
+                  <Link href={`/orders/${order.id}/pack`}>
+                    <Barcode className="h-4 w-4" />
+                    <span>Open Packing Station Page</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
             </>
           )}
 
@@ -302,23 +344,29 @@ export function BangladeshFulfillmentStepper({
                   <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Step 3: Packing Verified (Gross Weight: {order.packageWeightKg || 0.75}kg)
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  All items scanned with 0 errors. Ready to book consignment with Pathao or Steadfast Courier.
+                  All items scanned with 0 errors. Ready to book 3PL consignment with Pathao or Steadfast Courier.
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Button
+                  asChild
                   variant="outline"
                   size="sm"
-                  onClick={() => setPackOpen(true)}
                   className="cursor-pointer text-xs"
                 >
-                  <Scan className="mr-1.5 h-3.5 w-3.5" /> Re-Scan
+                  <Link href={`/orders/${order.id}/pack`}>
+                    <Scan className="mr-1.5 h-3.5 w-3.5" /> Re-Scan Station
+                  </Link>
                 </Button>
                 <Button
-                  onClick={() => setDispatchOpen(true)}
+                  asChild
                   className="cursor-pointer active:scale-[0.98] transition-all font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  <Truck className="h-4 w-4" /> Shift to Courier (Handover)
+                  <Link href={`/orders/${order.id}/dispatch`}>
+                    <Truck className="h-4 w-4" />
+                    <span>Open Courier Dispatch Page</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </Button>
               </div>
             </>
@@ -346,13 +394,23 @@ export function BangladeshFulfillmentStepper({
                       rel="noreferrer"
                       className="text-primary hover:underline flex items-center gap-1 font-semibold"
                     >
-                      Track Parcel <ExternalLink className="h-3 w-3" />
+                      Courier Portal <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer text-xs font-semibold text-primary"
+                >
+                  <Link href={`/orders/${order.id}/delivery`}>
+                    <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open Tracking &amp; COD Page
+                  </Link>
+                </Button>
                 {stage === "Handed to Courier" && (
                   <Button
                     variant="outline"
@@ -393,16 +451,23 @@ export function BangladeshFulfillmentStepper({
 
           {/* Stage 5: Delivered */}
           {stage === "Delivered" && (
-            <div className="flex items-center justify-between w-full">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full">
               <div className="flex items-center gap-2 text-xs text-foreground">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <div>
                   <strong className="text-emerald-600 dark:text-emerald-400">Order Completed &amp; Delivered.</strong> Cash on Delivery (৳{order.totalValue.toLocaleString("en-IN")}) collected and reconciled into VoltMart finance float.
                 </div>
               </div>
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs font-bold">
-                100% Fulfilled
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Button asChild variant="outline" size="sm" className="cursor-pointer text-xs">
+                  <Link href={`/orders/${order.id}/delivery`}>
+                    <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> View Delivery Audit Page
+                  </Link>
+                </Button>
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs font-bold">
+                  100% Fulfilled
+                </Badge>
+              </div>
             </div>
           )}
 

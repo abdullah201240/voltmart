@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,10 +29,14 @@ import {
   BarChart3,
   Table2,
   Plus,
+  Check,
+  CheckCircle2,
+  ArrowUpRight,
+  ExternalLink,
 } from "lucide-react";
 import { CHANNEL_OPTIONS } from "@/lib/data/products";
 import { useOps } from "@/lib/data/ops";
-import { setSaleStatus, applySaleAction } from "@/lib/data/workflows";
+import { setSaleStatus } from "@/lib/data/workflows";
 import { useConfirm, useToast } from "@/components/app-feedback";
 import {
   getOrders,
@@ -64,101 +69,8 @@ const STAGE_ACCENT: Record<OrderStatus, string> = {
   Cancelled: "bg-rose-500",
 };
 
-const ORDER_COLUMNS: CentralTableColumn<OrderRow>[] = [
-  {
-    accessorKey: "id",
-    header: "Order",
-    sortable: true,
-    width: "130px",
-    cell: ({ row, value }) => (
-      <Link
-        href={`/orders/${row.id}`}
-        className="font-mono font-bold text-sm text-foreground hover:text-primary transition-colors"
-      >
-        {value}
-      </Link>
-    ),
-  },
-  {
-    accessorKey: "customer",
-    header: "Customer",
-    sortable: true,
-    cell: ({ row }) => (
-      <div className="min-w-0">
-        <div className="font-semibold text-sm text-foreground truncate">{row.customer}</div>
-        <div className="text-xs text-muted-foreground mt-0.5 truncate">{row.email}</div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "date",
-    header: "Date",
-    sortable: true,
-    cell: ({ value }) => <span className="text-sm text-muted-foreground">{value}</span>,
-  },
-  {
-    accessorKey: "channel",
-    header: "Channel",
-    sortable: true,
-    cell: ({ value }) => <span className="text-sm text-muted-foreground font-medium">{value}</span>,
-  },
-  {
-    accessorKey: "itemCount",
-    header: "Items",
-    align: "center",
-    cell: ({ value }) => (
-      <Badge variant="outline" className="text-xs font-semibold tabular-nums">
-        {value}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    sortable: true,
-    cell: ({ value }) => (
-      <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full border inline-block", STATUS_META[value as OrderStatus])}>
-        {value}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "paymentStatus",
-    header: "Payment",
-    sortable: true,
-    cell: ({ value }) => (
-      <Badge variant={value === "Paid" ? "default" : value === "Refunded" ? "outline" : "secondary"} className="text-xs font-semibold px-2.5 py-1">
-        {value}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "fulfillmentStatus",
-    header: "Fulfillment",
-    sortable: true,
-    cell: ({ row, value }) => {
-      const isFulfilled = value === "Fulfilled" || row.status === "Fulfilled";
-      const isConfirmed = row.status === "Confirmed";
-      return (
-        <Badge
-          variant={isFulfilled ? "default" : isConfirmed ? "secondary" : "outline"}
-          className="text-xs font-semibold"
-        >
-          {isFulfilled ? "Dispatched" : isConfirmed ? "Ready to Pack" : "Pending Check"}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: "totalValue",
-    header: "Total",
-    sortable: true,
-    align: "right",
-    cell: ({ row }) => <span className="font-mono font-bold text-sm text-foreground">{row.total}</span>,
-  },
-];
-
 export default function OrdersPage() {
+  const router = useRouter();
   const { searchQuery } = useAdminLayout();
   const version = useOps();
   const confirm = useConfirm();
@@ -171,6 +83,152 @@ export default function OrdersPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState("all");
   const [searchTableQuery, setSearchTableQuery] = useState("");
+
+  const orderColumns: CentralTableColumn<OrderRow>[] = useMemo(
+    () => [
+      {
+        accessorKey: "id",
+        header: "Order #",
+        sortable: true,
+        width: "120px",
+        cell: ({ row, value }) => (
+          <Link
+            href={`/orders/${row.id}`}
+            className="font-mono font-bold text-sm text-foreground hover:text-primary transition-colors flex items-center gap-1 group"
+          >
+            <span>{value}</span>
+            <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
+          </Link>
+        ),
+      },
+      {
+        accessorKey: "customer",
+        header: "Customer & Contact",
+        sortable: true,
+        cell: ({ row }) => (
+          <div className="min-w-0">
+            <div className="font-semibold text-sm text-foreground truncate">{row.customer}</div>
+            <div className="text-xs text-muted-foreground mt-0.5 truncate">{row.email}</div>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "date",
+        header: "Placed Date",
+        sortable: true,
+        width: "140px",
+        cell: ({ value }) => (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+            <Clock className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+            <span>{value}</span>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "channel",
+        header: "Channel",
+        sortable: true,
+        width: "130px",
+        cell: ({ value }) => <span className="text-xs text-muted-foreground font-medium">{value}</span>,
+      },
+      {
+        accessorKey: "itemCount",
+        header: "Items",
+        align: "center",
+        width: "90px",
+        cell: ({ value }) => (
+          <Badge variant="outline" className="text-xs font-semibold tabular-nums">
+            {value} items
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "status",
+        header: "Order Status",
+        sortable: true,
+        width: "130px",
+        cell: ({ value }) => (
+          <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full border inline-block", STATUS_META[value as OrderStatus])}>
+            {value}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "deliveryStage",
+        header: "Delivery Milestone",
+        sortable: true,
+        width: "170px",
+        cell: ({ row }) => {
+          const stage = row.deliveryStage || (row.status === "Quotation" ? "Pending Confirmation" : "Confirmed");
+          const isPending = stage === "Pending Confirmation";
+          const isPacked = stage === "Packed";
+          const isCourier = stage === "Handed to Courier" || stage === "In Transit" || stage === "Out for Delivery";
+          const isDelivered = stage === "Delivered";
+
+          return (
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs font-medium px-2 py-0.5 inline-flex items-center gap-1",
+                isDelivered
+                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                  : isCourier
+                  ? "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30"
+                  : isPacked
+                  ? "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30"
+                  : isPending
+                  ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                  : "bg-muted text-foreground border-border"
+              )}
+            >
+              {stage}
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: "paymentStatus",
+        header: "Payment",
+        sortable: true,
+        width: "110px",
+        cell: ({ value }) => (
+          <Badge variant={value === "Paid" ? "default" : value === "Refunded" ? "outline" : "secondary"} className="text-xs font-semibold px-2.5 py-1">
+            {value}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "totalValue",
+        header: "Total Value",
+        sortable: true,
+        align: "right",
+        width: "120px",
+        cell: ({ row }) => <span className="font-mono font-bold text-sm text-foreground">{row.total}</span>,
+      },
+      {
+        id: "details",
+        header: "Details",
+        align: "right",
+        width: "130px",
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="h-8 px-2.5 text-xs font-semibold text-foreground hover:text-primary hover:border-primary/50 gap-1.5 cursor-pointer transition-colors"
+            >
+              <Link href={`/orders/${row.id}`}>
+                <span>Details</span>
+                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
+              </Link>
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
   useEffect(() => {
     let alive = true;
@@ -217,15 +275,27 @@ export default function OrdersPage() {
   const hasActiveFilters = activeFiltersCount > 0 || effectiveQuery.length > 0;
 
   // Revenue by lifecycle stage for the Graph view.
-  const graphData = useMemo(
-    () =>
-      STAGE_KEYS.map((s) => ({
+  const graphData = useMemo(() => {
+    const relevantRows = rows.filter((o) => {
+      const matchesChannel = selectedChannel === "all" || o.channelKey === selectedChannel;
+      const matchesPayment = selectedPayment === "all" || o.paymentStatus === selectedPayment;
+      const matchesQuery =
+        !effectiveQuery ||
+        o.id.toLowerCase().includes(effectiveQuery) ||
+        o.customer.toLowerCase().includes(effectiveQuery) ||
+        o.email.toLowerCase().includes(effectiveQuery);
+      return matchesChannel && matchesPayment && matchesQuery;
+    });
+
+    return STAGE_KEYS.map((s) => {
+      const stageRows = relevantRows.filter((o) => o.status === s);
+      return {
         label: s,
-        value: filteredRows.filter((o) => o.status === s).reduce((sum, o) => sum + o.totalValue, 0),
-        color: STAGE_ACCENT[s].replace("bg-", "bg-") + "/70",
-      })),
-    [filteredRows],
-  );
+        value: stageRows.reduce((sum, o) => sum + o.totalValue, 0),
+        count: stageRows.length,
+      };
+    });
+  }, [rows, selectedChannel, selectedPayment, effectiveQuery]);
 
   // Drag a Kanban card into a new stage column -> workflow stage change.
   // Moving into Cancelled is destructive, so it asks for permission first.
@@ -269,46 +339,25 @@ export default function OrdersPage() {
     appToast.success("Export ready", `${filteredRows.length} order(s) downloaded as CSV.`);
   };
 
-  const bulkAction = async (selectedRows: OrderRow[], kind: "ship" | "cancel") => {
-    const allowed = await confirm({
-      title: kind === "ship" ? `Fulfill ${selectedRows.length} order(s)?` : `Cancel ${selectedRows.length} order(s)?`,
-      description:
-        kind === "ship"
-          ? "Each selected order is marked shipped and its fulfillment updated."
-          : "This cancels every selected order. Refunds are not processed automatically.",
-      tone: kind === "cancel" ? "destructive" : "default",
-      confirmLabel: kind === "ship" ? "Fulfill Orders" : "Cancel Orders",
-    });
-    if (!allowed) return;
-    let moved = 0;
-    for (const r of selectedRows) {
-      const res = applySaleAction(r.id, r.customer, kind, {
-        status: r.status,
-        paymentStatus: r.paymentStatus,
-        fulfillmentStatus: r.fulfillmentStatus,
-      });
-      if (res.ok) moved += 1;
-    }
-    appToast.success(
-      kind === "ship" ? "Orders fulfilled" : "Orders cancelled",
-      `${moved} of ${selectedRows.length} order(s) updated.`
-    );
-  };
-
   return (
     <>
-      {/* Title & Actions Bar */}
+      {/* Title & Station Links Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+            <Badge variant="outline" className="text-xs bg-muted/60 font-semibold">
+              History &amp; Overview
+            </Badge>
+          </div>
           <p className="text-sm text-muted-foreground">
-            Track the full order lifecycle — quotation, confirmation, fulfillment and invoicing.
+            Complete historical audit log of customer orders. Click any order row to open its detailed profile, timeline, and fulfillment stations.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="h-11 px-5 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all" onClick={exportOrdersCsv}>
             <Download className="mr-2 h-4 w-4" />
-            Export
+            Export CSV
           </Button>
           <Button asChild className="h-11 px-5 text-sm font-medium cursor-pointer">
             <Link href="/orders/new">
@@ -397,7 +446,7 @@ export default function OrdersPage() {
       {view === "list" && (
         <CentralTable
           data={filteredRows}
-          columns={ORDER_COLUMNS}
+          columns={orderColumns}
           loading={loading}
           loadingRows={6}
           selectable
@@ -441,33 +490,7 @@ export default function OrdersPage() {
           pagination
           pageSize={10}
           pageSizeOptions={[10, 20, 50]}
-          selectedActions={(selectedRows, clearSelection) => (
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 text-xs font-semibold cursor-pointer"
-                onClick={() => {
-                  bulkAction(selectedRows as OrderRow[], "ship");
-                  clearSelection();
-                }}
-              >
-                <Truck className="mr-1.5 h-3.5 w-3.5" /> Fulfill
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 text-xs font-semibold gap-1.5 cursor-pointer text-rose-600 hover:bg-rose-500/10 hover:text-rose-600 dark:text-rose-400"
-                onClick={() => {
-                  bulkAction(selectedRows as OrderRow[], "cancel");
-                  clearSelection();
-                }}
-              >
-                <Ban className="h-3.5 w-3.5" />
-                Cancel
-              </Button>
-            </div>
-          )}
+          onRowClick={(row) => router.push(`/orders/${row.id}`)}
           emptyAction={
             hasActiveFilters && (
               <Button
@@ -515,10 +538,12 @@ export default function OrdersPage() {
         <GraphView
           data={graphData}
           formatValue={fmtMoney}
+          selectedLabel={selectedStatus}
           onSelect={(d) => {
-            setSelectedStatus(d.label);
-            setView("list");
+            setSelectedStatus(d.label === selectedStatus ? "all" : d.label);
           }}
+          onClearSelection={() => setSelectedStatus("all")}
+          title="Orders Revenue by Stage"
         />
       )}
 
@@ -535,8 +560,6 @@ export default function OrdersPage() {
           ]}
         />
       )}
-
-      {/* Action notices now handled by the global toast system */}
     </>
   );
 }

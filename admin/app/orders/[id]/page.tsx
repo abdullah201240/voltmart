@@ -20,6 +20,10 @@ import {
   XCircle,
   RotateCcw,
   FileText,
+  Barcode,
+  Phone,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import {
   getOrderById,
@@ -253,14 +257,34 @@ export default function OrderDetailPage() {
           </Button>
 
           {order.status === "Quotation" && (
-            <Button className="h-10 px-4 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all duration-200" onClick={() => run("confirm")}>
-              <Check className="mr-2 h-4 w-4" /> Confirm Order
+            <Button asChild className="h-10 px-4 text-sm font-semibold cursor-pointer active:scale-[0.98] transition-all duration-200 bg-primary text-primary-foreground">
+              <Link href={`/orders/${order.id}/confirm`}>
+                <Phone className="mr-2 h-4 w-4" /> Phone Verification Page
+              </Link>
             </Button>
           )}
 
-          {order.status === "Confirmed" && (
-            <Button className="h-10 px-4 text-sm font-medium cursor-pointer active:scale-[0.98] transition-all duration-200" onClick={() => run("ship")}>
-              <Truck className="mr-2 h-4 w-4" /> Create Delivery
+          {order.status === "Confirmed" && (!order.deliveryStage || order.deliveryStage === "Confirmed" || order.deliveryStage === "Packing") && (
+            <Button asChild className="h-10 px-4 text-sm font-semibold cursor-pointer active:scale-[0.98] transition-all duration-200 bg-primary text-primary-foreground">
+              <Link href={`/orders/${order.id}/pack`}>
+                <Barcode className="mr-2 h-4 w-4" /> Packing Station Page
+              </Link>
+            </Button>
+          )}
+
+          {order.deliveryStage === "Packed" && (
+            <Button asChild className="h-10 px-4 text-sm font-semibold cursor-pointer active:scale-[0.98] transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white">
+              <Link href={`/orders/${order.id}/dispatch`}>
+                <Truck className="mr-2 h-4 w-4" /> Courier Dispatch Page
+              </Link>
+            </Button>
+          )}
+
+          {(order.deliveryStage === "Handed to Courier" || order.deliveryStage === "In Transit" || order.deliveryStage === "Out for Delivery" || order.deliveryStage === "Delivered") && (
+            <Button asChild variant="outline" className="h-10 px-4 text-sm font-semibold cursor-pointer active:scale-[0.98] transition-all duration-200">
+              <Link href={`/orders/${order.id}/delivery`}>
+                <ExternalLink className="mr-2 h-4 w-4 text-primary" /> Delivery &amp; COD Page
+              </Link>
             </Button>
           )}
 

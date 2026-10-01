@@ -34,6 +34,17 @@ export interface OrderLine {
   total: number;
 }
 
+export type DeliveryStage =
+  | "Pending Confirmation"
+  | "Confirmed"
+  | "Packing"
+  | "Packed"
+  | "Handed to Courier"
+  | "In Transit"
+  | "Out for Delivery"
+  | "Delivered"
+  | "Returned";
+
 /** Order list row. */
 export interface OrderRow {
   id: string;
@@ -50,18 +61,16 @@ export interface OrderRow {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
+  deliveryStage?: DeliveryStage;
+  consignmentId?: string;
+  packageWeightKg?: number;
+  phoneVerified?: boolean;
+  deliveryZone?: "dhaka-inside" | "dhaka-suburbs" | "outside-dhaka";
+  courierPartner?: string;
+  totalItems?: number;
+  lines?: OrderLine[];
+  codAmount?: number;
 }
-
-export type DeliveryStage =
-  | "Pending Confirmation"
-  | "Confirmed"
-  | "Packing"
-  | "Packed"
-  | "Handed to Courier"
-  | "In Transit"
-  | "Out for Delivery"
-  | "Delivered"
-  | "Returned";
 
 /** Full order with lines + addresses (order detail). */
 export interface OrderDetail extends OrderRow {

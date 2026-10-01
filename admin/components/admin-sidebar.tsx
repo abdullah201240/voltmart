@@ -101,6 +101,9 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ShoppingCart,
         children: [
           { title: "All Orders", href: "/orders" },
+          { title: "Phone Verification", href: "/orders/confirmations" },
+          { title: "Packing Station", href: "/orders/packing" },
+          { title: "Courier Dispatch", href: "/orders/dispatch" },
           { title: "Returns & RMA", href: "/returns" },
         ],
       },
