@@ -173,32 +173,27 @@ export function GraphView({
                   )}
                 </div>
 
-                {/* Visible Vertical Bar Track Container */}
-                <div
-                  className={cn(
-                    "w-full h-52 rounded-t-lg bg-muted/40 border transition-all duration-200 flex flex-col justify-end p-1 relative overflow-hidden",
-                    isSelected
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/40 shadow-sm"
-                      : isHovered
-                      ? "border-primary/50 bg-muted/70 shadow-xs"
-                      : "border-border/70"
-                  )}
-                >
+                {/* Vertical Bar Container (Transparent, No Background) */}
+                <div className="w-full h-52 flex flex-col justify-end items-center relative">
                   {/* The Vibrant Filled Bar */}
                   {d.value > 0 ? (
                     <div
-                      className="w-full rounded-t-md transition-all duration-500 ease-out shadow-sm relative"
+                      className={cn(
+                        "w-full max-w-[64px] rounded-t-md transition-all duration-500 ease-out shadow-xs relative",
+                        isHovered && "opacity-90 scale-[1.02]",
+                        isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                      )}
                       style={{
                         height: `${Math.max(4, pct)}%`,
                         background: barGradient,
                       }}
                     >
                       {/* Top highlight cap */}
-                      <div className="w-full h-0.5 bg-white/40 rounded-t-md" />
+                      <div className="w-full h-0.5 bg-white/30 rounded-t-md" />
                     </div>
                   ) : (
-                    /* Zero indicator line */
-                    <div className="w-full h-1 bg-muted-foreground/20 rounded-t-sm" />
+                    /* Minimal zero indicator */
+                    <div className="w-full max-w-[64px] h-0.5 bg-border/60 rounded-full" />
                   )}
                 </div>
 

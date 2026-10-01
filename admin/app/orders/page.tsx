@@ -79,6 +79,40 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "kanban" | "graph" | "pivot">("list");
 
+  // Restore and sync active view tab from URL or localStorage across reloads
+  useEffect(() => {
+    const STORAGE_KEY = "vm_orders_active_view";
+    const validViews = ["list", "kanban", "graph", "pivot"] as const;
+
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlView = urlParams.get("view");
+      if (urlView && (validViews as readonly string[]).includes(urlView)) {
+        setView(urlView as typeof view);
+        localStorage.setItem(STORAGE_KEY, urlView);
+        return;
+      }
+
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && (validViews as readonly string[]).includes(saved)) {
+        setView(saved as typeof view);
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set("view", saved);
+        window.history.replaceState(null, "", currentUrl.toString());
+      }
+    } catch {}
+  }, []);
+
+  const handleViewChange = (newView: "list" | "kanban" | "graph" | "pivot") => {
+    setView(newView);
+    try {
+      localStorage.setItem("vm_orders_active_view", newView);
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("view", newView);
+      window.history.replaceState(null, "", currentUrl.toString());
+    } catch {}
+  };
+
   const [selectedChannel, setSelectedChannel] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState("all");
@@ -403,7 +437,7 @@ export default function OrdersPage() {
       {/* View switcher */}
       <ViewSwitcher
         active={view}
-        onChange={(k) => setView(k as typeof view)}
+        onChange={(k) => handleViewChange(k as typeof view)}
         meta={`${filteredRows.length} of ${rows.length} orders`}
         tabs={[
           { key: "list", label: "List", icon: <List className="h-4 w-4" /> },
@@ -455,7 +489,6 @@ export default function OrdersPage() {
           title="All Orders"
           description={`${filteredRows.length} of ${rows.length} orders`}
           groupable
-          favoriteKey="orders"
           filters={
             <div className="grid gap-5 sm:grid-cols-3 w-full">
               <SearchableDropbox
